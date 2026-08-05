@@ -33,6 +33,18 @@ Two guest access modes are supported (see [docs/privilege-model.md](docs/privile
   appliance VM (needs `/dev/kvm`); guest disks are accessed inside the appliance, so
   no host root is required.
 
+## Forklift (MTV) Integration
+
+kc-v2v is a drop-in replacement for the virt-v2v conversion image in
+[Forklift](https://github.com/kubev2v/forklift). Configure it with:
+
+```bash
+oc mtv settings set --setting virt_v2v_image_fqin \
+  --value quay.io/yaacov/kc-v2v:devel-amd64
+```
+
+See [docs/forklift-usage.md](docs/forklift-usage.md) for full usage instructions.
+
 ## Design Highlights
 
 - **Pure Go core pipeline** - builds with standard `go build`, no C toolchain

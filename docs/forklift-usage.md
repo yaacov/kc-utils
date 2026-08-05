@@ -4,9 +4,8 @@ kc-v2v is a drop-in replacement for the virt-v2v conversion image in
 [Forklift / Migration Toolkit for Virtualization](https://github.com/kubev2v/forklift).
 Point Forklift at the kc-v2v container image and run migrations as usual.
 
-> **Note:** kc-utils do not support preflight inspection. Always create plans
-> with `--run-preflight-inspection false` (or `runPreflightInspection: false`
-> in the Plan spec).
+> **Note:** kc-utils do not support preflight inspection. For warm
+> migrations, create plans with `--run-preflight-inspection false`.
 
 ## Prerequisites
 
@@ -19,44 +18,30 @@ Point Forklift at the kc-v2v container image and run migrations as usual.
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \
   --value quay.io/yaacov/kc-v2v:devel-amd64
-
-# kc-v2v ignores extra virt-v2v CLI args — clear any overrides
-oc mtv settings unset --setting virt_v2v_extra_args
 ```
 
 All subsequent migrations will use kc-v2v for guest conversion.
 
 ## 2. Create a migration plan
 
+Cold migration:
+
 ```bash
 oc mtv create plan --name my-plan \
   --source my-vsphere-provider --target host \
   --vms my-vm \
-  --run-preflight-inspection false \
   -n my-namespace
 ```
 
-Or as YAML:
+Warm migration (disable preflight inspection):
 
-```yaml
-apiVersion: forklift.konveyor.io/v1beta1
-kind: Plan
-metadata:
-  name: my-plan
-  namespace: my-namespace
-spec:
-  type: cold
-  skipGuestConversion: false
-  runPreflightInspection: false
-  provider:
-    source:
-      name: my-vsphere-provider
-      namespace: my-namespace
-    destination:
-      name: host
-      namespace: my-namespace
-  vms:
-    - name: my-vm
+```bash
+oc mtv create plan --name my-plan \
+  --source my-vsphere-provider --target host \
+  --type warm \
+  --vms my-vm \
+  --run-preflight-inspection false \
+  -n my-namespace
 ```
 
 ## 3. Start the migration
