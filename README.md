@@ -1,4 +1,4 @@
-# kc-utils
+# KVM Converter Utilities (kc-utils)
 
 Converts virtual machines disks from VMware, Xen, VirtualBox, Parallels, Hyper-V, EC2,
 Nutanix AHV, and other disk-based sources to run on KVM with virtio drivers.
@@ -78,11 +78,13 @@ dependencies, build, test, and PR guidance.
 
 - [community/architecture.md](community/architecture.md) - Design principles for contributors and agents
 - [community/CONTRIBUTING.md](community/CONTRIBUTING.md) - Build, test, layout, and dependencies
+- [community/pull-requests.md](community/pull-requests.md) - Branch naming and PR writing guidelines
 - [docs/README.md](docs/README.md) - Complete conversion flow
 - [docs/kc-v2v.md](docs/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
 - [docs/kc-copy.md](docs/kc-copy.md) - NFC disk copy stage CLI
 - [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
 - [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
+- [docs/forklift-usage.md](docs/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
 - [docs/privilege-model.md](docs/privilege-model.md) - Privilege model: host-mount vs. libguestfs
 - [docs/examples/](docs/examples/README.md) - JSON samples and runnable example
 - [docs/kc-prepare.md](docs/kc-prepare.md) - kc-prepare pipeline
