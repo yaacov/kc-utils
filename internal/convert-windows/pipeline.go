@@ -106,7 +106,7 @@ func Run(cfg *Config) error {
 
 	// Block 2: Locate virtio-win drivers from the pre-extracted directory tree.
 	slog.Debug("locating driver source")
-	driverFiles, err := driversource.CollectDrivers(caps.Arch, osVersion,
+	driverFiles, err := driversource.CollectDrivers(caps.Arch, osVersion, versionHandler.Name(),
 		versionHandler.DriverOSPreferences(), versionHandler.DriverOSFallbacks())
 	if err != nil {
 		return fmt.Errorf("locate virtio-win drivers: %w", err)

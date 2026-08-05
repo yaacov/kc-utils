@@ -62,7 +62,7 @@ TEST_IMAGE   := kc-utils-test
         cross-linux-s390x cross-all mod-tidy mod-verify check test-e2e \
         test-e2e-container test-e2e-disk test-e2e-disk-guestfs test-image \
         test-image-rebuild test-build check-all help build-kc-v2v \
-        build-kc-copy build-kc-v2v-image push-kc-v2v-image check_container_runtime
+        build-kc-copy prepare-windows-virtio-drivers build-kc-v2v-image push-kc-v2v-image check_container_runtime
 
 all: build
 
@@ -234,6 +234,11 @@ build-kc-v2v: kc-v2v
 
 ## Build kc-copy binary (pipeline stage + standalone CLI)
 build-kc-copy: kc-copy
+
+## Stage per-version Windows virtio-win vendor files (see build/kc-v2v/vendor/README.md)
+prepare-windows-virtio-drivers:
+	CONTAINER_CMD="$(CONTAINER_CMD)" \
+		bash build/kc-v2v/prepare-windows-virtio-drivers.sh
 
 ## Build kc-v2v container image
 build-kc-v2v-image: check_container_runtime build

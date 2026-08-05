@@ -30,8 +30,9 @@ func normalizeOSProductName(requested string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
 
-// CanonicalOSVersions expands an OS version token or product name into aliases
-// used by the virtio-win ISO layout (w10, 2k19, …).
+// CanonicalOSVersions maps a guest product name or by-os directory token to the
+// virtio-win driver directory name for that version only. There is no shared
+// alias bucket (Server 2008 does not match Vista, Win7 does not match 2k8R2, …).
 func CanonicalOSVersions(requested string) []string {
 	normalized := normalizeOSProductName(requested)
 	if normalized == "" {
@@ -57,77 +58,37 @@ func CanonicalOSVersions(requested string) []string {
 
 	switch {
 	case strings.Contains(normalized, "server 2025"):
-		add("2k25", "w11", "10.0")
+		add("2k25")
 	case strings.Contains(normalized, "server 2022"):
-		add("2k22", "w11", "10.0")
+		add("2k22")
 	case strings.Contains(normalized, "server 2019"):
-		add("2k19", "w10", "10.0")
+		add("2k19")
 	case strings.Contains(normalized, "server 2016"):
-		add("2k16", "w10", "10.0")
+		add("2k16")
 	case strings.Contains(normalized, "server 2012 r2"):
-		add("2k12r2", "w8.1", "6.3")
+		add("2k12r2")
 	case strings.Contains(normalized, "server 2012"):
-		add("2k12", "w8", "6.2")
+		add("2k12")
 	case strings.Contains(normalized, "server 2008 r2"):
-		add("2k8r2", "w7", "6.1")
+		add("2k8r2")
 	case strings.Contains(normalized, "server 2008"):
-		add("2k8", "vista", "6.0")
+		add("2k8")
 	case strings.Contains(normalized, "server 2003"):
-		add("2k3", "5.2")
-	case strings.Contains(normalized, "windows 11"):
-		add("w11", "10.0")
-	case strings.Contains(normalized, "windows 10"):
-		add("w10", "10.0")
-	case strings.Contains(normalized, "windows 8.1"):
-		add("w8.1", "6.3")
-	case strings.Contains(normalized, "windows 8"):
-		add("w8", "6.2")
-	case strings.Contains(normalized, "windows 7"):
-		add("w7", "6.1")
-	case strings.Contains(normalized, "vista"):
-		add("vista", "6.0")
-	case strings.Contains(normalized, "xp"):
-		add("xp", "5.1")
-	case normalized == "10.0":
-		add("w10", "w11", "2k16", "2k19", "2k22", "2k25")
-	case normalized == "2k25":
-		add("w11", "10.0")
-	case normalized == "2k22":
-		add("w11", "10.0")
-	case normalized == "2k19":
-		add("w10", "10.0")
-	case normalized == "2k16":
-		add("w10", "10.0")
-	case normalized == "2k12r2":
-		add("w8.1", "6.3")
-	case normalized == "2k12":
-		add("w8", "6.2")
-	case normalized == "2k8r2":
-		add("w7", "6.1")
-	case normalized == "2k8":
-		add("vista", "6.0")
-	case normalized == "w11":
-		// bare ISO token — do not attach 10.0 (would match Server 2019)
-	case normalized == "w10":
-		// bare ISO token
-	case normalized == "w8.1":
-		add("6.3")
-	case normalized == "w8":
-		add("6.2")
-	case normalized == "w7":
-		add("6.1")
-	case normalized == "6.3":
-		add("w8.1", "2k12r2")
-	case normalized == "6.2":
-		add("w8", "2k12")
-	case normalized == "6.1":
-		add("w7", "2k8r2")
-	case normalized == "6.0":
-		add("vista", "2k8")
-	case normalized == "5.1":
-		add("xp")
-	case normalized == "5.2":
 		add("2k3")
+	case strings.Contains(normalized, "windows 11"):
+		add("w11")
+	case strings.Contains(normalized, "windows 10"):
+		add("w10")
+	case strings.Contains(normalized, "windows 8.1"):
+		add("w8.1")
+	case strings.Contains(normalized, "windows 8"):
+		add("w8")
+	case strings.Contains(normalized, "windows 7"):
+		add("w7")
+	case strings.Contains(normalized, "vista"):
+		add("vista")
+	case strings.Contains(normalized, "xp"):
+		add("xp")
 	}
 
 	return aliases

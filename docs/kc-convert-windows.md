@@ -61,13 +61,14 @@ sudo dnf install -y virtio-win
 
 The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`.
 The kc-v2v container image ships this tree directly. The image build also
-merges **archived** virtio-win 1.9.12-era OS directories (`2k8`, `2k3`, `xp`,
-`vista`) for pre–Windows 8 guests — see
-[`build/kc-v2v/stage-archived-virtio-win.sh`](../build/kc-v2v/stage-archived-virtio-win.sh).
+**best-effort** stages per-version virtio-win **1.9.12**-era OS directories
+(`2k8`, `2k3`, `xp`, `vista`) when a vendor artifact is present — see
+[`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md). Without
+it, pre–Win 8 conversion fails at runtime with a clear error.
 
 | Plugin | Path | Notes |
 |--------|------|-------|
-| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` |
+| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista) |
 
 ## Version classification
 
@@ -158,7 +159,7 @@ running `.ps1` scripts. Batch-only guests (XP/2003) run `.bat` contributors only
 | `2500-static-ip` | Configure static IPs after netkvm is available (skipped with `--offline`) |
 | `2600-remove-duplicate-routes` | Remove stale persistent routes |
 | `2700-preserve-complementary-ips` | Add secondary IPs to NICs |
-| `3000-install-qemu-ga` | Install QEMU guest agent MSI when staged in the guest driver tree |
+| `3000-install-qemu-ga` | Install QEMU guest agent MSI when `qemu-ga` was collected into `DriverFiles` and copied to the guest (skipped when MSI not collected, e.g. XP/2003/2008/Vista handlers) |
 | `4000-disk-onliner` | Bring offline VirtIO disks online |
 | `9100-cleanup-vmware` | Disable VMware PnP devices (conditional on VMware source) |
 | `99999-signal-conversion-done` | Write `CONVERSION_DONE` to COM1 (conditional) |

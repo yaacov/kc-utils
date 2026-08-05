@@ -29,7 +29,7 @@ func TestFindBestOSDirWithPrefsPrefers2k8(t *testing.T) {
 		}
 	}
 
-	got, err := FindBestOSDirWithPrefs(base, "Windows Server 2008 Enterprise", []string{"2k8", "vista"}, nil)
+	got, err := FindBestOSDirWithPrefs(base, "Windows Server 2008 Enterprise", []string{"2k8"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,18 +38,14 @@ func TestFindBestOSDirWithPrefsPrefers2k8(t *testing.T) {
 	}
 }
 
-func TestFindBestOSDirFallback2k8To2k8R2(t *testing.T) {
+func TestFindBestOSDirNoCrossVersionFallback(t *testing.T) {
 	base := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(base, "2k8R2"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := FindBestOSDir(base, "Windows Server 2008 Enterprise")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if filepath.Base(got) != "2k8R2" {
-		t.Fatalf("got %q, want 2k8R2", got)
+	if _, err := FindBestOSDir(base, "Windows Server 2008 Enterprise"); err == nil {
+		t.Fatal("expected error when only 2k8R2 is present for Server 2008")
 	}
 }
 

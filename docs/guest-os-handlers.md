@@ -127,19 +127,33 @@ Implementation: [`pkg/convert-windows/version/handlers.go`](../pkg/convert-windo
 Columns describe what the handler returns; pipeline and firstboot plugins
 consume these flags.
 
-| Handler | Virtio-win OS dirs (prefs → fallbacks) | Firstboot launcher | Static IP | Disk online | VMware cleanup | QEMU-GA |
-|---------|----------------------------------------|--------------------|-----------|-------------|----------------|---------|
-| `win11` | `2k22`, `w11` → `w10`, `2k19` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes |
-| `win10` | `w10`, `2k19`, `2k16` → `2k22` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes |
-| `win81` | `w8.1`, `2k12r2` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes |
-| `win8` | `w8`, `2k12` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes |
-| `win7` | `w7`, `2k8r2` | PS 1.0 (reg execution policy) | Registry PS | WMI + diskpart | `.bat` | yes |
-| `win2008r2` | `2k8r2`, `w7` | PS 1.0 | Registry PS | WMI + diskpart | `.bat` | yes |
-| `win2008` | `2k8`, `vista` | PS 1.0 | WMI + netsh | **skipped** | `.bat` | **no** |
-| `winvista` | `vista`, `2k8` | PS 1.0 | WMI + netsh | WMI + diskpart | `.bat` | no |
-| `win2003` | `2k3`, `xp` → `xp` | Batch only | Registry `.bat` | WMI + diskpart | `.bat` | no |
-| `winxp` | `xp` | Batch only | Registry `.bat` | **skipped** | `.bat` | no |
-| `winunknown` | generic alias match | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes |
+**Virtio-win OS dir** — expected `by-os/<arch>/<dir>/` under
+`/usr/share/virtio-win/drivers/`. Dirs marked **†** are not in the default
+1.9.40 RPM; conversion fails unless the kc-v2v image was built with legacy
+vendor staging ([`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md)).
+
+**QEMU-GA** — whether qemu-ga is collected and installed. Handlers
+`win2008`, `winvista`, `win2003`, and `winxp` omit GA MSIs during
+[`CollectDrivers`](../pkg/convert-windows/driversource/collect.go) (see
+[`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go)).
+**yes‡** means the handler collects GA when a matching `qemu-ga*.msi` exists
+under `/usr/share/virtio-win/guest-agent/`; the `qemuga` firstboot contributor
+runs only when `qemu-ga` appears in `DriverFiles`. **—** means GA is not
+collected for that handler.
+
+| Handler | Virtio-win OS dir | Firstboot launcher | Static IP | Disk online | VMware cleanup | QEMU-GA |
+|---------|-------------------|--------------------|-----------|-------------|----------------|---------|
+| `win11` | `w11` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
+| `win10` | `w10` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
+| `win81` | `w8.1` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
+| `win8` | `w8` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
+| `win7` | `w7` | PS 1.0 (reg execution policy) | Registry PS | WMI + diskpart | `.bat` | yes‡ |
+| `win2008r2` | `2k8r2` | PS 1.0 | Registry PS | WMI + diskpart | `.bat` | yes‡ |
+| `win2008` | `2k8` † | PS 1.0 | WMI + netsh | **skipped** | `.bat` | — |
+| `winvista` | `vista` † | PS 1.0 | WMI + netsh | WMI + diskpart | `.bat` | — |
+| `win2003` | `2k3` † | Batch only | Registry `.bat` | WMI + diskpart | `.bat` | — |
+| `winxp` | `xp` † | Batch only | Registry `.bat` | **skipped** | `.bat` | — |
+| `winunknown` | generic alias match | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
 
 **Launcher kinds** ([`pkg/convert-windows/firstboot/firstboot.go`](../pkg/convert-windows/firstboot/firstboot.go)):
 
@@ -151,9 +165,9 @@ consume these flags.
 
 | Stage | Code | How handler is used |
 |-------|------|---------------------|
-| Driver lookup | [`driversource.CollectDrivers`](../pkg/convert-windows/driversource/collect.go) → [`FindBestOSDirWithPrefs`](../pkg/convert-windows/driversource/osdir.go) | Passes `DriverOSPreferences()` / `DriverOSFallbacks()` so e.g. Server 2008 picks archived `2k8` instead of generic `2k8R2` fallback |
+| Driver lookup | [`driversource.CollectDrivers`](../pkg/convert-windows/driversource/collect.go) → [`FindBestOSDirWithPrefs`](../pkg/convert-windows/driversource/osdir.go) | Passes `DriverOSPreferences()` — one by-os dir per handler, no cross-version fallback; omits qemu-ga MSIs when [`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go) is false |
 | Firstboot launcher | [`firstboot.Configure`](../pkg/convert-windows/firstboot/firstboot.go) | `Version.FirstbootLauncher()` selects `firstboot.bat` template |
-| Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` requires `SupportsQEMUGA()` |
+| Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` runs when `qemu-ga` is in `DriverFiles` |
 | Static IP scripts | [`staticip`](../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
 | VMware cleanup | [`vmwarecleanup`](../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../pkg/convert-windows/staticip/staticip.go) |
 
@@ -167,19 +181,25 @@ the classified handler:
 | Boot-time driver registration | NT &lt; 6.2 → `criticaldb`; ≥ 6.2 → `driverdb` | [`internal/convert-windows/pipeline.go`](../internal/convert-windows/pipeline.go) `registerDrivers` | Pre-Win8 guests need CriticalDeviceDatabase entries so viostor/vioscsi load before PnP |
 | NTFS boot sector heads | NT major &lt; 6 (pre-Vista) | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../pkg/convert-windows/ntfsfix/ntfsfix.go) | Patch `$NumberOfHeads` in the NTFS boot sector for virt-v2v parity |
 
-### Archived virtio-win drivers (pre–Win 8)
+### Pre–Win 8 virtio-win drivers
 
-Server 2008, 2003, XP, and Vista need SHA-1-era drivers that are not suitable
-in modern `2k8R2` / `w7` trees. The kc-v2v image build merges archived OS
-directories without overwriting modern ones:
+Server 2008, 2003, XP, and Vista need SHA-1-era drivers that are not in the
+modern virtio-win 1.9.40 tree. The kc-v2v image build **best-effort** stages
+each missing by-os directory when a vendor artifact is present (like
+`rpm/el8`, `el9`, `el10` for Linux QGA). **Image build succeeds without
+legacy vendor files**; pre–Win 8 conversion fails at runtime with a hint.
 
-- Script: [`build/kc-v2v/stage-archived-virtio-win.sh`](../build/kc-v2v/stage-archived-virtio-win.sh)
-- Source pin: virtio-win **1.9.12-4** from Fedora archive
-- Dirs copied per arch: `2k8`, `2k3`, `xp`, `vista`
-- Wired in [`build/kc-v2v/Containerfile`](../build/kc-v2v/Containerfile) downloader stage
+There is no open/free public source for these drivers — public el8+ virtio-win
+RPMs strip `2k8`/`2k3`/`xp` at build time. The known-good artifact is
+virtio-win **1.9.12-4.el7** (RHEL supplementary; entitlement required).
 
-At runtime, `win2008` / `win2003` / `winxp` / `winvista` handlers prefer those
-dirs via `DriverOSPreferences()`. There is no virtio-win ISO or `VIRTIO_WIN`
+- Script: [`build/kc-v2v/stage-windows-virtio-drivers.sh`](../build/kc-v2v/stage-windows-virtio-drivers.sh)
+- Optional vendor prep: [`prepare-windows-virtio-drivers.sh`](../build/kc-v2v/prepare-windows-virtio-drivers.sh) — see [`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md)
+- Dirs staged per arch: `2k8`, `2k3`, `xp`, `vista`
+
+At runtime, each version handler uses exactly one of those dirs via
+`DriverOSPreferences()`. Missing dirs produce an error naming the handler,
+required dir, and vendor README hint. There is no virtio-win ISO or `VIRTIO_WIN`
 env path — lookup is directory-only under
 `/usr/share/virtio-win/drivers/by-os/`.
 

@@ -7,6 +7,10 @@ tests/bin/
 tests/*.log
 tests/*.img
 
+# kc-v2v Windows virtio-win vendor (per-version dirs from Forklift pin)
+build/kc-v2v/vendor/*.rpm
+build/kc-v2v/vendor/*.iso
+
 # Editor and IDE
 *.swp
 *.swo

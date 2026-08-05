@@ -31,7 +31,7 @@ func TestCollectDriversDirectoryOnly(t *testing.T) {
 	}
 	Sources.Register("directory", dir)
 
-	files, err := CollectDrivers("x86_64", "Windows Server 2019", []string{"w10"}, nil)
+	files, err := CollectDrivers("x86_64", "Windows Server 2019", "win10", []string{"w10"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestCollectDriversRequiresDirectory(t *testing.T) {
 	t.Cleanup(func() { Sources = orig })
 
 	Sources.Register("directory", &stubSource{available: false})
-	if _, err := CollectDrivers("x86_64", "Windows Server 2019", nil, nil); err == nil {
+	if _, err := CollectDrivers("x86_64", "Windows Server 2019", "winunknown", nil, nil); err == nil {
 		t.Fatal("expected error when directory unavailable")
 	}
 }
@@ -57,7 +57,7 @@ func TestCollectDriversPropagatesFindError(t *testing.T) {
 	t.Cleanup(func() { Sources = orig })
 
 	Sources.Register("directory", &stubSource{available: true, err: errors.New("boom")})
-	if _, err := CollectDrivers("x86_64", "w10", nil, nil); err == nil {
+	if _, err := CollectDrivers("x86_64", "w10", "win10", nil, nil); err == nil {
 		t.Fatal("expected error from FindDrivers")
 	}
 }

@@ -44,13 +44,6 @@ func FindBestOSDirWithPrefs(archDir, osVersion string, prefs, fallbacks []string
 		}
 	}
 
-	for _, fallback := range osDirFallbacks(osVersion) {
-		dir := filepath.Join(archDir, fallback)
-		if st, statErr := os.Stat(dir); statErr == nil && st.IsDir() {
-			return dir, nil
-		}
-	}
-
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -80,13 +73,4 @@ func pickPreferredDir(matches, prefs []string) string {
 		}
 	}
 	return ""
-}
-
-func osDirFallbacks(osVersion string) []string {
-	for _, alias := range CanonicalOSVersions(osVersion) {
-		if alias == "2k8" {
-			return []string{"2k8R2"}
-		}
-	}
-	return nil
 }

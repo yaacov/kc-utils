@@ -14,6 +14,22 @@ See [pkg/v2v/README.md](../../pkg/v2v/README.md) for copy selection logic, vsphe
 make build-kc-v2v-image
 ```
 
+Pre–Win 8 Windows driver dirs (`2k8`, `2k3`, `xp`, `vista`) are staged
+**best-effort** when a virtio-win 1.9.12-4.el7 RPM or ISO is present under
+[`vendor/`](vendor/README.md). Image build succeeds without them; those guests
+fail at conversion time with a clear error.
+
+Optional — stage legacy drivers before building:
+
+```bash
+make prepare-windows-virtio-drivers   # copy virtio-win 1.9.12 RPM/ISO into vendor/
+make build-kc-v2v-image
+```
+
+Per-version dirs are merged individually like `rpm/el8`, `el9`, `el10`.
+See [`vendor/README.md`](vendor/README.md) for sourcing (no open/free public
+mirror — RHEL el7 artifact or Forklift downstream image extract).
+
 Or build binaries only:
 
 ```bash
@@ -27,28 +43,35 @@ Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`per
 
 | Path | Source | Purpose |
 |------|--------|---------|
-| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) + [`stage-archived-virtio-win.sh`](stage-archived-virtio-win.sh) | Windows VirtIO drivers (pre-extracted; archived `2k8`/`2k3`/`xp`/`vista` merged for legacy guests) |
+| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) + best-effort [`stage-windows-virtio-drivers.sh`](stage-windows-virtio-drivers.sh) | Windows VirtIO drivers (modern tree; optional per-version `2k8`/`2k3`/`xp`/`vista` when vendor artifact present) |
 | `/usr/share/virtio-win/guest-agent/` | same RPM | qemu-ga MSIs |
 | `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` | [`stage-linux-packages.sh`](stage-linux-packages.sh) | Offline Linux `qemu-guest-agent` for RHEL-family guests |
 
 `kc-v2v` passes `--offline` to converters when `V2V_offline=true`, so airgapped pods use these paths (no guest network install for QGA when a local RPM matches).
 
-### Archived virtio-win OS dirs (legacy Windows)
+### Pre–Win 8 virtio-win OS dirs
 
-Build stage [`stage-archived-virtio-win.sh`](stage-archived-virtio-win.sh) downloads
-virtio-win **1.9.12-4** from
-`fedorapeople.org/.../archive-virtio/` and copies `2k8`, `2k3`, `xp`, and
-`vista` per arch into the main `by-os` tree. Existing modern dirs are never
-overwritten. `kc-convert-windows` version handler `win2008` prefers `2k8` over
-the generic `2k8R2` fallback (SHA-2 drivers are unsuitable for Server 2008).
+Build stage [`stage-windows-virtio-drivers.sh`](stage-windows-virtio-drivers.sh)
+**best-effort** stages each missing by-os directory from virtio-win
+**1.9.12-4.el7** when present in [`vendor/`](vendor/README.md) (via optional
+[`prepare-windows-virtio-drivers.sh`](prepare-windows-virtio-drivers.sh)).
+Without a vendor artifact, the image builds with virtio-win 1.9.40 only and
+pre–Win 8 conversion fails at runtime with a documented error.
 
-| Version handler | Preferred OS dirs |
-|-----------------|-------------------|
-| `win2008` | `2k8`, `vista` |
-| `win2003` | `2k3`, `xp` |
+Existing modern dirs are never overwritten. Each version handler maps to exactly
+one by-os dir — there is no cross-version fallback (Server 2008 uses `2k8` only,
+not `vista` or `2k8R2`).
+
+| Version handler | by-os dir |
+|-----------------|-----------|
+| `win2008` | `2k8` |
+| `win2003` | `2k3` |
 | `winxp` | `xp` |
-| `win2008r2` / `win7` | `2k8r2`, `w7` |
-| `win10+` | `w10`, `2k19`, … |
+| `winvista` | `vista` |
+| `win2008r2` | `2k8r2` |
+| `win7` | `w7` |
+| `win10` | `w10` |
+| `win11` | `w11` |
 
 No `VIRTIO_WIN` ISO path is used — directory-only driver lookup.
 

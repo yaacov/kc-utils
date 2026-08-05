@@ -27,18 +27,20 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-prep
 # ── Stage 2: download guest conversion assets ────────────────────────
 FROM registry.fedoraproject.org/fedora:41 AS downloader
 
-RUN dnf install -y --setopt=install_weak_deps=False curl cpio rpm && dnf clean all
+RUN dnf install -y --setopt=install_weak_deps=False curl cpio rpm libarchive && dnf clean all
 
 # virtio-win — same pin as Forklift build/virt-v2v/Containerfile-upstream-fedora
 RUN dnf install -y --setopt=install_weak_deps=False \
         https://kojihub.stream.centos.org/kojifiles/packages/virtio-win/1.9.40/1.el9/noarch/virtio-win-1.9.40-1.el9.noarch.rpm && \
     dnf clean all
 
-# Merge archived SHA-1 virtio-win OS dirs (2k8, 2k3, xp, vista) for pre-Win 8 guests.
-COPY build/kc-v2v/stage-archived-virtio-win.sh /tmp/stage-archived-virtio-win.sh
-RUN chmod +x /tmp/stage-archived-virtio-win.sh && \
-    /tmp/stage-archived-virtio-win.sh /usr/share/virtio-win/drivers/by-os && \
-    rm -f /tmp/stage-archived-virtio-win.sh
+# Best-effort: stage pre–Win 8 by-os dirs (2k8, 2k3, xp, vista) when vendor/ has an RPM/ISO.
+# Optional host prep: make prepare-windows-virtio-drivers (see build/kc-v2v/vendor/README.md).
+COPY build/kc-v2v/vendor/ /tmp/virtio-win-vendor/
+COPY build/kc-v2v/stage-windows-virtio-drivers.sh /tmp/stage-windows-virtio-drivers.sh
+RUN chmod +x /tmp/stage-windows-virtio-drivers.sh && \
+    /tmp/stage-windows-virtio-drivers.sh /usr/share/virtio-win/drivers/by-os /tmp/virtio-win-vendor && \
+    rm -rf /tmp/stage-windows-virtio-drivers.sh /tmp/virtio-win-vendor
 
 # Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)
 COPY build/kc-v2v/stage-linux-packages.sh /tmp/stage-linux-packages.sh

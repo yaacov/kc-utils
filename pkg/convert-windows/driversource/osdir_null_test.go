@@ -8,7 +8,7 @@ import (
 
 func TestFindBestOSDirWin2008ProductNameWithNull(t *testing.T) {
 	base := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(base, "2k8R2"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(base, "2k8"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -16,7 +16,18 @@ func TestFindBestOSDirWin2008ProductNameWithNull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(got) != "2k8R2" {
-		t.Fatalf("got %q, want 2k8R2", got)
+	if filepath.Base(got) != "2k8" {
+		t.Fatalf("got %q, want 2k8", got)
+	}
+}
+
+func TestFindBestOSDirWin2008ProductNameNoCrossVersionDir(t *testing.T) {
+	base := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(base, "2k8R2"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := FindBestOSDir(base, "Windows Server (R) 2008 Enterprise\x00"); err == nil {
+		t.Fatal("expected error when only 2k8R2 is available for Server 2008")
 	}
 }

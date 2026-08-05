@@ -16,8 +16,8 @@ func TestClassifyWin2008RegisteredProductName(t *testing.T) {
 	if h.Name() != "win2008" {
 		t.Fatalf("got handler %q, want win2008", h.Name())
 	}
-	if prefs := h.DriverOSPreferences(); len(prefs) == 0 || prefs[0] != "2k8" {
-		t.Fatalf("prefs = %v, want 2k8 first", prefs)
+	if prefs := h.DriverOSPreferences(); len(prefs) != 1 || prefs[0] != "2k8" {
+		t.Fatalf("prefs = %v, want [2k8]", prefs)
 	}
 }
 

@@ -11,5 +11,5 @@ Strict block also:
 
 - Copies drivers to `Windows\Drivers\VirtIO\`
 - Copies boot `.sys` files to `system32\drivers\` (ImagePath points there)
-- Stages `qemu-ga*.msi` for firstboot install
+- Stages `qemu-ga*.msi` for firstboot install when present in `DriverFiles` (see [`CollectGuestAgentMSI`](../../version/guestagent.go))
 - Updates DevicePath to include `\Drivers\VirtIO`

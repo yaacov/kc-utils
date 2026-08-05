@@ -26,5 +26,10 @@ and qemu-ga MSIs under `/usr/share/virtio-win/guest-agent/`.
 
 The kc-v2v container image ships this tree directly (no ISO).
 
-Guest agent MSIs are staged into the guest's `Windows\Drivers\VirtIO\` during
-driver copy; firstboot installs them via `qemu-ga*.msi`.
+[`CollectDrivers`](../../collect.go) reads guest-agent MSIs from the directory
+plugin, then omits `qemu-ga` entries when
+[`CollectGuestAgentMSI`](../../version/guestagent.go) is false for the
+classified handler (XP, 2003, Server 2008, Vista). Guest agent MSIs that
+remain in `DriverFiles` are staged into the guest's `Windows\Drivers\VirtIO\`
+during driver copy; the `qemuga` firstboot contributor installs them via
+`qemu-ga*.msi`.

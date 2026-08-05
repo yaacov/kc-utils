@@ -80,7 +80,7 @@ func TestFindDriversWin2008Prefers2k8Dir(t *testing.T) {
 	}
 }
 
-func TestFindDriversWin2008Fallback(t *testing.T) {
+func TestFindDriversWin2008Requires2k8Dir(t *testing.T) {
 	root := t.TempDir()
 	osDir := filepath.Join(root, "amd64", "2k8R2")
 	if err := os.MkdirAll(osDir, 0o755); err != nil {
@@ -90,12 +90,13 @@ func TestFindDriversWin2008Fallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	src := &DirectorySource{BasePath: root}
-	drivers, err := src.FindDrivers("x86_64", "Windows Server 2008 Enterprise", nil, nil)
-	if err != nil {
-		t.Fatal(err)
+	h, ok := version.Handlers.Get("win2008")
+	if !ok {
+		t.Fatal("win2008 handler missing")
 	}
-	if len(drivers) == 0 {
-		t.Fatal("expected drivers via 2k8R2 fallback")
+
+	src := &DirectorySource{BasePath: root}
+	if _, err := src.FindDrivers("x86_64", "Windows Server 2008 Enterprise", h.DriverOSPreferences(), h.DriverOSFallbacks()); err == nil {
+		t.Fatal("expected error when 2k8 dir is missing")
 	}
 }

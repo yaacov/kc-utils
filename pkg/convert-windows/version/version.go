@@ -56,7 +56,6 @@ type VersionHandler interface {
 	StaticIPMode() StaticIPKind
 	DiskOnlineMode() DiskOnlineKind
 	VMwareCleanupMode() VMwareCleanupKind
-	SupportsQEMUGA() bool
 }
 
 // Handlers is the global registry of Windows version handlers.
