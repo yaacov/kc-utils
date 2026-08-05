@@ -3,6 +3,7 @@
 package direct
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
@@ -176,8 +177,24 @@ func (b *Backend) CloseCrypt(mapperName string) error {
 }
 
 func (b *Backend) RunCommand(guestRoot string, cmd []string) ([]byte, error) {
+	return runInGuestRoot(guestRoot, cmd)
+}
+
+// runInGuestRoot executes cmd with guestRoot as /. Plain chroot(2) requires
+// CAP_SYS_CHROOT; on hosts that deny unprivileged chroot (common on Fedora),
+// retry via "unshare -r chroot" which maps root inside a user namespace.
+func runInGuestRoot(guestRoot string, cmd []string) ([]byte, error) {
 	args := append([]string{guestRoot}, cmd...)
-	return exec.Command("chroot", args...).CombinedOutput()
+	out, err := exec.Command("chroot", args...).CombinedOutput()
+	if err == nil || !chrootNotPermitted(out) {
+		return out, err
+	}
+	unshareArgs := append([]string{"-r", "chroot"}, args...)
+	return exec.Command("unshare", unshareArgs...).CombinedOutput()
+}
+
+func chrootNotPermitted(out []byte) bool {
+	return bytes.Contains(out, []byte("Operation not permitted"))
 }
 
 func (b *Backend) DeviceRead(device string, offset int64, size int) ([]byte, error) {

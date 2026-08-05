@@ -162,7 +162,7 @@ setup_fake_virtio_drivers() {
             done
         done
     done
-    bsdtar -cf "$iso_dir/virtio-win.iso" -C "$staging" .
+    bsdtar --no-xattrs -cf "$iso_dir/virtio-win.iso" -C "$staging" .
 }
 
 # install_stub_dracut: place a no-op dracut inside a fake guest root so that

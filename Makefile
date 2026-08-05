@@ -171,6 +171,8 @@ test-e2e: test-build
 	echo ""; echo "Results: $$pass passed, $$fail failed, $$skip skipped"; \
 	[ $$fail -eq 0 ]
 
+KC_UTILS_WORKSPACE_MOUNT := -v $(CURDIR):/workspace/kc-utils:Z
+
 ## Build test container image (skips if already cached)
 test-image: check_container_runtime
 	@if ! $(CONTAINER_CMD) image inspect $(TEST_IMAGE) >/dev/null 2>&1; then \
@@ -185,14 +187,14 @@ test-image-rebuild: check_container_runtime
 
 ## [container] Run e2e tests in a Fedora container (all tests, incl. Windows)
 test-e2e-container: test-image
-	$(CONTAINER_CMD) run --rm \
-	    -v $(CURDIR)/..:/workspace:Z \
-	    $(TEST_IMAGE) make test-e2e
+	$(CONTAINER_CMD) run --rm --privileged \
+	    $(KC_UTILS_WORKSPACE_MOUNT) \
+	    $(TEST_IMAGE) bash -c 'losetup -D 2>/dev/null || true; make test-e2e'
 
 ## [container] Run disk-image e2e tests (--privileged, requires guestfs)
 test-e2e-disk: test-image
 	$(CONTAINER_CMD) run --rm --privileged \
-	    -v $(CURDIR)/..:/workspace:Z \
+	    $(KC_UTILS_WORKSPACE_MOUNT) \
 	    $(TEST_IMAGE) bash -c 'export LIBGUESTFS_BACKEND=direct && \
 	    losetup -D 2>/dev/null || true && \
 	    cd /workspace/kc-utils && make test-build && cd tests && \
@@ -210,7 +212,7 @@ test-e2e-disk: test-image
 ## [container] Run disk-image e2e tests via guestfs (no --privileged / no FUSE)
 test-e2e-disk-guestfs: test-image
 	$(CONTAINER_CMD) run --rm \
-	    -v $(CURDIR)/..:/workspace:Z \
+	    $(KC_UTILS_WORKSPACE_MOUNT) \
 	    $(TEST_IMAGE) bash -c 'export LIBGUESTFS_BACKEND=direct && \
 	    cd /workspace/kc-utils && make test-build && cd tests && \
 	    pass=0 fail=0 skip=0; \

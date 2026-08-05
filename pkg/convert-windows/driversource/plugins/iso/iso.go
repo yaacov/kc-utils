@@ -60,7 +60,7 @@ func (s *ISOSource) FindDrivers(arch, osVersion string) ([]driversource.DriverFi
 }
 
 func extractVirtioISO(isoPath, dest string) error {
-	cmd := exec.Command("bsdtar", "-xf", isoPath, "-C", dest)
+	cmd := exec.Command("bsdtar", "--no-xattrs", "-xf", isoPath, "-C", dest)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("iso: failed to extract %s with bsdtar: %w: %s",
 			isoPath, err, strings.TrimSpace(string(out)))

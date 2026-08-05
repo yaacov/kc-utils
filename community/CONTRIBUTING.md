@@ -80,8 +80,11 @@ For testing and development (`make test-e2e`, `make test-e2e-disk`, `make lint`)
 
 ```bash
 sudo dnf install -y \
-  golang make golangci-lint perl-hivex jq libguestfs-tools ntfs-3g ntfsprogs
+  golang make jq perl-hivex hivex libarchive bsdtar libguestfs-tools ntfs-3g ntfsprogs
 ```
+
+(`perl-hivex` provides `hivexregedit`; `hivex` provides `hivexget`; `libarchive`
+provides `bsdtar`.)
 
 Disk-image e2e tests need a privileged container (`make test-e2e-disk`); guestfs
 disk e2e also needs `libguestfs-tools` (`make test-e2e-disk-guestfs`).
@@ -112,13 +115,76 @@ make cross-all      # amd64, arm64, ppc64le, s390x
 
 ```bash
 make test                 # unit tests
-make lint                 # golangci-lint
+make lint                 # golangci-lint (auto-installs pinned golangci-lint)
 make check                # fmt + vet + lint + unit tests
-make test-e2e             # shell e2e tests (Windows tests need hivexregedit; includes kc-v2v/copy)
-make test-e2e-container   # e2e in a Fedora container
-make test-e2e-disk        # disk-image tests (privileged container, host-mount)
+make test-e2e             # shell e2e tests (see below)
+make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
+make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
+
+### `make test-e2e`
+
+Runs all shell scripts matching `tests/test-{linux,windows,root,kc,dynamicscripts}-*.sh`.
+Each script exits **0** (pass), **77** (skip), or another code (fail). Skips do
+not fail the target; only real failures do. Logs for a run are in
+`tests/<script-name>.log`.
+
+| Group | Scripts | Runs by default? | Skip when |
+|-------|---------|------------------|-----------|
+| Linux | `test-linux-*.sh` | Yes | Not on Linux, or `jq` missing |
+| Integration | `test-kc-*.sh`, `test-dynamicscripts-*.sh` | Yes | Not on Linux |
+| Windows | `test-windows-*.sh` | Usually | `hivexregedit`, `bsdtar`, or fixture files missing; or cannot write `/usr/share/virtio-win` (needs root) |
+| Windows registry | `test-windows-registry.sh` | Often skipped alone | Also needs `hivexget` (`hivex` on Fedora; `libhivex-bin` on Debian) |
+| Root selection | `test-root-*.sh` | Usually skipped | Not run as root, `guestfish` missing, or `losetup --partscan` cannot create `/dev/loopNp1` nodes |
+
+**Linux tests** build fake guest trees under `/tmp` and exercise converters
+offline. No root, real disks, or libguestfs required.
+
+**Windows tests** build registry hives with `hivexregedit`, stage a fake
+virtio-win ISO under `/usr/share/virtio-win`, then run `kc-convert-windows`.
+Install deps from [Dev dependencies](#dev-dependencies) and run as root:
+
+```bash
+sudo make test-e2e
+```
+
+`test-windows-registry.sh` reads hive values back with `hivexget` and is the
+only Windows e2e script that needs the `hivex` package in addition to
+`perl-hivex`.
+
+**Root-selection tests** create disk images with `guestfish`, attach loop
+devices, and verify `kc-prepare` root picking. They require root, working loop
+partition nodes (`/dev/loopNp1` after `losetup --partscan`), and
+`libguestfs-tools`. If `losetup` fails (common inside nested containers or
+restricted VMs), all six `test-root-*.sh` scripts skip with
+`losetup failed, skipping`:
+
+```bash
+sudo dnf install -y libguestfs-tools
+sudo make test-e2e
+```
+
+On hosts where loop partitions are unavailable, use disk e2e in a privileged
+container instead: `make test-e2e-disk`.
+
+To run the full suite without installing host packages, use the test container
+(built from `tests/Containerfile`). The container runs **privileged** so loop
+devices are available when Podman/Docker is rootful; **root-selection tests
+still skip under rootless Podman** (`losetup: Permission denied`):
+
+```bash
+make test-e2e-container
+```
+
+For root-selection and disk-image tests on rootless hosts, use
+`make test-e2e-disk` (privileged container with loop setup).
+
+Individual scripts can be skipped explicitly, e.g.
+`SKIP_TEST_LINUX_RHEL_SH=1 make test-e2e` (see `skip_if_skipped` in
+`tests/functions.sh`).
+
+Per-script logs: `tests/<script-name>.log`.
 
 ## Architecture expectations
 
