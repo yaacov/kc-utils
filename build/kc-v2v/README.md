@@ -77,7 +77,7 @@ Use normal **cold** or **warm** Plans (or **`type: conversion`** when disks are 
 | Plan field | Value for kc-v2v | Why |
 |---|---|---|
 | `skipGuestConversion` | `false` (default) | `true` skips virt-v2v/kc-v2v entirely (raw copy only) |
-| `runPreflightInspection` | `false` for warm vSphere | Default `true` runs **virt-v2v-inspector** before disk transfer — a separate image, not kc-v2v |
+| `runPreflightInspection` | `false` for warm vSphere | Default `true` runs preflight before disk transfer. With `FEATURE_USE_CONVERSION_CR=true` (default), Forklift creates a `DeepInspection` CR using `deep_inspection_image_fqin`. With the legacy path, it runs a `virt-v2v-inspection` pod using `virt_v2v_image_fqin` in remote inspector mode. kc-v2v supports neither. |
 | `type` | `cold`, `warm`, or `conversion` | In-place conversion on attached PVCs |
 | `virtV2vImage` | omit, or same kc-v2v FQIN | Per-plan override; omit to use cluster `virt_v2v_image_fqin` |
 
@@ -92,22 +92,32 @@ metadata:
 spec:
   type: warm
   skipGuestConversion: false
-  runPreflightInspection: false   # skip virt-v2v-inspector preflight
+  runPreflightInspection: false   # skip warm preflight (DeepInspection or legacy inspector)
   # ... provider, map, targetNamespace, vmSelector, etc.
 ```
 
 Cold Plans do not run preflight inspection. Warm Plans run it by default when `skipGuestConversion` is false.
 
-### Deep inspection (disable / avoid)
+### Warm preflight inspection
 
-**Deep inspection** is a separate Forklift workflow (`Conversion` type `DeepInspection`). It uses the **`deep_inspection_image_fqin`** image (vm-migration-detective), not kc-v2v. It is **not** part of a standard Plan migration unless you explicitly start it (UI assess flow or a `DeepInspection` Conversion CR).
+Warm vSphere plans with `runPreflightInspection: true` (default) and
+`skipGuestConversion: false` run a **PreflightInspection** step after the
+initial snapshot and before disk transfer. kc-v2v is not involved in either
+implementation:
 
-To stay on the kc-v2v path:
+| Forklift path | When | Image | Pod behavior |
+|---|---|---|---|
+| **DeepInspection** (default) | `FEATURE_USE_CONVERSION_CR=true` | `deep_inspection_image_fqin` | Inspects the warm snapshot via vm-migration-detective + VDDK |
+| **Legacy inspection** | `FEATURE_USE_CONVERSION_CR=false` | Same as `virt_v2v_image_fqin` | Runs `virt-v2v-inspector` remotely against parent disk paths (`V2V_remoteInspection=true`) |
 
-- Run **Plan-based migrations** (cold/warm/conversion) — do not create standalone `DeepInspection` Conversion CRs.
-- Do not rely on deep-inspection results to gate migrations when using kc-v2v; use Plan preflight (`runPreflightInspection`) only if you accept the upstream inspector image, or disable it as above.
+kc-v2v does not implement remote preflight (`V2V_remoteInspection`) and is not
+the deep-inspection image. Set `runPreflightInspection: false` (or
+`--run-preflight-inspection false`) on warm Plans.
 
-There is no ForkliftController switch that turns deep inspection off globally; it is opt-in per assessment/conversion request.
+**Standalone deep inspection** (UI assess flow or a manually created
+`DeepInspection` Conversion CR) uses the same `deep_inspection_image_fqin`
+image but is separate from the guest-conversion pod. Do not create standalone
+`DeepInspection` CRs when you intend to use kc-v2v for conversion only.
 
 ### Conversion CR types
 
@@ -128,7 +138,7 @@ These are Forklift controller concerns or upstream-only virt-v2v modes — misco
 |---|---|---|
 | Remote disk copy | `Conversion` type `Remote` | Unsupported — use in-place + CDI/copy-offload/blank-PVC copy |
 | Deep inspection | `Conversion` type `DeepInspection`, UI assess | Different image — not kc-v2v |
-| Warm preflight | Plan `runPreflightInspection: true` (default) | Separate virt-v2v-inspector pod |
+| Warm preflight | Plan `runPreflightInspection: true` (default) | DeepInspection CR (default) or legacy remote `virt-v2v-inspector` pod — neither is kc-v2v |
 | Extra virt-v2v args | `virt_v2v_extra_args` → `V2V_extra_args` | Ignored (warning logged) |
 | Raw copy without conversion | Plan `skipGuestConversion: true` | kc-v2v never runs |
 
@@ -232,6 +242,6 @@ See [Forklift configuration for kc-v2v](#forklift-configuration-for-kc-v2v) for 
 | In-place EC2 / copy-offload / Nutanix (pre-filled) | Remote copy (`virt-v2v -o kubevirt`, `Conversion` type `Remote`) |
 | vSphere NFC disk copy into blank PVCs (govmomi NFC export) | N/A |
 | govmomi vCenter inventory (disks, NICs, firmware) | Deep inspection (`Conversion` type `DeepInspection`) |
-| qcow2 overlay safety (`V2V_overlayEnabled`) | Warm preflight inspector (Plan `runPreflightInspection: true`) |
+| qcow2 overlay safety (`V2V_overlayEnabled`) | Warm preflight (Plan `runPreflightInspection: true` — DeepInspection or legacy inspector) |
 | Plan customization scripts, static IPs, LUKS | `V2V_extra_args` / `virt_v2v_extra_args` passthrough |
 | | Raw copy without conversion (`skipGuestConversion: true`) |

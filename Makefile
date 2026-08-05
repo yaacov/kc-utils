@@ -15,7 +15,14 @@ BIN_DIR    := bin
 GO      := go
 GOFLAGS := -trimpath
 LDFLAGS := -s -w
-LINT    := golangci-lint
+
+GOPATH ?= $(shell go env GOPATH)
+GOBIN  ?= $(GOPATH)/bin
+
+GOLANGCI_LINT_VERSION ?= v1.64.2
+GOLANGCI_LINT_BIN     ?= $(GOBIN)/golangci-lint
+GOLANGCI_LINT_GOVER   := $(shell $(GO) env GOVERSION | tr ':' '_' | tr '/' '_')
+GOLANGCI_LINT_STAMP   := $(GOBIN)/.golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOLANGCI_LINT_GOVER).stamp
 
 CONTAINER_RUNTIME ?=
 
@@ -50,11 +57,11 @@ REGISTRY_TAG ?= devel
 KC_V2V_IMAGE ?= $(REGISTRY)/$(REGISTRY_ORG)/kc-v2v:$(REGISTRY_TAG)
 TEST_IMAGE   := kc-utils-test
 
-.PHONY: all build $(BINS) test test-race test-coverage lint \
+.PHONY: all build $(BINS) test test-race test-coverage lint lint-install \
         fmt vet clean cross-linux-amd64 cross-linux-arm64 cross-linux-ppc64le \
         cross-linux-s390x cross-all mod-tidy mod-verify check test-e2e \
         test-e2e-container test-e2e-disk test-e2e-disk-guestfs test-image \
-        test-image-rebuild test-build check-all deps help build-kc-v2v \
+        test-image-rebuild test-build check-all help build-kc-v2v \
         build-kc-copy build-kc-v2v-image push-kc-v2v-image check_container_runtime
 
 all: build
@@ -90,9 +97,20 @@ test-coverage:
 	$(GO) tool cover -func=coverage.out
 	@echo "HTML report: go tool cover -html=coverage.out"
 
+## Install golangci-lint (pinned version, into GOBIN)
+lint-install:
+	@echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."
+	GOBIN=$(GOBIN) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	@echo "golangci-lint installed successfully."
+
 ## Run golangci-lint (GOOS=linux: pkg/guest and related packages are linux-only)
-lint:
-	GOOS=linux $(LINT) run ./...
+lint: $(GOLANGCI_LINT_STAMP)
+	@echo "Running golangci-lint..."
+	GOOS=linux $(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/... ./internal/...
+
+$(GOLANGCI_LINT_STAMP):
+	$(MAKE) lint-install
+	@touch $@
 
 ## Format Go source files
 fmt:
@@ -135,14 +153,6 @@ mod-verify:
 
 ## Run fmt + vet + lint + unit tests
 check: fmt vet lint test
-
-## Install test dependencies (hivex, jq) using OS package manager
-deps:
-	@case "$$(uname -s)" in \
-	    Linux)  dnf install -y perl-hivex jq ;; \
-	    Darwin) brew install hivex jq ;; \
-	    *)      echo "Unsupported OS: $$(uname -s)"; exit 1 ;; \
-	esac
 
 ## Build test binaries into tests/bin/
 test-build:

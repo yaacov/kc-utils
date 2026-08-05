@@ -151,8 +151,8 @@ func TestEnsureGuestfishEnvSetsDefaults(t *testing.T) {
 	if got := os.Getenv("LIBGUESTFS_BACKEND"); got != "direct" {
 		t.Errorf("LIBGUESTFS_BACKEND=%q, want direct", got)
 	}
-	if got := os.Getenv("LIBGUESTFS_MEMSIZE"); got != "1536" {
-		t.Errorf("LIBGUESTFS_MEMSIZE=%q, want 1536", got)
+	if got := os.Getenv("LIBGUESTFS_MEMSIZE"); got != "2048" {
+		t.Errorf("LIBGUESTFS_MEMSIZE=%q, want 2048", got)
 	}
 	smp := os.Getenv("LIBGUESTFS_SMP")
 	if smp == "" || smp == "0" {
@@ -206,8 +206,8 @@ func TestEnsureGuestfishEnvInvalidIgnored(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := os.Getenv("LIBGUESTFS_MEMSIZE"); got != "1536" {
-		t.Errorf("LIBGUESTFS_MEMSIZE=%q, want 1536 (invalid V2V_ falls to default)", got)
+	if got := os.Getenv("LIBGUESTFS_MEMSIZE"); got != "2048" {
+		t.Errorf("LIBGUESTFS_MEMSIZE=%q, want 2048 (invalid V2V_ falls to default)", got)
 	}
 	smp := os.Getenv("LIBGUESTFS_SMP")
 	if smp == "" || smp == "0" {

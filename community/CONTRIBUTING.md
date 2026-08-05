@@ -83,7 +83,6 @@ sudo dnf install -y \
   golang make golangci-lint perl-hivex jq libguestfs-tools ntfs-3g ntfsprogs
 ```
 
-Or run `make deps` to install the minimum e2e host packages (`perl-hivex`, `jq`).
 Disk-image e2e tests need a privileged container (`make test-e2e-disk`); guestfs
 disk e2e also needs `libguestfs-tools` (`make test-e2e-disk-guestfs`).
 
