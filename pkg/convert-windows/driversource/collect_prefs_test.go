@@ -59,6 +59,37 @@ func TestCollectDriversPropagatesFindError(t *testing.T) {
 	}
 }
 
+func TestCollectDriversWin2008FallbackTo2k8R2(t *testing.T) {
+	base := t.TempDir()
+	osDir := filepath.Join(base, "amd64", "2k8R2")
+	if err := os.MkdirAll(osDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(osDir, "viostor.inf"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	orig := driversource.Sources
+	driversource.Sources = plugin.NewRegistry[string, driversource.DriverSource]()
+	t.Cleanup(func() { driversource.Sources = orig })
+
+	driversource.Sources.Register("directory", &directory.DirectorySource{BasePath: base})
+
+	h, ok := version.Handlers.Get("win2008")
+	if !ok {
+		t.Fatal("win2008 handler missing")
+	}
+
+	files, err := driversource.CollectDrivers("x86_64", "Windows Server 2008", "win2008",
+		h.DriverOSPreferences(), h.DriverOSFallbacks())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) == 0 {
+		t.Fatal("expected drivers from 2k8R2 fallback")
+	}
+}
+
 func TestCollectDriversPreWin8MissingDirHint(t *testing.T) {
 	base := t.TempDir()
 	amd64 := filepath.Join(base, "amd64")
@@ -72,12 +103,12 @@ func TestCollectDriversPreWin8MissingDirHint(t *testing.T) {
 
 	driversource.Sources.Register("directory", &directory.DirectorySource{BasePath: base})
 
-	_, err := driversource.CollectDrivers("x86_64", "Windows Server 2008", "win2008", []string{"2k8"}, nil)
+	_, err := driversource.CollectDrivers("x86_64", "Windows XP", "winxp", []string{"xp"}, nil)
 	if err == nil {
-		t.Fatal("expected error when only 2k8R2 is present")
+		t.Fatal("expected error when xp dir is missing")
 	}
 	msg := err.Error()
-	for _, want := range []string{"2k8", "win2008", "build/kc-v2v/vendor/README.md"} {
+	for _, want := range []string{"xp", "winxp", "build/kc-v2v/vendor/README.md"} {
 		if !strings.Contains(msg, want) {
 			t.Fatalf("error %q missing %q", msg, want)
 		}

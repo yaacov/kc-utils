@@ -50,20 +50,24 @@ func (d *DirectorySource) FindDrivers(arch, osVersion string, osPrefs, osFallbac
 	for _, archName := range driversource.ArchSearchNames(arch) {
 		archDir := filepath.Join(d.basePath(), archName)
 		if st, err := os.Stat(archDir); err != nil || !st.IsDir() {
-			lastErr = err
+			if lastErr == nil {
+				lastErr = err
+			}
 			continue
 		}
 
 		osDir, err := driversource.FindBestOSDirWithPrefs(archDir, osVersion, osPrefs, osFallbacks)
 		if err != nil {
-			lastErr = err
-			continue
+			// Arch dir exists but no matching OS tree — do not fall through to
+			// alternate arch names (e.g. x86_64) which would mask the real error.
+			return nil, fmt.Errorf("no virtio-win drivers for arch=%s os=%s under %s: %w",
+				arch, osVersion, d.basePath(), err)
 		}
 
 		found, err := collectInfDrivers(osDir, arch)
 		if err != nil {
-			lastErr = err
-			continue
+			return nil, fmt.Errorf("no virtio-win drivers for arch=%s os=%s under %s: %w",
+				arch, osVersion, d.basePath(), err)
 		}
 		drivers = append(drivers, found...)
 		break

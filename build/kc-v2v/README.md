@@ -58,13 +58,14 @@ Build stage [`stage-windows-virtio-drivers.sh`](stage-windows-virtio-drivers.sh)
 Without a vendor artifact, the image builds with virtio-win 1.9.40 only and
 pre–Win 8 conversion fails at runtime with a documented error.
 
-Existing modern dirs are never overwritten. Each version handler maps to exactly
-one by-os dir — there is no cross-version fallback (Server 2008 uses `2k8` only,
-not `vista` or `2k8R2`).
+Existing modern dirs are never overwritten. Each version handler maps to a
+primary by-os dir via `DriverOSPreferences()`. There is no arbitrary
+cross-version fallback — except **`win2008`**, which uses `2k8R2` when `2k8`
+is absent (modern virtio-win 1.9.40 RPMs ship `2k8R2` only).
 
 | Version handler | by-os dir |
 |-----------------|-----------|
-| `win2008` | `2k8` |
+| `win2008` | `2k8` (fallback `2k8R2`) |
 | `win2003` | `2k3` |
 | `winxp` | `xp` |
 | `winvista` | `vista` |

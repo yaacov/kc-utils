@@ -135,7 +135,7 @@ func (win2008) Matches(i *types.InspectData) bool {
 	return strings.Contains(n, "server 2008") && !strings.Contains(n, "2008 r2")
 }
 func (win2008) DriverOSPreferences() []string { return []string{"2k8"} }
-func (win2008) DriverOSFallbacks() []string   { return nil }
+func (win2008) DriverOSFallbacks() []string   { return []string{"2k8R2"} }
 func (win2008) FirstbootLauncher() LauncherKind {
 	return LauncherPSV1
 }
