@@ -2,12 +2,27 @@ package driversource
 
 import "testing"
 
+func TestCanonicalOSVersionsWin2008ProductName(t *testing.T) {
+	aliases := CanonicalOSVersions("Windows Server (R) 2008 Enterprise\x00")
+	has2k8 := false
+	for _, a := range aliases {
+		if a == "2k8" {
+			has2k8 = true
+			break
+		}
+	}
+	if !has2k8 {
+		t.Fatalf("expected 2k8 alias in %v", aliases)
+	}
+}
+
 func TestMatchOSVersionAliases(t *testing.T) {
 	tests := []struct {
 		dirVer     string
 		requested  string
 		shouldFind bool
 	}{
+		{dirVer: "2k8R2", requested: "Windows Server (R) 2008 Enterprise\x00", shouldFind: false},
 		{dirVer: "2k22", requested: "Windows Server 2022", shouldFind: true},
 		{dirVer: "w11", requested: "Windows Server 2022", shouldFind: true},
 		{dirVer: "2k19", requested: "10.0", shouldFind: true},

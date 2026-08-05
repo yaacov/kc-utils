@@ -48,6 +48,26 @@ func TestFindDriversByOSLayout(t *testing.T) {
 	}
 }
 
+func TestFindDriversWin2008RegisteredProductName(t *testing.T) {
+	root := t.TempDir()
+	osDir := filepath.Join(root, "amd64", "2k8R2")
+	if err := os.MkdirAll(osDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(osDir, "viostor.inf"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	src := &DirectorySource{BasePath: root}
+	drivers, err := src.FindDrivers("x86_64", "Windows Server (R) 2008 Enterprise\x00")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(drivers) == 0 {
+		t.Fatal("expected drivers via 2k8R2 fallback")
+	}
+}
+
 func TestFindDriversWin2008Fallback(t *testing.T) {
 	root := t.TempDir()
 	osDir := filepath.Join(root, "amd64", "2k8R2")
