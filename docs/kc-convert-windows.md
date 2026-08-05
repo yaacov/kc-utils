@@ -27,19 +27,20 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|
-| 1 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted RPM tree |
-| 2 | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
-| 3 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
-| 4 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
-| 5 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
-| 6 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
-| 7 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
-| 8 | Hypervisor Services | pluggable: `WindowsServiceDisabler` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
-| 9 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
-| 10-12 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate PowerShell firstboot scripts |
-| 13 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |
-| 14 | UEFI | pluggable: `UEFIEditor` | `pkg/common/uefi/` | Update UEFI boot entries on ESP partitions |
-| 15 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
+| 1 | Version | pluggable: `VersionHandler` | `pkg/convert-windows/version/` | Classify Windows era (win2008, win10, …) |
+| 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted RPM tree |
+| 3 | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
+| 4 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
+| 5 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
+| 6 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
+| 7 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
+| 8 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
+| 9 | Hypervisor Services | pluggable: `WindowsServiceDisabler` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
+| 10 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
+| 11-13 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate version-appropriate firstboot scripts |
+| 14 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |
+| 15 | UEFI | pluggable: `UEFIEditor` | `pkg/common/uefi/` | Update UEFI boot entries on ESP partitions |
+| 16 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
 | 17 | Post-Convert | strict | `pkg/convert-windows/output/` | Post-convert permission fixup |
 
 Note: Block numbers match the pipeline comments in `internal/convert-windows/pipeline.go`.
@@ -59,11 +60,24 @@ sudo dnf install -y virtio-win
 ```
 
 The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`.
-The kc-v2v container image ships this tree directly.
+The kc-v2v container image ships this tree directly. The image build also
+merges **archived** virtio-win 1.9.12-era OS directories (`2k8`, `2k3`, `xp`,
+`vista`) for pre–Windows 8 guests — see
+[`build/kc-v2v/stage-archived-virtio-win.sh`](../build/kc-v2v/stage-archived-virtio-win.sh).
 
 | Plugin | Path | Notes |
 |--------|------|-------|
 | `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` |
+
+## Version classification
+
+Windows guests are classified into version handlers (`win2008`, `win10`, …)
+at pipeline block 1. Handlers drive virtio-win OS directory selection and
+firstboot script variants.
+
+See [guest-os-handlers.md](guest-os-handlers.md) for the full handler matrix,
+code locations, and archived driver merge details. Summary tables also appear
+below under **Driver source** and **Firstboot scripts**.
 
 Optional upstream repo:
 
@@ -98,7 +112,8 @@ Example: [examples/convert-output-windows.json](examples/convert-output-windows.
 
 | Interface | Implementations |
 |-----------|----------------|
-| `DriverSource` | `iso` |
+| `VersionHandler` | `win11`, `win10`, `win81`, `win8`, `win7`, `win2008r2`, `win2008`, `winvista`, `win2003`, `winxp`, `winunknown` |
+| `DriverSource` | `directory` |
 | `WindowsRemove` | `vmware`, `nutanix`, `awspv`, `ec2launch`, `ec2`, `virtualbox` |
 | `DriverRegistrar` | `criticaldb` (legacy Windows), `driverdb` (Windows 8+) |
 | `WindowsServices` | `vmware`, `nutanix`, `virtualbox` |
@@ -120,21 +135,33 @@ Key registry operations:
 
 ## Firstboot Scripts
 
-Firstboot scripts are PowerShell files under
-`C:\Program Files\Guestfs\Firstboot\scripts\`, launched by
-`firstboot.bat` via a RunOnce registry entry. They handle operations that
-require a running Windows environment:
+Firstboot scripts live under `C:\Program Files\Guestfs\Firstboot\scripts\`
+(`.ps1` and/or `.bat` depending on version handler), launched by
+`firstboot.bat` via a RunOnce registry entry.
+
+| Contributor | win2008 / 2003 / XP | win7 / 2008 R2 | win8+ |
+|-------------|---------------------|----------------|-------|
+| `pnputil` | PS1 or `.bat` | PS1 | PS1 |
+| `staticipfb` | WMI+netsh or registry `.bat` | registry PS | `Get-NetAdapter` PS |
+| `diskonliner` | skipped (2008/XP) or WMI+diskpart | WMI+diskpart | `Get-Disk` |
+| `routecleanup` | skipped (WMI static IP) | full PS | full PS |
+| `qemuga` | skipped when no MSI / unsupported | when MSI staged | when MSI staged |
+| `vmwarecleanup` | `.bat` service cleanup | `.bat` or PS PnP | PS PnP |
+| `signal` | unchanged (COM1) | unchanged | unchanged |
+
+Legacy launchers set PowerShell 1.0 execution policy via `reg add` before
+running `.ps1` scripts. Batch-only guests (XP/2003) run `.bat` contributors only.
 
 | Script | Purpose |
 |--------|---------|
-| `2000-install-virtio-drivers.ps1` | Run `pnputil` for VirtIO INF files |
-| `2500-static-ip.ps1` | Configure static IPs after netkvm is available (skipped with `--offline`) |
-| `2600-remove-duplicate-routes.ps1` | Remove stale persistent routes |
-| `2700-preserve-complementary-ips.ps1` | Add secondary IPs to NICs |
-| `3000-install-qemu-ga.ps1` | Install QEMU guest agent MSI when staged in the guest driver tree |
-| `4000-disk-onliner.ps1` | Bring offline VirtIO disks online |
-| `9100-cleanup-vmware.ps1` | Disable VMware PnP devices (conditional on VMware source) |
-| `99999-signal-conversion-done.ps1` | Write `CONVERSION_DONE` to COM1 (conditional) |
+| `2000-install-virtio-drivers` | Run `pnputil` for VirtIO INF files |
+| `2500-static-ip` | Configure static IPs after netkvm is available (skipped with `--offline`) |
+| `2600-remove-duplicate-routes` | Remove stale persistent routes |
+| `2700-preserve-complementary-ips` | Add secondary IPs to NICs |
+| `3000-install-qemu-ga` | Install QEMU guest agent MSI when staged in the guest driver tree |
+| `4000-disk-onliner` | Bring offline VirtIO disks online |
+| `9100-cleanup-vmware` | Disable VMware PnP devices (conditional on VMware source) |
+| `99999-signal-conversion-done` | Write `CONVERSION_DONE` to COM1 (conditional) |
 
 After all scripts complete, `firstboot.bat` removes the
 `C:\Program Files\Guestfs\Firstboot` directory and its contents.

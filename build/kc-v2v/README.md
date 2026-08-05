@@ -27,11 +27,30 @@ Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`per
 
 | Path | Source | Purpose |
 |------|--------|---------|
-| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) | Windows VirtIO drivers (pre-extracted) |
+| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) + [`stage-archived-virtio-win.sh`](stage-archived-virtio-win.sh) | Windows VirtIO drivers (pre-extracted; archived `2k8`/`2k3`/`xp`/`vista` merged for legacy guests) |
 | `/usr/share/virtio-win/guest-agent/` | same RPM | qemu-ga MSIs |
 | `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` | [`stage-linux-packages.sh`](stage-linux-packages.sh) | Offline Linux `qemu-guest-agent` for RHEL-family guests |
 
 `kc-v2v` passes `--offline` to converters when `V2V_offline=true`, so airgapped pods use these paths (no guest network install for QGA when a local RPM matches).
+
+### Archived virtio-win OS dirs (legacy Windows)
+
+Build stage [`stage-archived-virtio-win.sh`](stage-archived-virtio-win.sh) downloads
+virtio-win **1.9.12-4** from
+`fedorapeople.org/.../archive-virtio/` and copies `2k8`, `2k3`, `xp`, and
+`vista` per arch into the main `by-os` tree. Existing modern dirs are never
+overwritten. `kc-convert-windows` version handler `win2008` prefers `2k8` over
+the generic `2k8R2` fallback (SHA-2 drivers are unsuitable for Server 2008).
+
+| Version handler | Preferred OS dirs |
+|-----------------|-------------------|
+| `win2008` | `2k8`, `vista` |
+| `win2003` | `2k3`, `xp` |
+| `winxp` | `xp` |
+| `win2008r2` / `win7` | `2k8r2`, `w7` |
+| `win10+` | `w10`, `2k19`, … |
+
+No `VIRTIO_WIN` ISO path is used — directory-only driver lookup.
 
 No VDDK sidecar or external libraries are needed — disk copy is pure Go.
 

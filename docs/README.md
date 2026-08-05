@@ -206,6 +206,7 @@ Each binary links only the plugins it needs via blank imports in
 
 ### Design
 
+- [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [privilege-model.md](privilege-model.md) — host-mount vs. libguestfs appliance privilege trade-offs
 
 ## Code layout

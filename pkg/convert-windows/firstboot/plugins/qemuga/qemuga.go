@@ -1,6 +1,10 @@
 package qemuga
 
-import "github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
+import (
+	"strings"
+
+	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
+)
 
 type Plugin struct{}
 
@@ -11,7 +15,19 @@ func init() {
 func (p *Plugin) Priority() int { return 3000 }
 func (p *Plugin) Name() string  { return "install-qemu-ga" }
 
-func (p *Plugin) ShouldRun(_ *firstboot.ContributorConfig) bool { return true }
+func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
+	if cfg.Version != nil && !cfg.Version.SupportsQEMUGA() {
+		return false
+	}
+	for _, df := range cfg.DriverFiles {
+		if df.Name == "qemu-ga" || strings.Contains(strings.ToLower(df.InfPath), "qemu-ga") {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Plugin) UsesBatch(_ *firstboot.ContributorConfig) bool { return false }
 
 func (p *Plugin) Generate(_ *firstboot.ContributorConfig) (string, error) {
 	return "# Install QEMU Guest Agent\r\n" +

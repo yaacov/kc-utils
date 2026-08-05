@@ -87,6 +87,77 @@ func VMwareCleanupScript() string {
 		"Get-Service | Where-Object { $_.Name -like '*VMware*' -or $_.Name -like '*VMTools*' -or $_.Name -like '*VGAuth*' } | ForEach-Object { sc.exe delete $_.Name } 2>&1 | Out-Null\r\n"
 }
 
+// WMIScript generates WMI + netsh static IP configuration for legacy Windows.
+func WMIScript(ips []types.StaticIP) string {
+	if len(ips) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("# Configure static IP via WMI and netsh\r\n")
+	for _, sip := range ips {
+		mac := strings.ToUpper(strings.ReplaceAll(sip.MAC, ":", "-"))
+		b.WriteString(fmt.Sprintf("$cfg = Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object { $_.MACAddress -eq %q }\r\n", mac))
+		b.WriteString("if ($cfg) {\r\n")
+		if sip.IP != "" && sip.Netmask != "" {
+			b.WriteString(fmt.Sprintf("    $cfg.EnableStatic(@(%q), @(%q)) | Out-Null\r\n", sip.IP, sip.Netmask))
+		}
+		if sip.Gateway != "" {
+			b.WriteString(fmt.Sprintf("    $cfg.SetGateways(@(%q)) | Out-Null\r\n", sip.Gateway))
+		}
+		if len(sip.DNS) > 0 {
+			b.WriteString(fmt.Sprintf("    $cfg.SetDNSServerSearchOrder(@(%s)) | Out-Null\r\n", quoteList(sip.DNS)))
+			b.WriteString(fmt.Sprintf("    netsh interface ip set dns name=\"\" static %s primary validate=no\r\n", sip.DNS[0]))
+		}
+		b.WriteString("}\r\n")
+	}
+	return b.String()
+}
+
+// RegistryBatScript generates batch reg.exe static IP configuration for guests without PowerShell.
+func RegistryBatScript(ips []types.StaticIP) string {
+	if len(ips) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("@echo off\r\n")
+	b.WriteString("REM Registry-based static IP configuration\r\n")
+	for _, sip := range ips {
+		mac := strings.ToUpper(strings.ReplaceAll(sip.MAC, ":", "-"))
+		key := fmt.Sprintf(`HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{%s}`, mac)
+		b.WriteString(fmt.Sprintf("reg add %q /v EnableDHCP /t REG_DWORD /d 0 /f\r\n", key))
+		b.WriteString(fmt.Sprintf("reg add %q /v IPAddress /t REG_MULTI_SZ /d %s /f\r\n", key, sip.IP))
+		if sip.Netmask != "" {
+			b.WriteString(fmt.Sprintf("reg add %q /v SubnetMask /t REG_MULTI_SZ /d %s /f\r\n", key, sip.Netmask))
+		}
+		if sip.Gateway != "" {
+			b.WriteString(fmt.Sprintf("reg add %q /v DefaultGateway /t REG_MULTI_SZ /d %s /f\r\n", key, sip.Gateway))
+		}
+		if len(sip.DNS) > 0 {
+			b.WriteString(fmt.Sprintf("reg add %q /v NameServer /t REG_SZ /d %s /f\r\n", key, strings.Join(sip.DNS, ",")))
+		}
+	}
+	return b.String()
+}
+
+// DevconVMwareCleanupBat returns a batch script to remove VMware devices via devcon.
+func DevconVMwareCleanupBat() string {
+	return "@echo off\r\n" +
+		"REM Remove VMware drivers and services\r\n" +
+		"for %%S in (VMTools VGAuthService VMware Physical Disk Helper VMware Tools) do (\r\n" +
+		"    sc stop \"%%S\" 2>nul\r\n" +
+		"    sc delete \"%%S\" 2>nul\r\n" +
+		")\r\n" +
+		"if exist \"C:\\Windows\\System32\\drivers\\vm3dmp.sys\" del /f /q \"C:\\Windows\\System32\\drivers\\vm3dmp.sys\" 2>nul\r\n"
+}
+
+func quoteList(values []string) string {
+	quoted := make([]string, len(values))
+	for i, v := range values {
+		quoted[i] = fmt.Sprintf("%q", v)
+	}
+	return strings.Join(quoted, ",")
+}
+
 func netmaskToPrefixLength(mask string) string {
 	ip := net.ParseIP(mask)
 	if ip == nil {

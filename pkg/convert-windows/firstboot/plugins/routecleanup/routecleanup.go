@@ -1,6 +1,9 @@
 package routecleanup
 
-import "github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
+import (
+	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
+	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
+)
 
 type Plugin struct{}
 
@@ -12,8 +15,21 @@ func (p *Plugin) Priority() int { return 2600 }
 func (p *Plugin) Name() string  { return "remove-duplicate-routes" }
 
 func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
-	return !cfg.Offline && len(cfg.StaticIPs) > 0
+	if cfg.Offline || len(cfg.StaticIPs) == 0 {
+		return false
+	}
+	if cfg.Version != nil {
+		if cfg.Version.StaticIPMode() == version.StaticIPWMINetsh {
+			return false
+		}
+		if !cfg.Version.SupportsPowerShell() {
+			return false
+		}
+	}
+	return true
 }
+
+func (p *Plugin) UsesBatch(_ *firstboot.ContributorConfig) bool { return false }
 
 func (p *Plugin) Generate(cfg *firstboot.ContributorConfig) (string, error) {
 	if cfg.Options.WindowsRegistryNetwork {

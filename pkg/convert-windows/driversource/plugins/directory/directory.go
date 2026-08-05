@@ -43,7 +43,7 @@ func (d *DirectorySource) Available() bool {
 	return err == nil
 }
 
-func (d *DirectorySource) FindDrivers(arch, osVersion string) ([]driversource.DriverFile, error) {
+func (d *DirectorySource) FindDrivers(arch, osVersion string, osPrefs, osFallbacks []string) ([]driversource.DriverFile, error) {
 	var drivers []driversource.DriverFile
 	var lastErr error
 
@@ -54,7 +54,7 @@ func (d *DirectorySource) FindDrivers(arch, osVersion string) ([]driversource.Dr
 			continue
 		}
 
-		osDir, err := driversource.FindBestOSDir(archDir, osVersion)
+		osDir, err := driversource.FindBestOSDirWithPrefs(archDir, osVersion, osPrefs, osFallbacks)
 		if err != nil {
 			lastErr = err
 			continue

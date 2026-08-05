@@ -21,3 +21,5 @@ func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
 func (p *Plugin) Generate(_ *firstboot.ContributorConfig) (string, error) {
 	return staticip.RebootSignalScript(), nil
 }
+
+func (p *Plugin) UsesBatch(_ *firstboot.ContributorConfig) bool { return false }

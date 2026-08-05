@@ -4,7 +4,7 @@ import "github.com/yaacov/kc-utils/pkg/common/plugin"
 
 type DriverSource interface {
 	Available() bool
-	FindDrivers(arch, osVersion string) ([]DriverFile, error)
+	FindDrivers(arch, osVersion string, osPrefs, osFallbacks []string) ([]DriverFile, error)
 }
 
 type DriverFile struct {

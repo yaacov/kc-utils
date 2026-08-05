@@ -19,6 +19,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-windows/inspect"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/ntfsfix"
 	convertoutput "github.com/yaacov/kc-utils/pkg/convert-windows/output"
+	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -99,9 +100,14 @@ func Run(cfg *Config) error {
 	}
 	defer softwareHive.Close()
 
-	// Block 1: Locate virtio-win drivers from the pre-extracted directory tree.
+	// Block 1: Version classification
+	versionHandler := version.Classify(&cfg.PrepareData.Inspect)
+	slog.Info("matched version handler", "name", versionHandler.Name())
+
+	// Block 2: Locate virtio-win drivers from the pre-extracted directory tree.
 	slog.Debug("locating driver source")
-	driverFiles, err := driversource.CollectDrivers(caps.Arch, osVersion)
+	driverFiles, err := driversource.CollectDrivers(caps.Arch, osVersion,
+		versionHandler.DriverOSPreferences(), versionHandler.DriverOSFallbacks())
 	if err != nil {
 		return fmt.Errorf("locate virtio-win drivers: %w", err)
 	}
@@ -178,6 +184,7 @@ func Run(cfg *Config) error {
 		DriverFiles: driverFiles,
 		StaticIPs:   cfg.StaticIPs,
 		Options:     cfg.PrepareData.Options,
+		Version:     versionHandler,
 	}, softwareHive); err != nil {
 		output.Errors = append(output.Errors, types.BlockError{
 			Block: "firstboot", Message: err.Error(),

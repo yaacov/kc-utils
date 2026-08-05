@@ -25,6 +25,9 @@ import (
 	// Plugin registrations: driver sources
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/driversource/plugins/directory"
 
+	// Plugin registrations: Windows version handlers
+	_ "github.com/yaacov/kc-utils/pkg/convert-windows/version"
+
 	// hypervisor offline remove (block 4)
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/awspv"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/ec2"

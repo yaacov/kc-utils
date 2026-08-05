@@ -3,13 +3,13 @@ package driversource
 import "fmt"
 
 // CollectDrivers finds virtio-win drivers from the pre-extracted directory tree.
-func CollectDrivers(arch, osVersion string) ([]DriverFile, error) {
+func CollectDrivers(arch, osVersion string, osPrefs, osFallbacks []string) ([]DriverFile, error) {
 	src, ok := Sources.Get("directory")
 	if !ok || !src.Available() {
 		return nil, fmt.Errorf("virtio-win driver tree not available (expected /usr/share/virtio-win/drivers/by-os)")
 	}
 
-	files, err := src.FindDrivers(arch, osVersion)
+	files, err := src.FindDrivers(arch, osVersion, osPrefs, osFallbacks)
 	if err != nil {
 		return nil, fmt.Errorf("directory driver source: %w", err)
 	}

@@ -16,9 +16,12 @@ func MatchOSVersion(dirVer, requested string) bool {
 	return false
 }
 
+// NormalizeOSProductName cleans registry product names for substring matching.
+func NormalizeOSProductName(requested string) string {
+	return normalizeOSProductName(requested)
+}
+
 // normalizeOSProductName cleans registry product names for substring matching.
-// Windows often reports names like "Windows Server (R) 2008 Enterprise" with a
-// trailing NUL from the hive; "(R)" also breaks naive "server 2008" checks.
 func normalizeOSProductName(requested string) string {
 	s := strings.ReplaceAll(requested, "\x00", "")
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -69,6 +72,8 @@ func CanonicalOSVersions(requested string) []string {
 		add("2k8r2", "w7", "6.1")
 	case strings.Contains(normalized, "server 2008"):
 		add("2k8", "vista", "6.0")
+	case strings.Contains(normalized, "server 2003"):
+		add("2k3", "5.2")
 	case strings.Contains(normalized, "windows 11"):
 		add("w11", "10.0")
 	case strings.Contains(normalized, "windows 10"):
@@ -121,6 +126,8 @@ func CanonicalOSVersions(requested string) []string {
 		add("vista", "2k8")
 	case normalized == "5.1":
 		add("xp")
+	case normalized == "5.2":
+		add("2k3")
 	}
 
 	return aliases

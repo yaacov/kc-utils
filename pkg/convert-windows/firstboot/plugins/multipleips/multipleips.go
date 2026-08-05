@@ -23,9 +23,14 @@ func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
 	if cfg.Offline || !cfg.Options.MultipleIPsPerNic || len(cfg.StaticIPs) == 0 {
 		return false
 	}
+	if cfg.Version != nil && !cfg.Version.SupportsPowerShell() {
+		return false
+	}
 	// Only run if there are multiple IPs for at least one MAC
 	return hasMultipleIPsPerMAC(cfg.StaticIPs)
 }
+
+func (p *Plugin) UsesBatch(_ *firstboot.ContributorConfig) bool { return false }
 
 func (p *Plugin) Generate(cfg *firstboot.ContributorConfig) (string, error) {
 	if cfg.Options.WindowsRegistryNetwork {

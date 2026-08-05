@@ -74,6 +74,10 @@ Debian/SUSE guests are not covered by the baked matrix; without a matching local
 
 Note: Block numbers match the pipeline comments in `internal/convert-linux/pipeline.go`.
 
+Distro handlers (`rhel`, `debian`, `suse`), package format/manager lookup, and
+offline QGA selection are documented in
+[guest-os-handlers.md](guest-os-handlers.md).
+
 ## Input
 
 - `PrepareOutput` JSON (from kc-prepare): OS info, disk layout, mount paths

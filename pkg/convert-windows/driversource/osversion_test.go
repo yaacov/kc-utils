@@ -2,6 +2,20 @@ package driversource
 
 import "testing"
 
+func TestCanonicalOSVersionsServer2003(t *testing.T) {
+	aliases := CanonicalOSVersions("Windows Server 2003 Standard")
+	has2k3 := false
+	for _, a := range aliases {
+		if a == "2k3" {
+			has2k3 = true
+			break
+		}
+	}
+	if !has2k3 {
+		t.Fatalf("expected 2k3 alias in %v", aliases)
+	}
+}
+
 func TestCanonicalOSVersionsWin2008ProductName(t *testing.T) {
 	aliases := CanonicalOSVersions("Windows Server (R) 2008 Enterprise\x00")
 	has2k8 := false

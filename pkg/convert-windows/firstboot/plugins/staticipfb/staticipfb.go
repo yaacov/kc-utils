@@ -3,6 +3,7 @@ package staticipfb
 import (
 	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/staticip"
+	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
 )
 
 type Plugin struct{}
@@ -18,15 +19,38 @@ func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
 	return len(cfg.StaticIPs) > 0
 }
 
+func (p *Plugin) UsesBatch(cfg *firstboot.ContributorConfig) bool {
+	return cfg.Version != nil && !cfg.Version.SupportsPowerShell()
+}
+
 func (p *Plugin) Generate(cfg *firstboot.ContributorConfig) (string, error) {
+	mode := version.StaticIPNetCmdlet
+	if cfg.Version != nil {
+		mode = cfg.Version.StaticIPMode()
+	}
+
 	var content string
-	if cfg.Options.WindowsRegistryNetwork {
-		content = staticip.RegistryScript(cfg.StaticIPs)
-	} else {
-		content = staticip.PowerShellScript(cfg.StaticIPs)
+	switch mode {
+	case version.StaticIPRegistry:
+		if p.UsesBatch(cfg) {
+			content = staticip.RegistryBatScript(cfg.StaticIPs)
+		} else {
+			content = staticip.RegistryScript(cfg.StaticIPs)
+		}
+	case version.StaticIPWMINetsh:
+		content = staticip.WMIScript(cfg.StaticIPs)
+	default:
+		if cfg.Options.WindowsRegistryNetwork {
+			content = staticip.RegistryScript(cfg.StaticIPs)
+		} else {
+			content = staticip.PowerShellScript(cfg.StaticIPs)
+		}
 	}
 	if content == "" {
 		return "", nil
+	}
+	if p.UsesBatch(cfg) {
+		return content, nil
 	}
 	waitAndConfigure := "# Wait for virtio-net then configure static IPs\r\n" +
 		"$deadline = (Get-Date).AddMinutes(5)\r\n" +
