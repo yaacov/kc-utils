@@ -4,20 +4,8 @@ kc-v2v is a drop-in replacement for the virt-v2v conversion image in
 [Forklift / Migration Toolkit for Virtualization](https://github.com/kubev2v/forklift).
 Point Forklift at the kc-v2v container image and run migrations as usual.
 
-> **Note:** kc-v2v does not support warm preflight inspection. On warm
-> vSphere plans, Forklift runs preflight **before disk transfer** when
-> `runPreflightInspection` is true (default):
->
-> - **Default path** (`FEATURE_USE_CONVERSION_CR=true`): a `DeepInspection`
->   Conversion CR using `deep_inspection_image_fqin` (vm-migration-detective),
->   not kc-v2v.
-> - **Legacy path** (`FEATURE_USE_CONVERSION_CR=false`): a
->   `virt-v2v-inspection` pod using the same image as conversion
->   (`virt_v2v_image_fqin`), but in remote `virt-v2v-inspector` mode — kc-v2v
->   does not implement that entrypoint.
->
-> For warm migrations with kc-v2v, create plans with
-> `--run-preflight-inspection false`.
+> **Note:** kc-v2v does not support warm preflight inspection. For warm
+> vSphere plans, use `--run-preflight-inspection false`.
 
 ## Prerequisites
 
