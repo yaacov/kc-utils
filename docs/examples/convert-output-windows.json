@@ -1,0 +1,17 @@
+{
+  "guestcaps": {
+    "block_bus": "virtio",
+    "net_bus": "virtio",
+    "virtio_rng": true,
+    "virtio_balloon": true,
+    "virtio_socket": true,
+    "isa_pvpanic": true,
+    "machine_type": "q35",
+    "arch": "x86_64",
+    "virtio_1_0": true,
+    "rtc_utc": false
+  },
+  "warnings": [
+    "antivirus detected: Windows Defender; this may interfere with virtio driver installation (INACCESSIBLE_BOOT_DEVICE)"
+  ]
+}

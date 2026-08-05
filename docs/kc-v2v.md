@@ -1,0 +1,184 @@
+# kc-v2v Orchestrator
+
+Drop-in replacement for Forklift's `virt-v2v` container entrypoint. Runs the
+full in-place conversion pipeline inside the conversion pod: optional NFC disk
+copy, then `kc-prepare` → `kc-convert-{linux,windows}` → `kc-finalize`, then
+Forklift-compatible inspection XML and HTTP API.
+
+## Entry Point
+
+`cmd/kc-v2v/main.go` — bootstrap via `pkg/v2v/env/`; orchestration in
+[`internal/v2v/pipeline.go`](../internal/v2v/pipeline.go); HTTP server in
+[`internal/v2v/server/`](../internal/v2v/server/).
+
+## Flow
+
+```text
+env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
+  → LinkCertificates / EnsureWorkdir
+  → internal/v2v.Run(cfg)
+      → env.NeedsCopy?  → ResolveCopySources → write copy-input.json → kc-copy
+      → DiscoverDisks
+      → if V2V_guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
+      → kc-prepare → kc-convert-* → kc-finalize
+           (stages adopt via GUESTFISH_PID / KC_GUESTFISH_PID; pkg/guest only)
+      → on failure after prepare may have set up guest:
+           kc-finalize --teardown-only (best-effort, no Sync)
+      → always: SharedListener.Close (guestfish --remote exit)
+      → WriteInspectionXML
+      → HTTP server (:8080) when LOCAL_MIGRATION=true
+```
+
+Converter selection mirrors upstream virt-v2v: `PrepareOutput.converter` (or
+`PrepareOutput.inspect.type`) determines `kc-convert-linux` vs
+`kc-convert-windows`.
+
+### Failure cleanup
+
+If the pipeline fails after `kc-prepare` may have created guest state, `kc-v2v`
+best-effort runs `kc-finalize --teardown-only` to reclaim orphaned resources
+(mounts/LUKS/loops in direct mode; appliance mounts and guestfish session in
+guestfs mode — the container default). This path never Syncs guest edits back
+to disks. In guestfs mode the shared `guestfish --listen` PID is still passed
+into teardown-only, and `kc-v2v` always stops the listener afterward.
+qcow2 overlays (when enabled) are discarded separately by `RunWithOverlay`.
+Partial PVC data and workdir JSON are left alone. Cleanup failures are logged
+as warnings and do not replace the original pipeline error.
+
+See [kc-finalize.md](kc-finalize.md) (`--teardown-only`).
+
+## Orchestration Stages
+
+| # | Stage | Package | Description |
+|---|-------|---------|-------------|
+| 1 | Config | `pkg/v2v/config/` | `V2V_*` environment variable schema |
+| 2 | Load | `pkg/v2v/env/` | Parse env/flags, link certs, create workdir |
+| 3 | Orchestrate | `internal/v2v/pipeline.go` | Copy gate, discover, subprocess pipeline, inspection, HTTP |
+| 4 | Copy | `kc-copy` (`pkg/copy/`) | Optional NFC disk copy subprocess |
+| 5 | Discover | `pkg/v2v/env/disks.go` | Find disks on conversion-pod PVC mounts |
+| 6 | Inspection | `pkg/v2v/inspection/xml/` | Write Forklift-compatible inspection XML |
+| 7 | HTTP | `internal/v2v/server/` | Serve `/vm`, `/inspection`, `/warnings`, `/shutdown` |
+
+Stage 4 is skipped when disks are already populated (CDI, copy-offload, EC2,
+Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under
+`KC_BIN_DIR` (default `/usr/lib/kc-utils`). See [kc-copy.md](kc-copy.md) and
+[pkg/v2v/README.md](../pkg/v2v/README.md).
+
+## Configuration
+
+Configuration is loaded from `V2V_*` environment variables with CLI flag
+overrides via `env.Load()`. Full schema:
+[`pkg/v2v/config/config.go`](../pkg/v2v/config/config.go).
+
+### Required
+
+| Variable | When | Purpose |
+|----------|------|---------|
+| `V2V_source` | Always | Source hypervisor (`vSphere`, `ec2`, `nutanix`, …) |
+| `V2V_libvirtURL` | vSphere copy | vCenter URL (govmomi inventory + NFC export) |
+| `V2V_firmware` | vSphere | Optional firmware override (`uefi` or `bios`) |
+| `V2V_vmName` | vSphere copy | Source VM name |
+| `V2V_fingerprint` | vSphere copy | vCenter SSL thumbprint |
+
+### Copy vs in-place
+
+| `V2V_inPlace` | Behavior | Expected disk state |
+|---------------|----------|---------------------|
+| unset (default) / `0` | Run NFC disk copy, then convert | Blank PVCs |
+| `1` / `true` | Skip copy, convert in-place | Pre-filled PVCs |
+
+`Load()` validates that PVC state matches the flag; mismatch fails early.
+
+### Common optional
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `V2V_inPlace` | `false` (copy) | Skip disk copy when `1` (pre-filled disks) |
+| `LOCAL_MIGRATION` | `true` | Start HTTP server on `:8080` |
+| `V2V_RootDisk` | `first` | Root selection policy passed to kc-prepare |
+| `V2V_staticIPs` | | Static IP mapping for Windows guests |
+| `V2V_overlayEnabled` | `true` | qcow2 overlay during conversion |
+| `VIRTIO_WIN` | | Override path to virtio-win ISO (image default: `/usr/share/virtio-win/`) |
+| `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock |
+| `V2V_offline` | `false` | Pass `--offline` to converters (use image-staged packages only) |
+
+The container image bakes Windows `virtio-win` and RHEL-family offline
+`qemu-guest-agent` RPMs under `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/`.
+Set `V2V_offline=true` to pass `--offline` to converters. See [build/kc-v2v/README.md](../build/kc-v2v/README.md).
+
+Disk copy settings:
+
+| Variable | Default |
+|----------|---------|
+| `V2V_copyConcurrency` | `4` (max parallel NFC disk copies; capped at disk count) |
+| `V2V_caBundle` | `/opt/ca-bundle.crt` (CA symlink dest) |
+| `V2V_caCert` | `/etc/secret/cacert` (preferred CA source if present) |
+| `V2V_systemCaBundle` | `/etc/pki/tls/certs/ca-bundle.crt.bak` (fallback) |
+
+Workdir defaults: `/var/tmp/v2v` (JSON handoff files), mount root `/tmp/kc-guest`.
+
+## HTTP API
+
+When `LOCAL_MIGRATION=true`, serves Forklift-compatible endpoints on `:8080`:
+
+| Endpoint | Response |
+|----------|----------|
+| `GET /vm` | 204 No Content (in-place mode) |
+| `GET /inspection` | Inspection XML file |
+| `GET /warnings` | JSON warnings array, or 204 when empty |
+| `GET /shutdown` | Graceful server shutdown |
+
+## Forklift Wiring
+
+Set the virt-v2v image FQIN to the kc-v2v container:
+
+```bash
+oc mtv settings set --setting virt_v2v_image_fqin --value quay.io/you/kc-v2v:latest
+```
+
+The migration controller starts the conversion pod with
+`ENTRYPOINT ["/usr/bin/kc-v2v"]`. Disk copy uses pure Go govmomi NFC export
+(no external libraries required).
+
+| kc-v2v path | When | Behavior |
+|---|---|---|
+| Copy + convert | `V2V_inPlace` unset/`0` (default) | Spawn `kc-copy`, then in-place convert |
+| Convert only | `V2V_inPlace=1` | `DiscoverDisks()` on attached volumes, then convert |
+
+Pre-filled PVCs appear as `/dev/blockN` or `/mnt/disks/diskN/disk.img` in the
+pod — that is normal Kubernetes volume attachment, not a separate path per
+source (EC2, CDI, Nutanix, etc.). Hypervisor cleanup runs in convert plugins
+from `V2V_source`, same as every other source.
+
+Container build and Forklift Plan configuration:
+[build/kc-v2v/README.md](../build/kc-v2v/README.md).
+
+### Avoid unsupported Forklift features
+
+kc-v2v replaces in-place virt-v2v pods only. Configure Forklift so other workflows
+do not expect upstream virt-v2v:
+
+- Set `virt_v2v_image_fqin` to the kc-v2v image; unset `virt_v2v_extra_args`
+  (kc-v2v ignores `V2V_extra_args`).
+- Keep `skipGuestConversion: false` on Plans.
+- For warm vSphere: set `runPreflightInspection: false` to skip virt-v2v-inspector
+  (default runs a separate image before disk transfer).
+- Do not use `Conversion` CRs with type `Remote`, `DeepInspection`, or
+  `Inspection` — use Plan migrations or `InPlace` conversions.
+
+Full configuration table and YAML examples:
+[build/kc-v2v/README.md — Forklift configuration for kc-v2v](../build/kc-v2v/README.md#forklift-configuration-for-kc-v2v).
+
+## Supported vs Unsupported
+
+| Supported | Unsupported |
+|-----------|-------------|
+| In-place EC2 / copy-offload / Nutanix (pre-filled) | Remote copy (`Conversion` type `Remote`) |
+| vSphere NFC disk copy into blank PVCs | Deep inspection, virt-v2v-inspector preflight |
+| qcow2 overlay (`V2V_overlayEnabled`) | `V2V_extra_args` / `virt_v2v_extra_args` passthrough |
+
+## Related
+
+- [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
+- [docs/README.md](README.md) — four-binary pipeline overview
+- [pkg/v2v/README.md](../pkg/v2v/README.md) — kc-v2v package internals

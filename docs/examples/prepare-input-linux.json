@@ -1,0 +1,29 @@
+{
+  "disks": [
+    {
+      "path": "/var/lib/kc/disk0.img",
+      "format": "raw"
+    }
+  ],
+  "source": {
+    "name": "rhel9-vm",
+    "type": "vmware",
+    "firmware_hint": "uefi",
+    "nics": [
+      {
+        "mac": "52:54:00:12:34:56",
+        "model": "e1000",
+        "network": "default"
+      }
+    ]
+  },
+  "network_map": [
+    {
+      "source": "VM Network",
+      "target": "ovirtmgmt"
+    }
+  ],
+  "options": {
+    "tmp_dir": "/var/lib/kc/tmp"
+  }
+}

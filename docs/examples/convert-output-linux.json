@@ -1,0 +1,14 @@
+{
+  "guestcaps": {
+    "block_bus": "virtio",
+    "net_bus": "virtio",
+    "virtio_rng": false,
+    "virtio_balloon": false,
+    "virtio_socket": false,
+    "isa_pvpanic": false,
+    "machine_type": "q35",
+    "arch": "x86_64",
+    "virtio_1_0": true,
+    "rtc_utc": true
+  }
+}

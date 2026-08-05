@@ -1,0 +1,19 @@
+# Build artifacts
+bin/
+coverage.out
+
+# Test artifacts
+tests/bin/
+tests/*.log
+tests/*.img
+
+# Editor and IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Claude Code (keep shared skills)
+.claude/*
+!.claude/skills/

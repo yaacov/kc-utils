@@ -1,0 +1,59 @@
+{
+  "status": "complete",
+  "converter": "kc-convert-linux",
+  "inspect": {
+    "type": "linux",
+    "distro": "rhel",
+    "major_version": 9,
+    "minor_version": 2,
+    "arch": "x86_64",
+    "product_name": "Red Hat Enterprise Linux 9.2 (Plow)",
+    "package_format": "rpm",
+    "package_manager": "dnf"
+  },
+  "firmware": {
+    "type": "bios"
+  },
+  "boot_device": {
+    "disk_index": 0,
+    "part_index": 1,
+    "bootloader_type": "grub2"
+  },
+  "free_space": [
+    {
+      "path": "/mnt/kc-guest",
+      "free_bytes": 4294967296,
+      "free_inodes": 131072
+    }
+  ],
+  "source": {
+    "name": "rhel9-vm",
+    "type": "vmware",
+    "firmware_hint": "uefi",
+    "nics": [
+      {
+        "mac": "52:54:00:12:34:56",
+        "model": "e1000",
+        "network": "default"
+      }
+    ]
+  },
+  "disks": [
+    {
+      "path": "/var/lib/kc/disk0.img",
+      "size_bytes": 536870912,
+      "format": "raw",
+      "partitions": [
+        {
+          "index": 1,
+          "size_bytes": 536866816,
+          "fs_type": "ext4",
+          "mount_point": "/",
+          "device_path": "/dev/loop0p1"
+        }
+      ]
+    }
+  ],
+  "mount_root": "/mnt/kc-guest",
+  "root_device": "/dev/loop0p1"
+}

@@ -1,0 +1,67 @@
+# kc-v2v — Forklift virt-v2v replacement (in-place conversion + NFC disk copy)
+#
+# Three-stage build:
+#   1. builder     — compile Go binaries
+#   2. downloader  — fetch guest conversion assets (no runtime bloat in final image)
+#   3. runtime     — minimal Fedora with only the tools and files we need
+#
+# Disk copy uses govmomi NFC export (pure Go, no VDDK required).
+#
+# Guest conversion assets (Forklift virt-v2v parity + kc offline Linux QGA):
+#   - virtio-win RPM → /usr/share/virtio-win/ (Windows drivers + qemu-ga MSI)
+#   - qemu-guest-agent RPMs → /usr/share/kc-packages/rpm/el{8,9,10}/x86_64/
+
+# ── Stage 1: Go build ────────────────────────────────────────────────
+FROM golang:1.24 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-prepare ./cmd/kc-prepare && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-finalize ./cmd/kc-finalize && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-convert-linux ./cmd/kc-convert-linux && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-convert-windows ./cmd/kc-convert-windows && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-v2v ./cmd/kc-v2v && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-copy ./cmd/kc-copy
+
+# ── Stage 2: download guest conversion assets ────────────────────────
+FROM registry.fedoraproject.org/fedora:41 AS downloader
+
+# virtio-win — same pin as Forklift build/virt-v2v/Containerfile-upstream-fedora
+RUN dnf install -y --setopt=install_weak_deps=False \
+        https://kojihub.stream.centos.org/kojifiles/packages/virtio-win/1.9.40/1.el9/noarch/virtio-win-1.9.40-1.el9.noarch.rpm && \
+    dnf clean all
+
+# Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)
+COPY build/kc-v2v/stage-linux-packages.sh /tmp/stage-linux-packages.sh
+RUN chmod +x /tmp/stage-linux-packages.sh && \
+    /tmp/stage-linux-packages.sh /usr/share/kc-packages && \
+    rm -f /tmp/stage-linux-packages.sh
+
+# ── Stage 3: runtime ─────────────────────────────────────────────────
+FROM registry.fedoraproject.org/fedora:41
+RUN dnf install -y --setopt=install_weak_deps=False \
+        qemu-img cryptsetup lvm2 clevis clevis-luks \
+        hivex perl-hivex ntfs-3g e2fsprogs xfsprogs btrfs-progs \
+        libguestfs libguestfs-tools-c libguestfs-xfs \
+        fuse fuse-libs bsdtar && \
+    dnf clean all
+
+COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/
+COPY --from=downloader /usr/share/kc-packages/ /usr/share/kc-packages/
+
+RUN mkdir -p /usr/lib/kc-utils
+COPY --from=builder /out/kc-prepare /out/kc-finalize /out/kc-convert-linux /out/kc-convert-windows /out/kc-copy /usr/lib/kc-utils/
+COPY --from=builder /out/kc-v2v /usr/bin/kc-v2v
+COPY --from=builder /out/kc-copy /usr/bin/kc-copy
+
+# Use the "direct" backend so libguestfs launches QEMU directly instead of
+# routing through libvirtd (which is not available in a container). The pod
+# only needs /dev/kvm. Guest FS access happens via guestfish RPC against
+# mounts inside the appliance VM.
+ENV LIBGUESTFS_BACKEND=direct
+ENV V2V_guestfs=true
+# qemu uid 107 has passwd HOME=/; guestfish needs a writable $HOME/.guestfish.
+ENV HOME=/var/tmp
+
+ENTRYPOINT ["/usr/bin/kc-v2v"]

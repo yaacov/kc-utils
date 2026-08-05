@@ -1,0 +1,15 @@
+{
+  "disks": [
+    {
+      "path": "/var/lib/kc/multiboot.img",
+      "format": "raw"
+    }
+  ],
+  "source": {
+    "name": "dual-boot-workstation",
+    "type": "disk"
+  },
+  "options": {
+    "root": "first"
+  }
+}

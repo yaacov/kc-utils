@@ -1,0 +1,18 @@
+{
+  "disks": [
+    {
+      "path": "/var/lib/kc/encrypted.img",
+      "format": "raw"
+    }
+  ],
+  "source": {
+    "name": "luks-guest",
+    "type": "disk"
+  },
+  "luks": {
+    "key_files": {
+      "/dev/sda2": "/var/lib/kc/luks-keys/root.key"
+    }
+  },
+  "options": {}
+}

@@ -1,0 +1,83 @@
+package config
+
+const (
+	EnvLibvirtURL                   = "V2V_libvirtURL"
+	EnvInPlace                      = "V2V_inPlace"
+	EnvExtraArgs                    = "V2V_extra_args"
+	EnvVmName                       = "V2V_vmName"
+	EnvNewName                      = "V2V_NewName"
+	EnvRootDisk                     = "V2V_RootDisk"
+	EnvStaticIPs                    = "V2V_staticIPs"
+	EnvSource                       = "V2V_source"
+	EnvDiskPath                     = "V2V_diskPath"
+	EnvFirmware                     = "V2V_firmware"
+	EnvLocalMigration               = "LOCAL_MIGRATION"
+	EnvVirtioWin                    = "VIRTIO_WIN"
+	EnvHostName                     = "V2V_HOSTNAME"
+	EnvNbdeClevis                   = "V2V_NBDE_CLEVIS"
+	EnvMultipleIPsPerNic            = "V2V_multipleIPsPerNic"
+	EnvVsphereVmwareDriverRemoval   = "V2V_vsphereVmwareDriverRemoval"
+	EnvWindowsRegistryNetworkConfig = "V2V_windowsRegistryNetworkConfig"
+	EnvWaitForGuestReboot           = "V2V_waitForGuestReboot"
+	EnvOverlayEnabled               = "V2V_overlayEnabled"
+	EnvFingerprint                  = "V2V_fingerprint"
+	EnvCopyConcurrency              = "V2V_copyConcurrency"
+	EnvOffline                      = "V2V_offline"
+	EnvGuestfs                      = "V2V_guestfs"
+	EnvCaBundle                     = "V2V_caBundle"
+	EnvCaCert                       = "V2V_caCert"
+	EnvSystemCaBundle               = "V2V_systemCaBundle"
+
+	DefaultCopyConcurrency = 4
+	// Forklift conversion-pod CA symlink paths.
+	DefaultCaBundle       = "/opt/ca-bundle.crt"
+	DefaultCaCert         = "/etc/secret/cacert"
+	DefaultSystemCaBundle = "/etc/pki/tls/certs/ca-bundle.crt.bak"
+
+	DefaultWorkdir              = "/var/tmp/v2v"
+	DefaultInspectionOutputFile = DefaultWorkdir + "/inspection.xml"
+	DefaultDynamicScriptsDir    = "/mnt/dynamic_scripts"
+	DefaultLuksDir              = "/etc/luks"
+	DefaultMountRoot            = "/tmp/kc-guest"
+
+	BlockGlob = "/dev/block[0-9]*"
+	FSGlob    = "/mnt/disks/disk[0-9]*"
+)
+
+// Config mirrors Forklift AppConfig fields used by kc-v2v.
+type Config struct {
+	LibvirtURL                   string
+	IsInPlace                    bool
+	IsLocalMigration             bool
+	ExtraArgs                    []string
+	VmName                       string
+	NewVmName                    string
+	RootDisk                     string
+	StaticIPs                    string
+	Source                       string
+	DiskPath                     string
+	Firmware                     string
+	VirtioWinISO                 string
+	HostName                     string
+	NbdeClevis                   bool
+	MultipleIPsPerNic            bool
+	VsphereVmwareDriverRemoval   bool
+	WindowsRegistryNetworkConfig bool
+	WaitForGuestReboot           bool
+	OverlayEnabled               bool
+	Fingerprint                  string
+	CopyConcurrency              int
+	CaBundle                     string // dest symlink for TLS
+	CaCert                       string // preferred CA source (provider secret)
+	SystemCaBundle               string // fallback system CA pool
+
+	Offline              bool
+	UseGuestfs           bool
+	LuksDir              string
+	DynamicScriptsDir    string
+	Workdir              string
+	InspectionOutputFile string
+	MountRoot            string
+	LogLevel             string
+	BinDir               string
+}

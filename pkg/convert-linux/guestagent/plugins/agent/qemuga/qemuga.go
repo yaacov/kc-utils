@@ -1,0 +1,55 @@
+//go:build linux
+
+package qemuga
+
+import (
+	"log/slog"
+	"os"
+	"path/filepath"
+
+	"github.com/yaacov/kc-utils/pkg/convert-linux/guestagent"
+	"github.com/yaacov/kc-utils/pkg/guest"
+)
+
+type QEMUAgent struct{}
+
+func init() {
+	guestagent.Agents.Register("qemu-ga", &QEMUAgent{})
+}
+
+func (q *QEMUAgent) Detect(guestRoot string) bool {
+	p := filepath.Join(guestRoot, "usr", "bin", "qemu-ga")
+	return guest.FileExists(p)
+}
+
+func (q *QEMUAgent) Remove(guestRoot string) error {
+	// Check if RPM-based: log that package removal would happen at firstboot.
+	rpmDB := filepath.Join(guestRoot, "var", "lib", "rpm")
+	if guest.FileExists(rpmDB) {
+		slog.Info("RPM database found, qemu-guest-agent will be removed via rpm -e at firstboot")
+	}
+
+	// Check if dpkg-based: log that package removal would happen at firstboot.
+	dpkgDB := filepath.Join(guestRoot, "var", "lib", "dpkg")
+	if guest.FileExists(dpkgDB) {
+		slog.Info("dpkg database found, qemu-guest-agent will be removed via dpkg --purge at firstboot")
+	}
+
+	// Remove the binary.
+	binaryPath := filepath.Join(guestRoot, "usr", "bin", "qemu-ga")
+	if err := guest.FileRemove(binaryPath); err != nil && !os.IsNotExist(err) {
+		slog.Warn("failed to remove binary", "path", binaryPath, "error", err)
+	} else if err == nil {
+		slog.Info("removed binary", "path", binaryPath)
+	}
+
+	// Remove the systemd service file if it exists.
+	servicePath := filepath.Join(guestRoot, "usr", "lib", "systemd", "system", "qemu-guest-agent.service")
+	if err := guest.FileRemove(servicePath); err != nil && !os.IsNotExist(err) {
+		slog.Warn("failed to remove service file", "path", servicePath, "error", err)
+	} else if err == nil {
+		slog.Info("removed service file", "path", servicePath)
+	}
+
+	return nil
+}
