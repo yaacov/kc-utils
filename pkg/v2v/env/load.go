@@ -37,7 +37,6 @@ func Load() (*Config, error) {
 	flag.StringVar(&cfg.NewVmName, "new-vm-name", os.Getenv(EnvNewName), "new VM name")
 	flag.StringVar(&cfg.RootDisk, "root-disk", envOr(EnvRootDisk, "first"), "root disk selector")
 	flag.StringVar(&cfg.StaticIPs, "static-ips", os.Getenv(EnvStaticIPs), "static IP mapping")
-	flag.StringVar(&cfg.VirtioWinISO, "virtio-win-legacy-drivers", os.Getenv(EnvVirtioWin), "virtio-win ISO path")
 	flag.StringVar(&cfg.HostName, "hostname", os.Getenv(EnvHostName), "guest hostname")
 	flag.StringVar(&cfg.Workdir, "work-dir", DefaultWorkdir, "working directory")
 	flag.StringVar(&cfg.InspectionOutputFile, "inspection-output-file", DefaultInspectionOutputFile, "inspection XML path")

@@ -20,34 +20,34 @@ func (s *stubSource) FindDrivers(arch, osVersion string) ([]DriverFile, error) {
 	return s.files, s.err
 }
 
-func TestCollectDriversISOOnly(t *testing.T) {
+func TestCollectDriversDirectoryOnly(t *testing.T) {
 	orig := Sources
 	Sources = plugin.NewRegistry[string, DriverSource]()
 	t.Cleanup(func() { Sources = orig })
 
-	iso := &stubSource{
+	dir := &stubSource{
 		available: true,
-		files:     []DriverFile{{Name: "viostor", SrcPath: "/iso/viostor"}},
+		files:     []DriverFile{{Name: "viostor", SrcPath: "/by-os/amd64/w10"}},
 	}
-	Sources.Register("iso", iso)
+	Sources.Register("directory", dir)
 
-	files, _, err := CollectDrivers("x86_64", "Windows Server 2019")
+	files, err := CollectDrivers("x86_64", "Windows Server 2019")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(files) != 1 || files[0].SrcPath != "/iso/viostor" {
+	if len(files) != 1 || files[0].SrcPath != "/by-os/amd64/w10" {
 		t.Fatalf("got %#v", files)
 	}
 }
 
-func TestCollectDriversRequiresISO(t *testing.T) {
+func TestCollectDriversRequiresDirectory(t *testing.T) {
 	orig := Sources
 	Sources = plugin.NewRegistry[string, DriverSource]()
 	t.Cleanup(func() { Sources = orig })
 
-	Sources.Register("iso", &stubSource{available: false})
-	if _, _, err := CollectDrivers("x86_64", "Windows Server 2019"); err == nil {
-		t.Fatal("expected error when ISO unavailable")
+	Sources.Register("directory", &stubSource{available: false})
+	if _, err := CollectDrivers("x86_64", "Windows Server 2019"); err == nil {
+		t.Fatal("expected error when directory unavailable")
 	}
 }
 
@@ -56,8 +56,8 @@ func TestCollectDriversPropagatesFindError(t *testing.T) {
 	Sources = plugin.NewRegistry[string, DriverSource]()
 	t.Cleanup(func() { Sources = orig })
 
-	Sources.Register("iso", &stubSource{available: true, err: errors.New("boom")})
-	if _, _, err := CollectDrivers("x86_64", "w10"); err == nil {
+	Sources.Register("directory", &stubSource{available: true, err: errors.New("boom")})
+	if _, err := CollectDrivers("x86_64", "w10"); err == nil {
 		t.Fatal("expected error from FindDrivers")
 	}
 }

@@ -98,22 +98,15 @@ wget -qO- https://fedorapeople.org/groups/virt/virtio-win/virtio-win.repo \
 sudo dnf install -y virtio-win
 ```
 
-The package installs into `/usr/share/virtio-win/`, which kc-utils uses
-automatically:
+The package installs into `/usr/share/virtio-win/drivers/by-os/`, which kc-utils
+reads automatically:
 
 | Host path | Plugin | Role |
 |-----------|--------|------|
-| `/usr/share/virtio-win/virtio-win.iso` | `iso` | `bsdtar` extract; match guest arch and Windows version |
+| `/usr/share/virtio-win/drivers/by-os` | `directory` | Match guest arch and Windows version |
 
-There is no separate “install RPM at runtime” step inside kc-utils — install
-the host package (or place an ISO at the path above) before running
-`kc-convert-windows`.
-
-### Other platforms
-
-Debian/Ubuntu have no matching `virtio-win` package layout. Download
-[virtio-win.iso](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso)
-and place it at `/usr/share/virtio-win/virtio-win.iso`.
+Install the host package before running `kc-convert-windows` locally, or use the
+kc-v2v container image (includes the tree).
 
 ### Linux guest packages (different feature)
 

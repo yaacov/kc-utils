@@ -135,34 +135,24 @@ make_linux_prepare_json() {
 EOF
 }
 
-# setup_fake_virtio_drivers: create a minimal virtio-win ISO for tests.
-# Provides viostor, vioscsi, netkvm, viorng, balloon, vioserial .inf+.sys+.cat
-# in ISO layout <driver>/<osVer>/amd64/ at /usr/share/virtio-win/virtio-win.iso.
-# Usage: setup_fake_virtio_drivers
-setup_fake_virtio_drivers() {
-    if ! command -v bsdtar >/dev/null 2>&1; then
-        echo "$0: bsdtar required to build fake virtio-win ISO, skipping"
-        exit 77
-    fi
+# setup_fake_virtio_drivers_tree: populate a minimal virtio-win by-os tree for tests.
+# Creates driver files under /usr/share/virtio-win/drivers/by-os/amd64/2k22/.
+# Usage: setup_fake_virtio_drivers_tree
+setup_fake_virtio_drivers_tree() {
     local iso_dir="/usr/share/virtio-win"
-    if ! mkdir -p "$iso_dir" 2>/dev/null; then
+    if ! mkdir -p "$iso_dir/drivers/by-os/amd64/2k22" 2>/dev/null; then
         echo "$0: cannot create $iso_dir (need root?), skipping"
         exit 77
     fi
     cleanup_fn rm -rf /usr/share/virtio-win
-    local staging
-    staging=$(mktemp -d)
-    cleanup_fn rm -rf "$staging"
     local drv osver ext
     for drv in viostor vioscsi netkvm viorng balloon vioserial; do
-        for osver in w10 w11; do
-            mkdir -p "$staging/$drv/$osver/amd64"
-            for ext in inf sys cat; do
-                echo "fake-$drv" > "$staging/$drv/$osver/amd64/$drv.$ext"
-            done
+        for ext in inf sys cat; do
+            echo "fake-$drv" > "$iso_dir/drivers/by-os/amd64/2k22/$drv.$ext"
         done
     done
-    bsdtar --no-xattrs -cf "$iso_dir/virtio-win.iso" -C "$staging" .
+    mkdir -p "$iso_dir/guest-agent"
+    echo "fake-ga" > "$iso_dir/guest-agent/qemu-ga-x86_64.msi"
 }
 
 # install_stub_dracut: place a no-op dracut inside a fake guest root so that

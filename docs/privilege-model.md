@@ -29,7 +29,8 @@ mount or device operations themselves — they access guest disks exclusively
 through `pkg/guest/`. `kc-convert-linux` runs guest commands (dracut,
 grub-mkconfig) via `guest.RunInGuest`, which the direct backend implements as
 `chroot` and the guestfs backend implements as an in-appliance shell.
-`kc-convert-windows` extracts the virtio-win ISO with `bsdtar` on the host
+`kc-convert-windows` reads virtio-win drivers from the pre-extracted tree at
+`/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).
 filesystem (no loop device; works in unprivileged pods) — this is not guest-disk
 I/O.
 

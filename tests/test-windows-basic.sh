@@ -11,12 +11,11 @@ skip_if_skipped
 requires_linux  # binaries are Linux ELF; cannot execute on other platforms
 requires command -v hivexregedit
 requires_jq
-requires command -v bsdtar
 ensure_built
 requires test -f "$UPSTREAM_TESTDATA/minimal-hive"
 
-# Set up fake virtio-win ISO so guestcaps reports virtio.
-setup_fake_virtio_drivers
+# Set up fake virtio-win driver tree so guestcaps reports virtio.
+setup_fake_virtio_drivers_tree
 
 # Create temp working directory.
 d=$(mktemp -d)

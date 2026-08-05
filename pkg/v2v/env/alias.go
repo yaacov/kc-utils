@@ -17,7 +17,6 @@ const (
 	EnvDiskPath                     = config.EnvDiskPath
 	EnvFirmware                     = config.EnvFirmware
 	EnvLocalMigration               = config.EnvLocalMigration
-	EnvVirtioWin                    = config.EnvVirtioWin
 	EnvHostName                     = config.EnvHostName
 	EnvNbdeClevis                   = config.EnvNbdeClevis
 	EnvMultipleIPsPerNic            = config.EnvMultipleIPsPerNic

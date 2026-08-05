@@ -1,5 +1,5 @@
 FROM registry.fedoraproject.org/fedora:latest
 
-RUN dnf install -y golang hivex perl-hivex jq make libguestfs-tools fuse fuse-libs ntfs-3g ntfsprogs bsdtar && dnf clean all
+RUN dnf install -y golang hivex perl-hivex jq make libguestfs-tools fuse fuse-libs ntfs-3g ntfsprogs && dnf clean all
 
 WORKDIR /workspace/kc-utils

@@ -23,11 +23,12 @@ make build-kc-copy   # copy stage binary (also used standalone)
 
 ## Image contents (guest conversion assets)
 
-Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`perl-hivex`, `bsdtar`, …), the image bakes:
+Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`perl-hivex`, …), the image bakes:
 
 | Path | Source | Purpose |
 |------|--------|---------|
-| `/usr/share/virtio-win/` | `virtio-win` RPM (CentOS Stream Koji pin, same pattern as Forklift virt-v2v) | Windows VirtIO drivers + qemu-ga MSI |
+| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) | Windows VirtIO drivers (pre-extracted) |
+| `/usr/share/virtio-win/guest-agent/` | same RPM | qemu-ga MSIs |
 | `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` | [`stage-linux-packages.sh`](stage-linux-packages.sh) | Offline Linux `qemu-guest-agent` for RHEL-family guests |
 
 `kc-v2v` passes `--offline` to converters when `V2V_offline=true`, so airgapped pods use these paths (no guest network install for QGA when a local RPM matches).

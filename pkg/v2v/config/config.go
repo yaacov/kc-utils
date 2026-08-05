@@ -12,7 +12,6 @@ const (
 	EnvDiskPath                     = "V2V_diskPath"
 	EnvFirmware                     = "V2V_firmware"
 	EnvLocalMigration               = "LOCAL_MIGRATION"
-	EnvVirtioWin                    = "VIRTIO_WIN"
 	EnvHostName                     = "V2V_HOSTNAME"
 	EnvNbdeClevis                   = "V2V_NBDE_CLEVIS"
 	EnvMultipleIPsPerNic            = "V2V_multipleIPsPerNic"
@@ -57,7 +56,6 @@ type Config struct {
 	Source                       string
 	DiskPath                     string
 	Firmware                     string
-	VirtioWinISO                 string
 	HostName                     string
 	NbdeClevis                   bool
 	MultipleIPsPerNic            bool

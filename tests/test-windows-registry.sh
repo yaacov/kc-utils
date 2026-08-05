@@ -15,9 +15,8 @@ requires command -v hivexget
 requires_jq
 ensure_built
 requires test -f "$UPSTREAM_TESTDATA/minimal-hive"
-requires command -v bsdtar
 
-setup_fake_virtio_drivers
+setup_fake_virtio_drivers_tree
 
 d=$(mktemp -d)
 cleanup_fn rm -rf "$d"

@@ -14,7 +14,6 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-windows/crashcontrol"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/drivers"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource"
-	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource/plugins/iso"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/inspect"
@@ -100,20 +99,12 @@ func Run(cfg *Config) error {
 	}
 	defer softwareHive.Close()
 
-	// Block 1: Locate virtio-win drivers from ISO (extract kept until after copy)
+	// Block 1: Locate virtio-win drivers from the pre-extracted directory tree.
 	slog.Debug("locating driver source")
-	if isoPath := cfg.PrepareData.Options.VirtioWinISO; isoPath != "" {
-		if src, ok := driversource.Sources.Get("iso"); ok {
-			if isoSrc, ok := src.(*iso.ISOSource); ok {
-				isoSrc.ISOPath = isoPath
-			}
-		}
-	}
-	driverFiles, driverCleaners, err := driversource.CollectDrivers(caps.Arch, osVersion)
+	driverFiles, err := driversource.CollectDrivers(caps.Arch, osVersion)
 	if err != nil {
 		return fmt.Errorf("locate virtio-win drivers: %w", err)
 	}
-	defer driversource.CleanupAll(driverCleaners)
 	if cfg.Offline {
 		slog.Info("offline mode enabled, skipping network-dependent operations")
 	}

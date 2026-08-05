@@ -11,7 +11,6 @@ func TestBuildPrepareInput(t *testing.T) {
 		Workdir:                      "/work",
 		HostName:                     "guest1",
 		DynamicScriptsDir:            "/scripts",
-		VirtioWinISO:                 "/virtio.iso",
 		VsphereVmwareDriverRemoval:   true,
 		WindowsRegistryNetworkConfig: true,
 		MultipleIPsPerNic:            true,
@@ -44,7 +43,7 @@ func TestBuildPrepareInput(t *testing.T) {
 		!in.Options.MultipleIPsPerNic || !in.Options.WaitForGuestReboot {
 		t.Errorf("bool options = %+v", in.Options)
 	}
-	if in.Options.VirtioWinISO != "/virtio.iso" || in.Options.DynamicScriptsDir != "/scripts" {
+	if in.Options.DynamicScriptsDir != "/scripts" {
 		t.Errorf("paths = %+v", in.Options)
 	}
 }

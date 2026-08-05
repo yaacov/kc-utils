@@ -98,11 +98,11 @@ overrides via `env.Load()`. Full schema:
 | `V2V_RootDisk` | `first` | Root selection policy passed to kc-prepare |
 | `V2V_staticIPs` | | Static IP mapping for Windows guests |
 | `V2V_overlayEnabled` | `true` | qcow2 overlay during conversion |
-| `VIRTIO_WIN` | | Override path to virtio-win ISO (image default: `/usr/share/virtio-win/`) |
 | `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock |
 | `V2V_offline` | `false` | Pass `--offline` to converters (use image-staged packages only) |
 
-The container image bakes Windows `virtio-win` and RHEL-family offline
+The container image bakes Windows virtio-win drivers under
+`/usr/share/virtio-win/drivers/by-os/` and RHEL-family offline
 `qemu-guest-agent` RPMs under `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/`.
 Set `V2V_offline=true` to pass `--offline` to converters. See [build/kc-v2v/README.md](../build/kc-v2v/README.md).
 

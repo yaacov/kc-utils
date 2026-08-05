@@ -68,7 +68,6 @@ type PrepareOptions struct {
 	Hostname               string     `json:"hostname,omitempty"`
 	Timezone               string     `json:"timezone,omitempty"`
 	DynamicScriptsDir      string     `json:"dynamic_scripts_dir,omitempty"`
-	VirtioWinISO           string     `json:"virtio_win_iso,omitempty"`
 	VMwareDriverRemoval    bool       `json:"vmware_driver_removal,omitempty"`
 	WindowsRegistryNetwork bool       `json:"windows_registry_network,omitempty"`
 	MultipleIPsPerNic      bool       `json:"multiple_ips_per_nic,omitempty"`

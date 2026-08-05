@@ -37,7 +37,6 @@ func BuildPrepareInput(cfg *Config, disks []DiskInfo, source types.SourceSpec) (
 			Root:                   root,
 			Hostname:               cfg.HostName,
 			DynamicScriptsDir:      cfg.DynamicScriptsDir,
-			VirtioWinISO:           cfg.VirtioWinISO,
 			VMwareDriverRemoval:    cfg.VsphereVmwareDriverRemoval,
 			WindowsRegistryNetwork: cfg.WindowsRegistryNetworkConfig,
 			MultipleIPsPerNic:      cfg.MultipleIPsPerNic,

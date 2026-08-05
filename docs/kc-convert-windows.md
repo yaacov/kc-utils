@@ -20,14 +20,14 @@ Requires Linux (`//go:build linux`).
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
-VirtIO drivers are located from the virtio-win ISO via the `iso` `DriverSource`
-plugin (path overridable with prepare option `VirtioWinISO`), not a dedicated CLI flag.
+VirtIO drivers are located from the pre-extracted virtio-win tree via the
+`directory` `DriverSource` plugin at `/usr/share/virtio-win/drivers/by-os`.
 
 ## Pipeline Blocks
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|
-| 1 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from the virtio-win ISO |
+| 1 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted RPM tree |
 | 2 | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
 | 3 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
 | 4 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
@@ -50,7 +50,7 @@ Note: Block numbers match the pipeline comments in `internal/convert-windows/pip
 - Mounted guest filesystem at `--mount-root`
 
 VirtIO drivers are read from the **conversion host**, not from JSON or CLI flags.
-Install the Linux package (or place an ISO) before running the converter.
+Install the Linux `virtio-win` package before running the converter locally.
 
 ### Linux packages (Fedora / RHEL) — supported
 
@@ -58,12 +58,12 @@ Install the Linux package (or place an ISO) before running the converter.
 sudo dnf install -y virtio-win
 ```
 
-The `virtio-win` RPM installs files under `/usr/share/virtio-win/`. kc-utils
-reads drivers from the ISO only:
+The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`.
+The kc-v2v container image ships this tree directly.
 
 | Plugin | Path | Notes |
 |--------|------|-------|
-| `iso` | `/usr/share/virtio-win/virtio-win.iso` | Extract with `bsdtar`. Filters by guest Windows version aliases and CPU arch |
+| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` |
 
 Optional upstream repo:
 
@@ -72,12 +72,8 @@ wget -qO- https://fedorapeople.org/groups/virt/virtio-win/virtio-win.repo \
   | sudo tee /etc/yum.repos.d/virtio-win.repo >/dev/null
 ```
 
-There is no RPM-specific plugin and no JSON field for driver location — install
-the host package (or copy the ISO to the default path) before conversion.
-
-On Debian/Ubuntu, download
-[virtio-win.iso](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso)
-to `/usr/share/virtio-win/virtio-win.iso`.
+There is no JSON field for driver location — install the host package before
+conversion (or use the kc-v2v image, which includes it).
 
 See [pkg/convert-windows/driversource/plugins/README.md](../pkg/convert-windows/driversource/plugins/README.md) for
 plugin details. Linux guest offline packages (`qemu-guest-agent` RPM/DEB) are a

@@ -9,12 +9,11 @@ type DriverSource interface {
 }
 ```
 
-Conversion uses the **ISO** source only (`CollectDrivers`). The extract tree is
-kept until after `drivers.Copy`, then cleaned up via `Cleaner`.
+Conversion uses the **directory** source only (`CollectDrivers`).
 
 | Key | Package | Default path | Description |
 |-----|---------|--------------|-------------|
-| `iso` | iso/ | `/usr/share/virtio-win/virtio-win.iso` | Extract with `bsdtar` (no loop device). Filter by guest arch and Windows version |
+| `directory` | directory/ | `/usr/share/virtio-win/drivers/by-os` | Read pre-extracted RPM driver tree. Filter by guest arch and Windows version |
 
 ## Linux distro packages
 
@@ -22,17 +21,10 @@ kept until after `drivers.Copy`, then cleaned up via `Cleaner`.
 sudo dnf install -y virtio-win
 ```
 
-Optional repo:
+The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`
+and qemu-ga MSIs under `/usr/share/virtio-win/guest-agent/`.
 
-```bash
-wget -qO- https://fedorapeople.org/groups/virt/virtio-win/virtio-win.repo \
-  | sudo tee /etc/yum.repos.d/virtio-win.repo >/dev/null
-```
+The kc-v2v container image ships this tree directly (no ISO).
 
-On Debian/Ubuntu, download
-[virtio-win.iso](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso)
-to `/usr/share/virtio-win/virtio-win.iso`.
-
-Guest agent MSIs under `/usr/share/guest-agent/` are not read by kc-convert-windows;
-firstboot looks for `qemu-ga*.msi` under the guest's `Windows\Drivers\VirtIO\` after
-driver copy.
+Guest agent MSIs are staged into the guest's `Windows\Drivers\VirtIO\` during
+driver copy; firstboot installs them via `qemu-ga*.msi`.

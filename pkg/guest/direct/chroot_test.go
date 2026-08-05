@@ -3,6 +3,7 @@
 package direct
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +20,9 @@ func TestRunInGuestRoot(t *testing.T) {
 
 	out, err := runInGuestRoot(root, []string{"/bin/sh", "-c", "echo guest-ok"})
 	if err != nil {
+		if guestRootExecUnavailable(out) {
+			t.Skipf("guest root execution unavailable in this environment: %v\n%s", err, out)
+		}
 		t.Fatalf("runInGuestRoot: %v\n%s", err, out)
 	}
 	if string(out) != "guest-ok\n" {
@@ -66,4 +70,9 @@ func installTestShell(t *testing.T, root string) {
 			t.Fatal(err)
 		}
 	}
+}
+
+func guestRootExecUnavailable(out []byte) bool {
+	return bytes.Contains(out, []byte("Operation not permitted")) ||
+		bytes.Contains(out, []byte("uid_map"))
 }

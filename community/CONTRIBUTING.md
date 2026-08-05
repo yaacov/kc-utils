@@ -42,7 +42,6 @@ These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 | Tool | Package | Used For |
 |------|---------|----------|
 | `hivexregedit` | perl-hivex | Windows registry writes |
-| `bsdtar` | bsdtar (libarchive) | virtio-win ISO extract for Windows conversion |
 | `e2fsck` | e2fsprogs | ext2/3/4 filesystem check |
 | `xfs_repair` | xfsprogs | XFS filesystem check |
 | `btrfs` | btrfs-progs | Btrfs filesystem check |
@@ -80,11 +79,10 @@ For testing and development (`make test-e2e`, `make test-e2e-disk`, `make lint`)
 
 ```bash
 sudo dnf install -y \
-  golang make jq perl-hivex hivex libarchive bsdtar libguestfs-tools ntfs-3g ntfsprogs
+  golang make jq perl-hivex hivex libguestfs-tools ntfs-3g ntfsprogs
 ```
 
-(`perl-hivex` provides `hivexregedit`; `hivex` provides `hivexget`; `libarchive`
-provides `bsdtar`.)
+(`perl-hivex` provides `hivexregedit`; `hivex` provides `hivexget`.)
 
 Disk-image e2e tests need a privileged container (`make test-e2e-disk`); guestfs
 disk e2e also needs `libguestfs-tools` (`make test-e2e-disk-guestfs`).
@@ -134,7 +132,7 @@ not fail the target; only real failures do. Logs for a run are in
 |-------|---------|------------------|-----------|
 | Linux | `test-linux-*.sh` | Yes | Not on Linux, or `jq` missing |
 | Integration | `test-kc-*.sh`, `test-dynamicscripts-*.sh` | Yes | Not on Linux |
-| Windows | `test-windows-*.sh` | Usually | `hivexregedit`, `bsdtar`, or fixture files missing; or cannot write `/usr/share/virtio-win` (needs root) |
+| Windows | `test-windows-*.sh` | Usually | `hivexregedit`, or fixture files missing; or cannot write `/usr/share/virtio-win` (needs root) |
 | Windows registry | `test-windows-registry.sh` | Often skipped alone | Also needs `hivexget` (`hivex` on Fedora; `libhivex-bin` on Debian) |
 | Root selection | `test-root-*.sh` | Usually skipped | Not run as root, `guestfish` missing, or `losetup --partscan` cannot create `/dev/loopNp1` nodes |
 

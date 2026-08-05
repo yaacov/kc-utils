@@ -44,10 +44,11 @@ RUN dnf install -y --setopt=install_weak_deps=False \
         qemu-img cryptsetup lvm2 clevis clevis-luks \
         hivex perl-hivex ntfs-3g e2fsprogs xfsprogs btrfs-progs \
         libguestfs libguestfs-tools-c libguestfs-xfs \
-        fuse fuse-libs bsdtar && \
+        fuse fuse-libs && \
     dnf clean all
 
 COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/
+RUN rm -f /usr/share/virtio-win/virtio-win*.iso
 COPY --from=downloader /usr/share/kc-packages/ /usr/share/kc-packages/
 
 RUN mkdir -p /usr/lib/kc-utils

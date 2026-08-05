@@ -1,9 +1,9 @@
 #!/bin/bash -
 # Test: VirtIO driver copy and registration.
-# Creates a fake virtio-win ISO, runs the converter, and verifies that
+# Creates a fake virtio-win driver tree, runs the converter, and verifies that
 # driver files are copied into the guest tree at Windows/Drivers/VirtIO/.
 #
-# Requires write access to /usr/share/virtio-win (typically root) and bsdtar.
+# Requires write access to /usr/share/virtio-win (typically root).
 
 source "$(cd "$(dirname "$0")" && pwd)/functions.sh"
 set -e
@@ -12,12 +12,11 @@ set -x
 skip_if_skipped
 requires_linux  # binaries are Linux ELF; cannot execute on other platforms
 requires command -v hivexregedit
-requires command -v bsdtar
 requires_jq
 ensure_built
 requires test -f "$UPSTREAM_TESTDATA/minimal-hive"
 
-setup_fake_virtio_drivers
+setup_fake_virtio_drivers_tree
 
 # Create temp working directory.
 d=$(mktemp -d)

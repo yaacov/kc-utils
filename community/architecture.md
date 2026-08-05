@@ -59,7 +59,9 @@ Converters never call `chroot` or other privileged tools directly. `kc-convert-l
 - **Direct** — real `chroot(2)` into the mounted guest root (`pkg/guest/direct/`)
 - **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/guest/guestfs/`)
 
-`kc-convert-windows` extracts the virtio-win ISO with `bsdtar` on the **host** filesystem (not guest-disk I/O), so it does not go through `pkg/guest/` — it is a host-side unpack of bundled driver files that are later copied into the guest via the `Guest` handle.
+`kc-convert-windows` reads virtio-win drivers from the pre-extracted RPM tree
+at `/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).
+Driver files are later copied into the guest via the `Guest` handle.
 
 ## Plugin System
 

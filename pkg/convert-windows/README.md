@@ -42,8 +42,8 @@ Hypervisor plugins (VMware, EC2, Nutanix, AWS PV, …):
 
 ## Driver source
 
-VirtIO drivers are read from the **conversion host**, not from JSON or CLI flags.
-Install the Linux package (or place an ISO) before running the converter. See
+VirtIO drivers are read from the **conversion host** pre-extracted tree at
+`/usr/share/virtio-win/drivers/by-os/`. See
 [`driversource/plugins/README.md`](driversource/plugins/README.md) for paths and
 Fedora/RHEL `virtio-win` RPM layout.
 
