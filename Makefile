@@ -62,7 +62,7 @@ TEST_IMAGE   := kc-utils-test
         cross-linux-s390x cross-all mod-tidy mod-verify check test-e2e \
         test-e2e-container test-e2e-disk test-e2e-disk-guestfs test-image \
         test-image-rebuild test-build check-all help build-kc-v2v \
-        build-kc-copy build-kc-v2v-image \
+        build-kc-copy cache-virtio-win build-kc-v2v-image \
         push-kc-v2v-image test-kc-v2v-image check_container_runtime
 
 all: build
@@ -235,6 +235,17 @@ build-kc-v2v: kc-v2v
 
 ## Build kc-copy binary (pipeline stage + standalone CLI)
 build-kc-copy: kc-copy
+
+## Cache virtio-win ISOs locally (avoids re-downloading on each image build)
+cache-virtio-win:
+	@mkdir -p build/kc-v2v/cache
+	@for url in \
+		"https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso" \
+		"https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.160-1/virtio-win-0.1.160.iso"; do \
+		f="build/kc-v2v/cache/$$(basename "$$url")"; \
+		if [ -f "$$f" ]; then echo "Cached: $$f"; \
+		else echo "Downloading $$(basename "$$url")..."; curl -fL --retry 3 --retry-delay 5 -o "$$f" "$$url"; fi; \
+	done
 
 ## Build kc-v2v container image
 build-kc-v2v-image: check_container_runtime build
