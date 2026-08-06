@@ -38,7 +38,7 @@ Warm migration (disable preflight inspection):
 ```bash
 oc mtv create plan --name my-plan \
   --source my-vsphere-provider --target host \
-  --type warm \
+  --migration-type warm \
   --vms my-vm \
   --run-preflight-inspection false \
   -n my-namespace
