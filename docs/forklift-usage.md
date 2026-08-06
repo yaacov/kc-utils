@@ -68,5 +68,6 @@ features that kc-v2v does not handle.
 ## Related
 
 - [docs/kc-v2v.md](kc-v2v.md) — kc-v2v orchestrator reference
-- [docs/virt-v2v-vs-kc-v2v.md](virt-v2v-vs-kc-v2v.md) — Benchmark comparison
+- [docs/ref-baseline/README.md](ref-baseline/README.md) — Benchmark comparison (results, scripts, runs)
+- [Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html) ([source](ref-baseline/dashboard.html)) — Interactive charts (memory, CPU, network over time)
 - [build/kc-v2v/README.md](../build/kc-v2v/README.md) — Container image and Forklift Plan config

@@ -22,9 +22,16 @@ see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
   <br><br>
 </p>
 
-**[Benchmark](docs/virt-v2v-vs-kc-v2v.md)** :
-Cold migration metrics on OpenShift MTV show kc-v2v matches virt-v2v in
-copy + conversion time while consuming less peak memory and CPU.
+**[Benchmark](docs/ref-baseline/README.md)** :
+On OpenShift MTV cold migrations, kc-v2v matches or beats virt-v2v wall time
+(about 3 minutes faster on RHEL, similar on Windows) while using less peak
+memory and far less peak CPU, and transferring roughly 56–64 % less network
+data by converting disks in-pod instead of a separate DiskTransferV2v stream.
+
+**[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html)**
+([source](docs/ref-baseline/dashboard.html)):
+Interactive charts of memory, CPU, and network I/O over time for the ref vs
+kc-v2v runs.
 
 Two guest access modes are supported (see [docs/privilege-model.md](docs/privilege-model.md)):
 
