@@ -113,10 +113,13 @@ Count gates:
 ### Disk selection and PVC ordering
 
 1. `source_disks` lists the VMDKs to copy (from inventory / `V2V_diskPath`).
-2. NFC lease items are matched by normalized path (`disk-000001.vmdk` → `disk.vmdk`).
-3. Selected disks keep **source_disks order**; lease disks not in the list are skipped.
-4. Empty PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
-5. Pairing is `targets[i]` ← `selected[i]`.
+2. `mapDiskURLs` labels each NFC disk URL with the VM backing `FileName` (normalized)
+   and drops non-disk lease items (nvram, etc. via `HttpNfcLeaseDeviceUrl.disk`).
+3. NFC lease items are matched to `source_disks` by normalized path
+   (`disk-000001.vmdk` → `disk.vmdk`).
+4. Selected disks keep **source_disks order**; lease disks not in the list are skipped.
+5. Empty PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
+6. Pairing is `targets[i]` ← `selected[i]`.
 
 Forklift must attach PVCs in the same order as `source_disks` (same contract as
 virt-v2v). Omitting a disk from the list (e.g. a shared disk) skips copying it.
