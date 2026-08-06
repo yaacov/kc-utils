@@ -114,4 +114,5 @@ DiskTransferV2v step.
 ## Dashboard
 
 Open `dashboard.html` in a browser for interactive charts comparing memory,
-CPU, and network I/O over time.
+CPU, and network I/O over time. Chart.js is vendored as `chart.umd.min.js`
+next to the HTML (no CDN required).
