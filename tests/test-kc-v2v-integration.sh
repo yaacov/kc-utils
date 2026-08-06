@@ -10,6 +10,6 @@ ensure_built
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
-go test ./pkg/v2v/... ./internal/v2v/... -count=1
+go test ./pkg/v2v/... ./pkg/cmd/v2v/... -count=1
 
 echo "PASS: test-kc-v2v-integration"
