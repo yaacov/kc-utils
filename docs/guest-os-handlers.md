@@ -16,8 +16,8 @@ kc-prepare  →  InspectData (distro / major / minor / product_name)
 
 | OS | Registry | Classifier | Orchestrator |
 |----|----------|------------|--------------|
-| Linux | [`pkg/convert-linux/distro/`](../pkg/convert-linux/distro/) | First matching `DistroHandler.Matches` | [`internal/convert-linux/pipeline.go`](../internal/convert-linux/pipeline.go) |
-| Windows | [`pkg/convert-windows/version/`](../pkg/convert-windows/version/) | First matching handler in registration order | [`internal/convert-windows/pipeline.go`](../internal/convert-windows/pipeline.go) |
+| Linux | [`pkg/convert-linux/distro/`](../pkg/convert-linux/distro/) | First matching `DistroHandler.Matches` | [`pkg/cmd/convert-linux/pipeline.go`](../pkg/cmd/convert-linux/pipeline.go) |
+| Windows | [`pkg/convert-windows/version/`](../pkg/convert-windows/version/) | First matching handler in registration order | [`pkg/cmd/convert-windows/pipeline.go`](../pkg/cmd/convert-windows/pipeline.go) |
 
 ---
 
@@ -71,7 +71,7 @@ These drive:
 
 | Concern | Code | Behavior |
 |---------|------|----------|
-| Kernel scan | [`internal/convert-linux/pipeline.go`](../internal/convert-linux/pipeline.go) `scanKernels` | Tries `rpm` scanner first, then `deb` |
+| Kernel scan | [`pkg/cmd/convert-linux/pipeline.go`](../pkg/cmd/convert-linux/pipeline.go) `scanKernels` | Tries `rpm` scanner first, then `deb` |
 | qemu-guest-agent install | [`pkg/convert-linux/guestagent/install.go`](../pkg/convert-linux/guestagent/install.go) | Local copy + firstboot `rpm -ivh` / `dpkg -i`, or network `dnf`/`apt`/`zypper` |
 | Offline QGA package pick | [`pkg/convert-linux/guestagent/plugins/packagesource/directory/`](../pkg/convert-linux/guestagent/plugins/packagesource/directory/) | RPM: versioned `rpm/el{N}/{arch}/` (exact `el{major}` or nearest lower); DEB: flat `deb/{arch}/` |
 
@@ -170,7 +170,7 @@ collected for that handler.
 | Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` runs when `qemu-ga` is in `DriverFiles` |
 | Static IP scripts | [`staticip`](../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
 | VMware cleanup | [`vmwarecleanup`](../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../pkg/convert-windows/staticip/staticip.go) |
-| Driver registration | [`internal/convert-windows/pipeline.go`](../internal/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
+| Driver registration | [`pkg/cmd/convert-windows/pipeline.go`](../pkg/cmd/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
 | NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only) |
 
 ### Pre–Win 8 virtio-win drivers

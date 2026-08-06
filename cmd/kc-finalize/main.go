@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/yaacov/kc-utils/internal/finalize"
+	"github.com/yaacov/kc-utils/pkg/cmd/finalize"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 

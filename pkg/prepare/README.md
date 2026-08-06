@@ -36,5 +36,5 @@ blocks register implementers under `plugins/` (see each block's `plugins/README.
 | Mount | [`mount/plan.go`](mount/plan.go) | Mount ordering (nested paths first) |
 | Mount | [`mount/plugins/fstab/`](mount/plugins/fstab/) | Plan mounts from `/etc/fstab` |
 
-Orchestrator: [`internal/prepare/`](../../internal/prepare/).
+Orchestrator: [`pkg/cmd/prepare/`](../cmd/prepare/).
 Docs: [`docs/kc-prepare.md`](../../docs/kc-prepare.md).

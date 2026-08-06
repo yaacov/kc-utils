@@ -53,5 +53,5 @@ Registry access uses [`pkg/common/registry/`](../common/registry/) — pure Go r
 Supporting helper (not a pipeline block): [`staticip/`](staticip/) — PowerShell firstboot
 for preserving static IP across NIC change.
 
-Orchestrator: [`internal/convert-windows/`](../../internal/convert-windows/).
+Orchestrator: [`pkg/cmd/convert-windows/`](../cmd/convert-windows/).
 Docs: [`docs/kc-convert-windows.md`](../../docs/kc-convert-windows.md).

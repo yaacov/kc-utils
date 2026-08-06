@@ -1,7 +1,7 @@
 # kc-convert-linux — orchestrator
 
 [`pipeline.go`](pipeline.go) is a thin orchestrator for kc-convert-linux. It
-runs 16 semantic blocks in order under [`pkg/convert-linux/`](../../pkg/convert-linux/).
+runs 16 semantic blocks in order under [`pkg/convert-linux/`](../../convert-linux/).
 
 **Pluggable:** `pkg/convert-linux/<block>/plugins/` (distro, bootloader, remap, kernel,
 uefi, hypervisor, guestagent, nicnaming).
@@ -10,4 +10,4 @@ uefi, hypervisor, guestagent, nicnaming).
 
 Writes `ConverterOutput` JSON on success.
 
-Full block table: [`docs/kc-convert-linux.md`](../../docs/kc-convert-linux.md).
+Full block table: [`docs/kc-convert-linux.md`](../../../docs/kc-convert-linux.md).

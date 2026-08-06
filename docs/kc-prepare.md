@@ -7,7 +7,7 @@ Requires Linux (`//go:build linux`).
 
 ## Entry Point
 
-`cmd/kc-prepare/main.go` — orchestrator in `internal/prepare/pipeline.go`.
+`cmd/kc-prepare/main.go` — orchestrator in `pkg/cmd/prepare/pipeline.go`.
 
 ## CLI Flags
 
@@ -31,7 +31,7 @@ Root selection is configured in `PrepareInput.options.root` (not a CLI flag).
 
 ## Pipeline Blocks
 
-Order matches [`internal/prepare/pipeline.go`](../internal/prepare/pipeline.go):
+Order matches [`pkg/cmd/prepare/pipeline.go`](../pkg/cmd/prepare/pipeline.go):
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|

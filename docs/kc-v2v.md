@@ -8,15 +8,15 @@ Forklift-compatible inspection XML and HTTP API.
 ## Entry Point
 
 `cmd/kc-v2v/main.go` — bootstrap via `pkg/v2v/env/`; orchestration in
-[`internal/v2v/pipeline.go`](../internal/v2v/pipeline.go); HTTP server in
-[`internal/v2v/server/`](../internal/v2v/server/).
+[`pkg/cmd/v2v/pipeline.go`](../pkg/cmd/v2v/pipeline.go); HTTP server in
+[`pkg/cmd/v2v/server/`](../pkg/cmd/v2v/server/).
 
 ## Flow
 
 ```text
 env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → LinkCertificates / EnsureWorkdir
-  → internal/v2v.Run(cfg)
+  → v2v.Run(cfg)
       → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → DiscoverDisks
       → if V2V_guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
@@ -53,11 +53,11 @@ See [kc-finalize.md](kc-finalize.md) (`--teardown-only`).
 |---|-------|---------|-------------|
 | 1 | Config | `pkg/v2v/config/` | `V2V_*` environment variable schema |
 | 2 | Load | `pkg/v2v/env/` | Parse env/flags, link certs, create workdir |
-| 3 | Orchestrate | `internal/v2v/pipeline.go` | Copy gate, discover, subprocess pipeline, inspection, HTTP |
+| 3 | Orchestrate | `pkg/cmd/v2v/pipeline.go` | Copy gate, discover, subprocess pipeline, inspection, HTTP |
 | 4 | Copy | `kc-copy` (`pkg/copy/`) | Optional NFC disk copy subprocess |
 | 5 | Discover | `pkg/v2v/env/disks.go` | Find disks on conversion-pod PVC mounts |
 | 6 | Inspection | `pkg/v2v/inspection/xml/` | Write Forklift-compatible inspection XML |
-| 7 | HTTP | `internal/v2v/server/` | Serve `/vm`, `/inspection`, `/warnings`, `/shutdown` |
+| 7 | HTTP | `pkg/cmd/v2v/server/` | Serve `/vm`, `/inspection`, `/warnings`, `/shutdown` |
 
 Stage 4 is skipped when disks are already populated (CDI, copy-offload, EC2,
 Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under

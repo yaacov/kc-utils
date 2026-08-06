@@ -1,7 +1,7 @@
 # kc-v2v — pkg libraries
 
 Importable libraries for the v2v orchestrator ([`cmd/kc-v2v`](../../cmd/kc-v2v/main.go)).
-Orchestration lives in [`internal/v2v/`](../../internal/v2v/).
+Orchestration lives in [`pkg/cmd/v2v/`](../cmd/v2v/).
 
 | Package | Description |
 |---------|-------------|
@@ -21,7 +21,7 @@ Documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md),
 ```text
 env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → LinkCertificates / EnsureWorkdir
-  → internal/v2v.Run(cfg)
+  → v2v.Run(cfg)
       → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → env.DiscoverDisks
       → kc-prepare → kc-convert-* → kc-finalize
@@ -73,7 +73,7 @@ Full variable list: [`config/config.go`](config/config.go). User-facing table:
 ## env — config and prepare input
 
 Loads configuration, discovers attached disks, and builds `PrepareInput` for
-kc-prepare. Called by [`internal/v2v/pipeline.go`](../../internal/v2v/pipeline.go).
+kc-prepare. Called by [`pkg/cmd/v2v/pipeline.go`](../cmd/v2v/pipeline.go).
 
 ### Load and setup
 
@@ -156,7 +156,7 @@ copy requested but PVCs already populated, or `V2V_inPlace=1` with empty PVCs).
 
 ```text
 kc-v2v
-  → internal/v2v.Run
+  → v2v.Run
       → env.NeedsCopy? (!V2V_inPlace) → ResolveCopySources → ValidateCopySourceCount → kc-copy (NFC)
       → DiscoverDisks → kc-prepare → kc-convert-* → kc-finalize
 ```

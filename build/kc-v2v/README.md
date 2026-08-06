@@ -200,7 +200,7 @@ Plan **customization scripts**, **static IPs**, **LUKS**, and **feature flags** 
 ```text
 Conversion pod (blank PVCs)
   → kc-v2v
-    → internal/v2v.Run(cfg)
+    → v2v.Run(cfg)
       → env.NeedsCopy?  (!V2V_inPlace; default copy)
         → yes: NFC disk copy via govmomi
         → no:  skip (V2V_inPlace=1)

@@ -31,5 +31,5 @@ Plugins: [`customize/plugins/README.md`](customize/plugins/README.md).
 | [`fwresolve.go`](target/fwresolve.go) | BIOS vs UEFI from prepare firmware + guest layout |
 | [`busassign.go`](target/busassign.go) | Disk and NIC bus assignment for TargetMeta |
 
-Orchestrator: [`internal/finalize/`](../../internal/finalize/).
+Orchestrator: [`pkg/cmd/finalize/`](../cmd/finalize/).
 Docs: [`docs/kc-finalize.md`](../../docs/kc-finalize.md).

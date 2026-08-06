@@ -107,7 +107,7 @@ lint-install:
 ## Run golangci-lint (GOOS=linux: pkg/guest and related packages are linux-only)
 lint: $(GOLANGCI_LINT_STAMP)
 	@echo "Running golangci-lint..."
-	GOOS=linux $(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/... ./internal/...
+	GOOS=linux $(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/...
 
 $(GOLANGCI_LINT_STAMP):
 	$(MAKE) lint-install

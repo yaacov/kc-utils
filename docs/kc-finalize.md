@@ -9,7 +9,7 @@ Requires Linux (`//go:build linux`).
 
 ## Entry Point
 
-`cmd/kc-finalize/main.go` — orchestrator in `internal/finalize/pipeline.go`.
+`cmd/kc-finalize/main.go` — orchestrator in `pkg/cmd/finalize/pipeline.go`.
 
 ## CLI Flags
 
@@ -27,7 +27,7 @@ Requires Linux (`//go:build linux`).
 
 ## Pipeline Blocks
 
-Order matches [`internal/finalize/pipeline.go`](../internal/finalize/pipeline.go):
+Order matches [`pkg/cmd/finalize/pipeline.go`](../pkg/cmd/finalize/pipeline.go):
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|

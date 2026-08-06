@@ -8,7 +8,7 @@ Requires Linux (`//go:build linux`).
 
 ## Entry Point
 
-`cmd/kc-convert-windows/main.go` — orchestrator in `internal/convert-windows/pipeline.go`.
+`cmd/kc-convert-windows/main.go` — orchestrator in `pkg/cmd/convert-windows/pipeline.go`.
 
 ## CLI Flags
 
@@ -43,7 +43,7 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 | 15 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
 | 17 | Post-Convert | strict | `pkg/convert-windows/output/` | Post-convert permission fixup |
 
-Block numbers match the pipeline comments in `internal/convert-windows/pipeline.go`.
+Block numbers match the pipeline comments in `pkg/cmd/convert-windows/pipeline.go`.
 
 ## Input
 

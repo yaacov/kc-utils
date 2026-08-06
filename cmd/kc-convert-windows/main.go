@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/yaacov/kc-utils/internal/convert-windows"
+	"github.com/yaacov/kc-utils/pkg/cmd/convert-windows"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 

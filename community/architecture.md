@@ -22,7 +22,7 @@ kc-prepare → kc-convert-linux / kc-convert-windows → kc-finalize
 
 Each binary has its own:
 - `cmd/kc-*/main.go` — CLI entry point with blank imports for plugin loading
-- `internal/<stage>/pipeline.go` — thin orchestrator that wires blocks together
+- `pkg/cmd/<stage>/pipeline.go` — thin orchestrator that wires blocks together
 - `pkg/<stage>/` — block packages (the actual logic)
 - `docs/kc-<stage>.md` — CLI flags, block descriptions, and behavioral notes
 

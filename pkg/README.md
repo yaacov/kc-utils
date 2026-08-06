@@ -12,8 +12,8 @@ pluggable blocks document implementers in `<block>/plugins/README.md`.
 | **finalize** | [`finalize/`](finalize/) | All kc-finalize blocks |
 | **guest** | [`guest/`](guest/) | Privileged guest disk ops: direct (host mounts) and guestfs (libguestfs) backends behind a common `Backend` interface |
 | **copy** | [`copy/`](copy/) | NFC disk copy via govmomi: VMDK stream-to-raw conversion and vSphere export |
-| **v2v** | [`v2v/`](v2v/) | kc-v2v libraries (config, env, copy, vsphere, inspection); orchestrator in [`internal/v2v/`](../internal/v2v/) |
+| **v2v** | [`v2v/`](v2v/) | kc-v2v libraries (config, env, copy, vsphere, inspection); orchestrator in [`cmd/v2v/`](cmd/v2v/) |
 
 Path pattern: `pkg/<utility>/<semantic-name>/` with optional `plugins/` for pluggable blocks.
 
-Pipeline orchestration: [`internal/`](../internal/). User-facing docs: [`docs/`](../docs/).
+Pipeline orchestration: [`pkg/cmd/`](cmd/). User-facing docs: [`docs/`](../docs/).

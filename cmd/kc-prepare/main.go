@@ -11,7 +11,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/yaacov/kc-utils/internal/prepare"
+	"github.com/yaacov/kc-utils/pkg/cmd/prepare"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
 	"github.com/yaacov/kc-utils/pkg/common/types"

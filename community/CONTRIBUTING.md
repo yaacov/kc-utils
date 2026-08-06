@@ -20,18 +20,18 @@ kc-utils/
     convert-windows/    kc-convert-windows blocks
     finalize/           kc-finalize blocks
     v2v/                kc-v2v orchestration (config, env, copy, vsphere, inspection)
-  internal/             Thin orchestrators only
-    prepare/pipeline.go
-    convert-linux/pipeline.go
-    convert-windows/pipeline.go
-    finalize/pipeline.go
-    v2v/server/         HTTP warning server
+    cmd/                Thin orchestrators (public)
+      prepare/pipeline.go
+      convert-linux/pipeline.go
+      convert-windows/pipeline.go
+      finalize/pipeline.go
+      v2v/server/         HTTP warning server
   community/            Contributor and architecture guidance
   docs/                 Pipeline block tables per utility
   tests/                Shell-based e2e tests and fixtures
 ```
 
-See [pkg/README.md](../pkg/README.md) and [internal/README.md](../internal/README.md) for block maps.
+See [pkg/README.md](../pkg/README.md) for block maps.
 
 ## External dependencies
 

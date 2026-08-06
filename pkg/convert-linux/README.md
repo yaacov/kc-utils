@@ -62,7 +62,7 @@ config via `grub2-mkconfig` / `grub-mkconfig` when defaults change:
 4. Update module dependency metadata
 5. Recompress and write back
 
-Orchestrator: [`internal/convert-linux/`](../../internal/convert-linux/).
+Orchestrator: [`pkg/cmd/convert-linux/`](../cmd/convert-linux/).
 Docs: [`docs/kc-convert-linux.md`](../../docs/kc-convert-linux.md).
 
 Import path prefix: `github.com/yaacov/kc-utils/pkg/convert-linux/…`

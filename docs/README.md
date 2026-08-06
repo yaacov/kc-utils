@@ -182,10 +182,9 @@ via a generic `Registry[K,V]`. Implementations live under
 `pkg/<utility>/<block>/plugins/` and self-register in their `init()` functions.
 
 All pipeline blocks live under `pkg/<utility>/<block>/`. The thin
-`internal/<utility>/pipeline.go` orchestrator wires them together.
+`pkg/cmd/<utility>/pipeline.go` orchestrator wires them together.
 
-Shared helpers live under `pkg/common/`. See [pkg/README.md](../pkg/README.md) and
-[internal/README.md](../internal/README.md).
+Shared helpers live under `pkg/common/`. See [pkg/README.md](../pkg/README.md).
 
 Each binary links only the plugins it needs via blank imports in
 `cmd/<binary>/main.go`.
@@ -215,7 +214,7 @@ Each binary links only the plugins it needs via blank imports in
 |-------|-------|--------------|
 | Blocks | [pkg/README.md](../pkg/README.md) | `pkg/<utility>/<block>/` |
 | Block plugins | `<block>/plugins/README.md` | `pkg/<utility>/<block>/plugins/<impl>/` |
-| Orchestrators | [internal/README.md](../internal/README.md) | `internal/<utility>/pipeline.go` |
+| Orchestrators | [pkg/cmd/](../pkg/cmd/) | `pkg/cmd/<utility>/pipeline.go` |
 | Shared helpers | [pkg/common/README.md](../pkg/common/README.md) | `pkg/common/<semantic>/` |
 | V2V libraries | [pkg/v2v/README.md](../pkg/v2v/README.md) | `pkg/v2v/<package>/` |
 

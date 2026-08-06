@@ -8,7 +8,7 @@ Requires Linux (`//go:build linux`).
 
 ## Entry Point
 
-`cmd/kc-convert-linux/main.go` — orchestrator in `internal/convert-linux/pipeline.go`.
+`cmd/kc-convert-linux/main.go` — orchestrator in `pkg/cmd/convert-linux/pipeline.go`.
 
 ## CLI Flags
 
@@ -73,7 +73,7 @@ Debian/SUSE guests are not covered by the baked matrix; without a matching local
 | 16 | SELinux Relabel | strict | `pkg/convert-linux/selinux/` | Offline SELinux relabel via `setfiles` |
 | 17 | GuestCaps | strict | `pkg/convert-linux/guestcaps/` | Derive guest capabilities for KVM |
 
-Block numbers match the pipeline comments in `internal/convert-linux/pipeline.go`.
+Block numbers match the pipeline comments in `pkg/cmd/convert-linux/pipeline.go`.
 
 Distro handlers (`rhel`, `debian`, `suse`), package format/manager lookup, and
 offline QGA selection are documented in

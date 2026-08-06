@@ -1,7 +1,7 @@
 # kc-finalize — orchestrator
 
 [`pipeline.go`](pipeline.go) is a thin orchestrator for kc-finalize. It runs 6
-semantic blocks in order under [`pkg/finalize/`](../../pkg/finalize/).
+semantic blocks in order under [`pkg/finalize/`](../../finalize/).
 
 **Pluggable:** `pkg/finalize/<block>/plugins/` (customize).
 
@@ -11,11 +11,11 @@ Writes `TargetMeta` JSON on success.
 
 | Block | Package | Type |
 |-------|---------|------|
-| 1 customize | [`pkg/finalize/customize/`](../../pkg/finalize/customize/) | pluggable |
+| 1 customize | [`pkg/finalize/customize/`](../../finalize/customize/) | pluggable |
 | 2 fstrim | inline (`pkg/guest/`) | inline |
 | 3 teardown | inline (`pkg/guest/`) | inline |
 | 4 fschecker | inline (`pkg/guest/`) | inline |
-| 5 target | [`pkg/finalize/target/`](../../pkg/finalize/target/) | strict |
-| 6 metadata | [`pkg/finalize/metadata/`](../../pkg/finalize/metadata/) | strict |
+| 5 target | [`pkg/finalize/target/`](../../finalize/target/) | strict |
+| 6 metadata | [`pkg/finalize/metadata/`](../../finalize/metadata/) | strict |
 
-Full block table: [`docs/kc-finalize.md`](../../docs/kc-finalize.md).
+Full block table: [`docs/kc-finalize.md`](../../../docs/kc-finalize.md).

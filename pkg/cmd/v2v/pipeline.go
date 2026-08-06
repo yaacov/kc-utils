@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	v2vserver "github.com/yaacov/kc-utils/internal/v2v/server"
+	v2vserver "github.com/yaacov/kc-utils/pkg/cmd/v2v/server"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
 	"github.com/yaacov/kc-utils/pkg/prepare/guest/overlay"

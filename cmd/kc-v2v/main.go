@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	v2v "github.com/yaacov/kc-utils/internal/v2v"
+	v2v "github.com/yaacov/kc-utils/pkg/cmd/v2v"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 )

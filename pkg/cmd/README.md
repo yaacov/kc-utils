@@ -1,6 +1,6 @@
-# internal/
+# pkg/cmd/
 
-Thin orchestrators per utility. All pipeline blocks live under [`pkg/`](../pkg/).
+Thin orchestrators per utility. All pipeline blocks live under [`pkg/`](../).
 
 | Utility | README | Orchestrator |
 |---------|--------|--------------|
@@ -11,6 +11,6 @@ Thin orchestrators per utility. All pipeline blocks live under [`pkg/`](../pkg/)
 | **v2v** | [`v2v/README.md`](v2v/README.md) | [`v2v/pipeline.go`](v2v/pipeline.go), [`v2v/server/`](v2v/server/) |
 
 Importable v2v libraries (config, env, copy, vsphere, inspection):
-[`pkg/v2v/`](../pkg/v2v/README.md).
+[`pkg/v2v/`](../v2v/README.md).
 
-Block packages: [`pkg/`](../pkg/). User-facing docs: [`docs/`](../docs/).
+Block packages: [`pkg/`](../). User-facing docs: [`docs/`](../../docs/).
