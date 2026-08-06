@@ -79,8 +79,22 @@ func probeDevice(g *guest.Guest, device string, diskIndex, partIndex int, ft str
 
 	data, ok := inspect.ProbeRoot(scanHost)
 	if !ok {
+		slog.Info("root probe miss",
+			"device", device,
+			"fstype", ft,
+			"diskIndex", diskIndex,
+			"partIndex", partIndex,
+			"scanPath", scanHost,
+		)
 		return types.RootCandidate{}, false, nil
 	}
+	slog.Info("root probe hit",
+		"device", device,
+		"fstype", ft,
+		"os", data.Type,
+		"distro", data.Distro,
+		"product", inspect.ProductName(data),
+	)
 	return types.RootCandidate{
 		DevicePath:  device,
 		DiskIndex:   diskIndex,

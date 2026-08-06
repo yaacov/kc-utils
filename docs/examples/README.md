@@ -82,31 +82,18 @@ Then set `"root": "/dev/loop0p2"` (or `"first"`) and re-run `kc-prepare`. See
 must already be on the **conversion host** at paths the built-in `DriverSource`
 plugins scan.
 
-### Linux packages (Fedora / RHEL) — supported
+### Driver tree
 
-Install the `virtio-win` RPM before converting Windows guests:
-
-```bash
-sudo dnf install -y virtio-win
-```
-
-Optional repo (stable or latest builds):
-
-```bash
-wget -qO- https://fedorapeople.org/groups/virt/virtio-win/virtio-win.repo \
-  | sudo tee /etc/yum.repos.d/virtio-win.repo >/dev/null
-sudo dnf install -y virtio-win
-```
-
-The package installs into `/usr/share/virtio-win/drivers/by-os/`, which kc-utils
-reads automatically:
+The kc-v2v container image downloads virtio-win ISOs from the public
+[Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
+at build time and ships drivers under `/usr/share/virtio-win/drivers/by-os/`.
 
 | Host path | Plugin | Role |
 |-----------|--------|------|
 | `/usr/share/virtio-win/drivers/by-os` | `directory` | Match guest arch and Windows version |
 
-Install the host package before running `kc-convert-windows` locally, or use the
-kc-v2v container image (includes the tree).
+For local development without the container, extract a virtio-win ISO into that
+path or install the `virtio-win` package on Fedora/RHEL (`dnf install -y virtio-win`).
 
 ### Linux guest packages (different feature)
 

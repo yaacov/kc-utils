@@ -2,7 +2,7 @@ package driversource
 
 import "strings"
 
-// MatchOSVersion reports whether a virtio-win ISO OS directory matches the guest OS.
+// MatchOSVersion reports whether a virtio-win by-os directory matches the guest OS.
 func MatchOSVersion(dirVer, requested string) bool {
 	dirAliases := CanonicalOSVersions(dirVer)
 	reqAliases := CanonicalOSVersions(requested)

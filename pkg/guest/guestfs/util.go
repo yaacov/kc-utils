@@ -9,8 +9,27 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
+
+// guestfishBinary returns virt-guestfish when present (UBI/RHEL image
+// symlink so argv[0] satisfies the winsupport NTFS allowlist), else guestfish.
+var (
+	guestfishBinOnce sync.Once
+	guestfishBin     string
+)
+
+func guestfishBinary() string {
+	guestfishBinOnce.Do(func() {
+		if _, err := exec.LookPath("virt-guestfish"); err == nil {
+			guestfishBin = "virt-guestfish"
+			return
+		}
+		guestfishBin = "guestfish"
+	})
+	return guestfishBin
+}
 
 func quoteGuestfish(path string) string {
 	if strings.ContainsAny(path, " \t\"'") {
@@ -66,31 +85,32 @@ func runGuestfsCmd(name string, args ...string) ([]byte, error) {
 }
 
 func runGuestfishScript(args []string, script string) ([]byte, error) {
+	bin := guestfishBinary()
 	safe := prefixDash(script)
 	slog.Info("guestfs exec",
-		"bin", "guestfish",
+		"bin", bin,
 		"args", args,
 		"scriptLines", strings.Count(safe, "\n"),
 		"script", truncateLog(strings.TrimSpace(safe), 256),
 	)
 	start := time.Now()
-	cmd := exec.Command("guestfish", args...)
+	cmd := exec.Command(bin, args...)
 	cmd.Stdin = strings.NewReader(safe)
 	out, err := cmd.CombinedOutput()
 	duration := time.Since(start).Round(time.Millisecond)
 	msg := strings.TrimSpace(string(out))
 	if err != nil {
-		slog.Error("guestfs exec failed", "bin", "guestfish", "duration", duration, "error", err, "output", msg)
+		slog.Error("guestfs exec failed", "bin", bin, "duration", duration, "error", err, "output", msg)
 		if msg != "" {
 			return out, fmt.Errorf("guestfish: %w\n%s", err, msg)
 		}
 		return out, fmt.Errorf("guestfish: %w", err)
 	}
 	if errMsg := extractGuestfsError(msg); errMsg != "" {
-		slog.Error("guestfs exec failed", "bin", "guestfish", "duration", duration, "error", errMsg, "output", msg)
+		slog.Error("guestfs exec failed", "bin", bin, "duration", duration, "error", errMsg, "output", msg)
 		return out, fmt.Errorf("guestfish: %s", errMsg)
 	}
-	slog.Info("guestfs exec ok", "bin", "guestfish", "duration", duration, "outputBytes", len(out), "output", truncateLog(msg, 512))
+	slog.Info("guestfs exec ok", "bin", bin, "duration", duration, "outputBytes", len(out), "output", truncateLog(msg, 512))
 	return out, nil
 }
 
@@ -133,10 +153,60 @@ func prefixDash(script string) string {
 // but prints "libguestfs: error: ..." to stderr). Returns the first
 // error message found, or "" if none.
 func extractGuestfsError(output string) string {
+	errs := extractAllGuestfsErrors(output)
+	if len(errs) == 0 {
+		return ""
+	}
+	return errs[0]
+}
+
+// extractAllGuestfsErrors returns every libguestfs error line in output.
+func extractAllGuestfsErrors(output string) []string {
+	var errs []string
 	for _, line := range strings.Split(output, "\n") {
 		if strings.Contains(line, "libguestfs: error:") {
-			return strings.TrimSpace(line)
+			errs = append(errs, strings.TrimSpace(line))
 		}
 	}
-	return ""
+	return errs
+}
+
+// runGuestfishScriptSoft is like runGuestfishScript but does not fail when
+// '-'-prefixed commands print libguestfs errors (used by root probe, where
+// missing OS marker paths are expected). Process exit errors still fail.
+func runGuestfishScriptSoft(args []string, script string) ([]byte, error) {
+	bin := guestfishBinary()
+	safe := prefixDash(script)
+	slog.Info("guestfs exec",
+		"bin", bin,
+		"args", args,
+		"scriptLines", strings.Count(safe, "\n"),
+		"script", truncateLog(strings.TrimSpace(safe), 256),
+		"soft", true,
+	)
+	start := time.Now()
+	cmd := exec.Command(bin, args...)
+	cmd.Stdin = strings.NewReader(safe)
+	out, err := cmd.CombinedOutput()
+	duration := time.Since(start).Round(time.Millisecond)
+	msg := strings.TrimSpace(string(out))
+	if err != nil {
+		slog.Error("guestfs exec failed", "bin", bin, "duration", duration, "error", err, "output", msg, "soft", true)
+		if msg != "" {
+			return out, fmt.Errorf("guestfish: %w\n%s", err, msg)
+		}
+		return out, fmt.Errorf("guestfish: %w", err)
+	}
+	if errs := extractAllGuestfsErrors(msg); len(errs) > 0 {
+		slog.Warn("guestfs soft script reported errors",
+			"bin", bin,
+			"duration", duration,
+			"errors", len(errs),
+			"first", errs[0],
+			"output", truncateLog(msg, 1024),
+		)
+	} else {
+		slog.Info("guestfs exec ok", "bin", bin, "duration", duration, "outputBytes", len(out), "output", truncateLog(msg, 512), "soft", true)
+	}
+	return out, nil
 }

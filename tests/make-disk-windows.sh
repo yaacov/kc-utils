@@ -13,7 +13,11 @@ FIXTURES="$TESTS_DIR/fixtures"
 
 rm -f "$IMG"
 
-if ! guestfish -a /dev/null run : available "ntfs3g ntfsprogs"; then
+# Prefer virt-guestfish so RHEL's winsupport NTFS allowlist applies (argv[0]).
+GUESTFISH=guestfish
+command -v virt-guestfish >/dev/null 2>&1 && GUESTFISH=virt-guestfish
+
+if ! "$GUESTFISH" -a /dev/null run : available "ntfs3g ntfsprogs"; then
     echo "Warning: no NTFS support in libguestfs, skipping Windows image"
     exit 77
 fi
@@ -37,7 +41,7 @@ hivexregedit --merge "$tmpdir/SOFTWARE" \
     --prefix 'HKEY_LOCAL_MACHINE\SOFTWARE' \
     "$tmpdir/software-combined.reg"
 
-guestfish <<EOF
+"$GUESTFISH" <<EOF
 disk-create $IMG raw 512M
 add $IMG
 run

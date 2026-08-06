@@ -45,7 +45,7 @@ Hypervisor plugins (VMware, EC2, Nutanix, AWS PV, …):
 VirtIO drivers are read from the **conversion host** pre-extracted tree at
 `/usr/share/virtio-win/drivers/by-os/`. See
 [`driversource/plugins/README.md`](driversource/plugins/README.md) for paths and
-Fedora/RHEL `virtio-win` RPM layout.
+driver tree population.
 
 Registry access uses [`pkg/common/registry/`](../common/registry/) — pure Go read,
 `hivexregedit` for writes.

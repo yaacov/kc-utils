@@ -4,6 +4,7 @@ package guestfs
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -147,6 +148,17 @@ func TestExtractGuestfsError(t *testing.T) {
 				t.Errorf("extractGuestfsError(%q) = %q, want %q", tc.output, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestExtractAllGuestfsErrors(t *testing.T) {
+	out := "ok\nlibguestfs: error: mount: /dev/sda1: failed\nlibguestfs: error: copy_out: missing\n"
+	got := extractAllGuestfsErrors(out)
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2: %v", len(got), got)
+	}
+	if !strings.Contains(got[0], "mount:") || !strings.Contains(got[1], "copy_out:") {
+		t.Fatalf("unexpected: %v", got)
 	}
 }
 

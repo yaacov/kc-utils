@@ -3,6 +3,7 @@
 package guestfs
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -139,7 +141,7 @@ func (l *SharedListener) Close() error {
 	pid := l.PID
 	l.PID = 0
 	slog.Info("guestfish shared listener exit", "pid", pid)
-	_, err := runGuestfsCmd("guestfish", fmt.Sprintf("--remote=%d", pid), "--", "exit")
+	_, err := runGuestfsCmd(guestfishBinary(), fmt.Sprintf("--remote=%d", pid), "--", "exit")
 	if err != nil {
 		_ = syscall.Kill(pid, syscall.SIGTERM)
 	}
@@ -191,14 +193,23 @@ func envGuestfishPID() (int, bool) {
 const guestfishListenTimeout = 30 * time.Second
 
 func startGuestfishListen() (int, error) {
-	cmd := exec.Command("guestfish", "--listen")
+	bin := guestfishBinary()
+	cmd := exec.Command(bin, "--listen")
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return 0, fmt.Errorf("guestfish --listen stdout pipe: %w", err)
 	}
-	var stderrBuf bytes.Buffer
-	cmd.Stderr = &stderrBuf
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return 0, fmt.Errorf("guestfish --listen stderr pipe: %w", err)
+	}
 
+	// Drain stderr into a rolling buffer for startup failure messages.
+	var stderrMu sync.Mutex
+	var stderrBuf bytes.Buffer
+	go drainGuestfishListenStderr(stderr, &stderrMu, &stderrBuf)
+
+	slog.Info("guestfish listen starting", "bin", bin)
 	if err := cmd.Start(); err != nil {
 		return 0, fmt.Errorf("guestfish --listen start: %w", err)
 	}
@@ -217,6 +228,12 @@ func startGuestfishListen() (int, error) {
 		}
 	}()
 
+	stderrSnapshot := func() string {
+		stderrMu.Lock()
+		defer stderrMu.Unlock()
+		return strings.TrimSpace(stderrBuf.String())
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), guestfishListenTimeout)
 	defer cancel()
 
@@ -224,14 +241,14 @@ func startGuestfishListen() (int, error) {
 	select {
 	case <-ctx.Done():
 		_ = cmd.Process.Kill()
-		msg := strings.TrimSpace(stderrBuf.String())
+		msg := stderrSnapshot()
 		if msg != "" {
 			return 0, fmt.Errorf("guestfish --listen: timed out waiting for GUESTFISH_PID after %s\n%s", guestfishListenTimeout, msg)
 		}
 		return 0, fmt.Errorf("guestfish --listen: timed out waiting for GUESTFISH_PID after %s", guestfishListenTimeout)
 	case err := <-errCh:
 		_ = cmd.Process.Kill()
-		msg := strings.TrimSpace(stderrBuf.String())
+		msg := stderrSnapshot()
 		if msg != "" {
 			return 0, fmt.Errorf("guestfish --listen: %w\n%s", err, msg)
 		}
@@ -242,18 +259,39 @@ func startGuestfishListen() (int, error) {
 	deadline := time.Now().Add(5 * time.Second)
 	for {
 		if sessionAlive(pid) {
-			slog.Info("guestfish listen socket ready", "pid", pid, "socket", guestfishSocketPath(pid))
+			slog.Info("guestfish listen socket ready", "pid", pid, "socket", guestfishSocketPath(pid), "bin", bin)
 			return pid, nil
 		}
 		if time.Now().After(deadline) {
 			_ = syscall.Kill(pid, syscall.SIGTERM)
-			msg := strings.TrimSpace(stderrBuf.String())
+			msg := stderrSnapshot()
 			if msg != "" {
 				return 0, fmt.Errorf("guestfish --listen: PID %d socket not ready at %s\n%s", pid, guestfishSocketPath(pid), msg)
 			}
 			return 0, fmt.Errorf("guestfish --listen: PID %d socket not ready at %s", pid, guestfishSocketPath(pid))
 		}
 		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+// drainGuestfishListenStderr keeps a rolling buffer for startup error messages.
+func drainGuestfishListenStderr(r io.Reader, mu *sync.Mutex, buf *bytes.Buffer) {
+	sc := bufio.NewScanner(r)
+	sc.Buffer(make([]byte, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if mu == nil || buf == nil {
+			continue
+		}
+		mu.Lock()
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+		if buf.Len() > 64*1024 {
+			b := buf.Bytes()
+			buf.Reset()
+			buf.Write(b[len(b)-32*1024:])
+		}
+		mu.Unlock()
 	}
 }
 
@@ -415,7 +453,7 @@ func (s *guestfishSession) remote(args ...string) ([]byte, error) {
 	all := make([]string, 0, 2+len(args))
 	all = append(all, s.remoteFlag(), "--")
 	all = append(all, args...)
-	return runGuestfsCmd("guestfish", all...)
+	return runGuestfsCmd(guestfishBinary(), all...)
 }
 
 func (s *guestfishSession) remoteScript(script string) ([]byte, error) {
@@ -423,6 +461,15 @@ func (s *guestfishSession) remoteScript(script string) ([]byte, error) {
 		return nil, err
 	}
 	return runGuestfishScript([]string{s.remoteFlag()}, script)
+}
+
+// remoteScriptSoft runs a guestfish script without failing on libguestfs
+// error lines from '-'-prefixed commands (listener stays alive either way).
+func (s *guestfishSession) remoteScriptSoft(script string) ([]byte, error) {
+	if err := s.checkAlive(); err != nil {
+		return nil, err
+	}
+	return runGuestfishScriptSoft([]string{s.remoteFlag()}, script)
 }
 
 // checkAlive returns an error if the guestfish session process is no longer
@@ -468,6 +515,6 @@ func (s *guestfishSession) close() error {
 	s.pid = 0
 	s.launched = false
 	slog.Info("guestfish local listener exit", "pid", pid)
-	_, err := runGuestfsCmd("guestfish", fmt.Sprintf("--remote=%d", pid), "--", "exit")
+	_, err := runGuestfsCmd(guestfishBinary(), fmt.Sprintf("--remote=%d", pid), "--", "exit")
 	return err
 }

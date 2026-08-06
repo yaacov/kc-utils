@@ -13,18 +13,18 @@ Conversion uses the **directory** source only (`CollectDrivers`).
 
 | Key | Package | Default path | Description |
 |-----|---------|--------------|-------------|
-| `directory` | directory/ | `/usr/share/virtio-win/drivers/by-os` | Read pre-extracted RPM driver tree. Filter by guest arch and Windows version |
+| `directory` | directory/ | `/usr/share/virtio-win/drivers/by-os` | Read pre-extracted driver tree. Filter by guest arch and Windows version |
 
-## Linux distro packages
+## Driver tree population
 
-```bash
-sudo dnf install -y virtio-win
-```
+The kc-v2v container image downloads virtio-win ISOs from the public
+[Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
+at build time (see [`build/kc-v2v/download-virtio-win.sh`](../../../../build/kc-v2v/download-virtio-win.sh)).
+Drivers are extracted under `/usr/share/virtio-win/drivers/by-os/` and qemu-ga
+MSIs under `/usr/share/virtio-win/guest-agent/`.
 
-The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`
-and qemu-ga MSIs under `/usr/share/virtio-win/guest-agent/`.
-
-The kc-v2v container image ships this tree directly (no ISO).
+For local development, install the `virtio-win` package on Fedora/RHEL or
+extract a virtio-win ISO into the same path.
 
 [`CollectDrivers`](../../collect.go) reads guest-agent MSIs from the directory
 plugin, then omits `qemu-ga` entries when

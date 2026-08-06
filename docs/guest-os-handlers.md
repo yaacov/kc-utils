@@ -128,9 +128,9 @@ Columns describe what the handler returns; pipeline and firstboot plugins
 consume these flags.
 
 **Virtio-win OS dir** — expected `by-os/<arch>/<dir>/` under
-`/usr/share/virtio-win/drivers/`. Dirs marked **†** are not in the default
-1.9.40 RPM; conversion fails unless the kc-v2v image was built with legacy
-vendor staging ([`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md)).
+`/usr/share/virtio-win/drivers/`. Dirs marked **†** come from the legacy ISO
+(virtio-win 0.1.160) downloaded at image build time by
+[`build/kc-v2v/download-virtio-win.sh`](../build/kc-v2v/download-virtio-win.sh).
 
 **QEMU-GA** — whether qemu-ga is collected and installed. Handlers
 `win2008`, `winvista`, `win2003`, and `winxp` omit GA MSIs during
@@ -176,27 +176,20 @@ collected for that handler.
 ### Pre–Win 8 virtio-win drivers
 
 Server 2003, XP, and Vista need SHA-1-era drivers that are not in the modern
-virtio-win 1.9.40 tree. **Server 2008** prefers `2k8` but falls back to
-`2k8R2` when only the modern RPM is staged (same behavior as virtio-win 1.9.40
-images without legacy vendor merge). The kc-v2v image build **best-effort**
-stages each missing by-os directory when a vendor artifact is present (like
-`rpm/el8`, `el9`, `el10` for Linux QGA). **Image build succeeds without
-legacy vendor files**; XP/2003/Vista conversion fails at runtime with a hint.
+virtio-win 0.1.285 tree. **Server 2008** prefers `2k8` but falls back to
+`2k8R2` when only the modern ISO is present. The kc-v2v image build downloads
+a legacy ISO (virtio-win **0.1.160** from the public
+[Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/))
+and stages the missing pre–Win 8 dirs automatically.
 
-There is no open/free public source for legacy `2k8`/`2k3`/`xp`/`vista` dirs —
-public el8+ virtio-win RPMs strip them at build time. The known-good artifact is
-virtio-win **1.9.12-4.el7** (RHEL supplementary; entitlement required).
-
-- Script: [`build/kc-v2v/stage-windows-virtio-drivers.sh`](../build/kc-v2v/stage-windows-virtio-drivers.sh)
-- Optional vendor prep: [`prepare-windows-virtio-drivers.sh`](../build/kc-v2v/prepare-windows-virtio-drivers.sh) — see [`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md)
+- Script: [`build/kc-v2v/download-virtio-win.sh`](../build/kc-v2v/download-virtio-win.sh)
 - Dirs staged per arch: `2k8`, `2k3`, `xp`, `vista`
 
 At runtime, each version handler uses `DriverOSPreferences()` for its primary
 by-os dir. `win2008` alone may use `DriverOSFallbacks()` (`2k8R2`) when `2k8`
 is missing. Other pre–Win 8 handlers with no fallback produce an error naming
-the handler, required dir, and vendor README hint. There is no virtio-win ISO
-or `VIRTIO_WIN` env path — lookup is directory-only under
-`/usr/share/virtio-win/drivers/by-os/`.
+the handler and required dir. There is no `VIRTIO_WIN` env path — lookup is
+directory-only under `/usr/share/virtio-win/drivers/by-os/`.
 
 ### Adding a Windows version handler
 
@@ -221,4 +214,4 @@ or `VIRTIO_WIN` env path — lookup is directory-only under
 
 - [kc-convert-linux.md](kc-convert-linux.md) — full Linux pipeline blocks
 - [kc-convert-windows.md](kc-convert-windows.md) — full Windows pipeline blocks
-- [build/kc-v2v/README.md](../build/kc-v2v/README.md) — image-staged guest packages and archived virtio-win dirs
+- [build/kc-v2v/README.md](../build/kc-v2v/README.md) — image-staged guest packages and virtio-win ISO downloads

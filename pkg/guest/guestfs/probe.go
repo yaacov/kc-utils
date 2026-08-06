@@ -45,7 +45,7 @@ func (b *Backend) ProbeMount(device, _ string, hostMountPoint string) error {
 	}
 	script.WriteString("-umount-all\n")
 
-	if _, err := b.session.remoteScript(script.String()); err != nil {
+	if _, err := b.session.remoteScriptSoft(script.String()); err != nil {
 		return err
 	}
 

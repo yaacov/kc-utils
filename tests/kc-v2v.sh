@@ -72,7 +72,10 @@ if $USE_GUESTFS; then
     GUESTFS_FLAG="--guestfs"
     export LIBGUESTFS_BACKEND=direct
     # Mirror Go kc-v2v: one shared guestfish --listen for prepare/convert/finalize.
-    eval "$(guestfish --listen)"
+    # Prefer virt-guestfish so RHEL NTFS mounts are allowlisted (argv[0]).
+    gf=guestfish
+    command -v virt-guestfish >/dev/null 2>&1 && gf=virt-guestfish
+    eval "$("$gf" --listen)"
     export KC_GUESTFISH_PID="$GUESTFISH_PID"
     GUESTFISH_OWNED=true
     sock="/tmp/.guestfish-$(id -u)/socket-$GUESTFISH_PID"

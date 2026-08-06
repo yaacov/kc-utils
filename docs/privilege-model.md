@@ -80,18 +80,19 @@ called the "appliance."
    a virtio-serial channel. It accepts RPC commands from the host-side library
    and executes them as the appliance VM's own root.
 
-4. **Host-side API.** kc-utils drives the appliance with `guestfish` (CLI).
-   Each command — mount, download/upload, fsck, fstrim, etc. — is sent to
-   `guestfsd` over virtio-serial and run inside the VM.
+4. **Host-side API.** kc-utils drives the appliance with `guestfish` (CLI),
+   preferring `virt-guestfish` when present (see [NTFS on RHEL/UBI](#ntfs-mounts-on-rhelcentosubi)
+   below). Each command — mount, download/upload, fsck, fstrim, etc. — is sent
+   to `guestfsd` over virtio-serial and run inside the VM.
 
 ```
 kc-v2v / kc-prepare / kc-finalize (unprivileged)
-  └── guestfish (--listen / --remote)
+  └── virt-guestfish (--listen / --remote)   # or guestfish when no symlink
         └── QEMU (appliance VM, LIBGUESTFS_BACKEND=direct)
               ├── Linux kernel (appliance's own)
               ├── guestfsd (root inside VM)
               │     mount, LVM, LUKS, fsck, fstrim ...
-              └── virtio-serial ←→ guestfish (RPC)
+              └── virtio-serial ←→ guestfish RPC
 ```
 
 Because mount, LVM, and LUKS operations happen inside the appliance VM, the
@@ -150,3 +151,41 @@ real host path (for example hivex on Windows registry hives) use
 `Guest.Checkout` / `Checkin` to download a single file to a temp path and
 upload it back. `guestmount` (FUSE) is not used. `Guest.Sync()` is a no-op —
 writes already hit the appliance-mounted filesystems.
+
+### NTFS mounts on RHEL/CentOS/UBI
+
+**Symptom.** With `libguestfs-winsupport` installed, mounting an NTFS volume
+via guestfish still fails:
+
+```text
+libguestfs: error: mount: unsupported filesystem type
+```
+
+Root probe then finds no Windows hives and prepare exits with
+`no root device found in guest`.
+
+**Cause.** RHEL/CentOS (and UBI images that use those libguestfs builds) ship
+a distro patch (RHBZ#1240276; also described in the
+[libguestfs FAQ](https://libguestfs.org/guestfs-faq.1.html)) that allowlists
+NTFS `mount` / `mount_ro` / `mount_options` / `mount_vfs` only when the
+libguestfs handle’s program name starts with `virt-`. That was intended for
+`virt-v2v` / `virt-p2v`. Plain `guestfish` sets the program from `argv[0]` to
+`guestfish`, so NTFS mounts are rejected even though winsupport bits are in
+the appliance.
+
+**Distro difference.** Fedora and Debian libguestfs do **not** apply this
+restriction; plain `guestfish` can mount NTFS there.
+
+**Workaround in kc-utils.** The `kc-v2v` image installs a symlink:
+
+```text
+/usr/bin/virt-guestfish → guestfish
+```
+
+`pkg/guest/guestfs` prefers that binary via `guestfishBinary()` for
+`--listen`, `--remote`, and scripts, so `argv[0]` is `virt-guestfish` and the
+allowlist accepts NTFS mounts. No `set-program` call is required when every
+process is started as `virt-guestfish`.
+
+**Check.** `make test-kc-v2v-image` asserts the symlink (and, with `/dev/kvm`
+and `REQUIRE_GUESTFS=1`, a real NTFS create/mount).

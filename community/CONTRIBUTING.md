@@ -51,7 +51,7 @@ These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 | `lsblk` | util-linux | Partition layout inspection |
 | `lvm`, `vgscan`, `pvscan`, `lvscan` | lvm2 | LVM volume activation |
 | `cryptsetup` | cryptsetup | LUKS partition decryption |
-| `virtio-win` | virtio-win | Windows VirtIO drivers on conversion host (see below) |
+| `virtio-win` | virtio-win (or ISO extract) | Windows VirtIO drivers on conversion host (see below) |
 
 ### Optional
 
@@ -60,12 +60,16 @@ These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 | `clevis` | clevis | Tang/TPM-bound LUKS unlock |
 | `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs mode (`--guestfs` / `V2V_guestfs=true`) |
 
-For Windows conversions, also install VirtIO-Win drivers on the host (RPM places
-files under `/usr/share/virtio-win/` for `kc-convert-windows`):
+For Windows conversions, populate the VirtIO-Win driver tree on the host at
+`/usr/share/virtio-win/` for `kc-convert-windows`. On Fedora/RHEL:
 
 ```bash
 sudo dnf install -y virtio-win
 ```
+
+Or extract a virtio-win ISO from the
+[Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
+into that path. The kc-v2v container image does this automatically at build time.
 
 Linux conversions take virtio modules from the guest kernel; no host VirtIO
 package is required. For offline qemu-guest-agent install on RHEL-family guests,
@@ -142,7 +146,7 @@ not fail the target; only real failures do. Logs for a run are in
 offline. No root, real disks, or libguestfs required.
 
 **Windows tests** build registry hives with `hivexregedit`, stage a fake
-virtio-win ISO under `/usr/share/virtio-win`, then run `kc-convert-windows`.
+virtio-win driver tree under `/usr/share/virtio-win`, then run `kc-convert-windows`.
 Install deps from [Dev dependencies](#dev-dependencies) and run as root:
 
 ```bash

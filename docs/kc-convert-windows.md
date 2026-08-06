@@ -28,7 +28,7 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|
 | 1 | Version | pluggable: `VersionHandler` | `pkg/convert-windows/version/` | Classify Windows era (win2008, win10, …) |
-| 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted RPM tree |
+| 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted driver tree |
 | 2b | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
 | 3 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
 | 4 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
@@ -51,20 +51,13 @@ Block numbers match the pipeline comments in `internal/convert-windows/pipeline.
 - Mounted guest filesystem at `--mount-root`
 
 VirtIO drivers are read from the **conversion host**, not from JSON or CLI flags.
-Install the Linux `virtio-win` package before running the converter locally.
+The kc-v2v container image ships these drivers under
+`/usr/share/virtio-win/drivers/by-os/`, downloaded from public
+[Fedora People ISOs](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
+at image build time (modern 0.1.285 + legacy 0.1.160 for pre–Win 8 guests).
 
-### Linux packages (Fedora / RHEL) — supported
-
-```bash
-sudo dnf install -y virtio-win
-```
-
-The `virtio-win` RPM installs drivers under `/usr/share/virtio-win/drivers/by-os/`.
-The kc-v2v container image ships this tree directly. The image build also
-**best-effort** stages per-version virtio-win **1.9.12**-era OS directories
-(`2k8`, `2k3`, `xp`, `vista`) when a vendor artifact is present — see
-[`build/kc-v2v/vendor/README.md`](../build/kc-v2v/vendor/README.md). Without
-it, pre–Win 8 conversion fails at runtime with a clear error.
+For local development without the container, extract a virtio-win ISO into that
+path or install the `virtio-win` package on Fedora/RHEL.
 
 | Plugin | Path | Notes |
 |--------|------|-------|
@@ -80,15 +73,8 @@ See [guest-os-handlers.md](guest-os-handlers.md) for the full handler matrix,
 code locations, and archived driver merge details. Summary tables also appear
 below under **Driver source** and **Firstboot scripts**.
 
-Optional upstream repo:
-
-```bash
-wget -qO- https://fedorapeople.org/groups/virt/virtio-win/virtio-win.repo \
-  | sudo tee /etc/yum.repos.d/virtio-win.repo >/dev/null
-```
-
-There is no JSON field for driver location — install the host package before
-conversion (or use the kc-v2v image, which includes it).
+There is no JSON field for driver location — use the kc-v2v image (which
+includes drivers) or populate the host tree before conversion.
 
 See [pkg/convert-windows/driversource/plugins/README.md](../pkg/convert-windows/driversource/plugins/README.md) for
 plugin details. Linux guest offline packages (`qemu-guest-agent` RPM/DEB) are a

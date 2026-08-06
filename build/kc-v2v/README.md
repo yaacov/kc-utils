@@ -16,23 +16,22 @@ See [pkg/v2v/README.md](../../pkg/v2v/README.md) for copy selection logic, vsphe
 
 ```bash
 make build-kc-v2v-image
+make test-kc-v2v-image                 # RPMs + winsupport; FS mounts if /dev/kvm
+REQUIRE_GUESTFS=1 make test-kc-v2v-image  # require kvm + ext4/xfs/btrfs/ntfs mounts
 ```
 
-Pre–Win 8 Windows driver dirs (`2k8`, `2k3`, `xp`, `vista`) are staged
-**best-effort** when a virtio-win 1.9.12-4.el7 RPM or ISO is present under
-[`vendor/`](vendor/README.md). Image build succeeds without them; those guests
-fail at conversion time with a clear error.
+VirtIO-Win drivers (modern + legacy pre–Win 8) are downloaded from the public
+[Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
+during image build. No manual staging required.
 
-Optional — stage legacy drivers before building:
+Override ISO URLs at build time for version bumps or mirrors:
 
 ```bash
-make prepare-windows-virtio-drivers   # copy virtio-win 1.9.12 RPM/ISO into vendor/
-make build-kc-v2v-image
+podman build \
+  --build-arg VIRTIO_WIN_MODERN_URL=https://example.com/virtio-win-0.1.285.iso \
+  --build-arg VIRTIO_WIN_LEGACY_URL=https://example.com/virtio-win-0.1.160.iso \
+  -f build/kc-v2v/Containerfile .
 ```
-
-Per-version dirs are merged individually like `rpm/el8`, `el9`, `el10`.
-See [`vendor/README.md`](vendor/README.md) for sourcing (no open/free public
-mirror — RHEL el7 artifact or Forklift downstream image extract).
 
 Or build binaries only:
 
@@ -47,25 +46,21 @@ Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`per
 
 | Path | Source | Purpose |
 |------|--------|---------|
-| `/usr/share/virtio-win/drivers/by-os/` | `virtio-win` RPM (CentOS Stream Koji pin) + best-effort [`stage-windows-virtio-drivers.sh`](stage-windows-virtio-drivers.sh) | Windows VirtIO drivers (modern tree; optional per-version `2k8`/`2k3`/`xp`/`vista` when vendor artifact present) |
-| `/usr/share/virtio-win/guest-agent/` | same RPM | qemu-ga MSIs |
+| `/usr/share/virtio-win/drivers/by-os/` | [`download-virtio-win.sh`](download-virtio-win.sh) — modern ISO (0.1.285) + legacy ISO (0.1.160) | Windows VirtIO drivers (all versions including pre–Win 8) |
+| `/usr/share/virtio-win/guest-agent/` | same script (modern ISO) | qemu-ga MSIs |
 | `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` | [`stage-linux-packages.sh`](stage-linux-packages.sh) | Offline Linux `qemu-guest-agent` for RHEL-family guests |
 
 `kc-v2v` passes `--offline` to converters when `V2V_offline=true`, so airgapped pods use these paths (no guest network install for QGA when a local RPM matches).
 
 ### Pre–Win 8 virtio-win OS dirs
 
-Build stage [`stage-windows-virtio-drivers.sh`](stage-windows-virtio-drivers.sh)
-**best-effort** stages each missing by-os directory from virtio-win
-**1.9.12-4.el7** when present in [`vendor/`](vendor/README.md) (via optional
-[`prepare-windows-virtio-drivers.sh`](prepare-windows-virtio-drivers.sh)).
-Without a vendor artifact, the image builds with virtio-win 1.9.40 only and
-pre–Win 8 conversion fails at runtime with a documented error.
+Build stage [`download-virtio-win.sh`](download-virtio-win.sh) downloads a
+legacy ISO (virtio-win **0.1.160**) and extracts pre–Win 8 by-os dirs
+(`2k8`, `2k3`, `xp`, `vista`) that are missing from the modern ISO.
 
-Existing modern dirs are never overwritten. Each version handler maps to a
-primary by-os dir via `DriverOSPreferences()`. There is no arbitrary
-cross-version fallback — except **`win2008`**, which uses `2k8R2` when `2k8`
-is absent (modern virtio-win 1.9.40 RPMs ship `2k8R2` only).
+Each version handler maps to a primary by-os dir via `DriverOSPreferences()`.
+There is no arbitrary cross-version fallback — except **`win2008`**, which
+uses `2k8R2` when `2k8` is absent.
 
 | Version handler | by-os dir |
 |-----------------|-----------|
@@ -78,7 +73,15 @@ is absent (modern virtio-win 1.9.40 RPMs ship `2k8R2` only).
 | `win10` | `w10` |
 | `win11` | `w11` |
 
-No `VIRTIO_WIN` ISO path is used — directory-only driver lookup.
+No `VIRTIO_WIN` env path is used at runtime — directory-only driver lookup.
+
+### Configurable download URLs
+
+| Build ARG / Env var | Default | Purpose |
+|---------------------|---------|---------|
+| `VIRTIO_WIN_MODERN_URL` | `https://fedorapeople.org/.../virtio-win-0.1.285-1/virtio-win-0.1.285.iso` | Modern drivers (Win7+, 2008R2+) |
+| `VIRTIO_WIN_LEGACY_URL` | `https://fedorapeople.org/.../virtio-win-0.1.160-1/virtio-win-0.1.160.iso` | Legacy drivers (2k8, 2k3, xp, vista) |
+| `VIRTIO_WIN_SKIP_DOWNLOAD` | `0` | Set to `1` to skip download (pre-populated tree) |
 
 No VDDK sidecar or external libraries are needed — disk copy is pure Go.
 
@@ -247,6 +250,11 @@ file I/O, trim, and fsck reuse the same QEMU. Guest filesystems stay mounted
 inside the appliance; stages read and write via guestfish RPC (`Checkout` for
 tools that need a host path, e.g. hivex). Set `V2V_guestfs=false` for privileged
 host mounts.
+
+On RHEL/CentOS/UBI, libguestfs only allows NTFS mounts when the program name
+starts with `virt-`. This image ships `/usr/bin/virt-guestfish` → `guestfish`
+and kc-utils prefers that binary so Windows guests work. Details:
+[docs/privilege-model.md](../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 See also existing `V2V_*` flags in [`pkg/v2v/config/config.go`](../../pkg/v2v/config/config.go).
 

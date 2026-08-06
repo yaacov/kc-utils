@@ -12,7 +12,7 @@ Suitable for unprivileged pods with /dev/kvm access.
 | `NewMounted()` | Attaches to a running guestfish session (convert/finalize re-attach) |
 | `TeardownMountRoot()` | Best-effort orphan cleanup for guestfs mode |
 | `SharedListener` | Long-lived guestfish session shared across pipeline stages |
-| `StartSharedListener()` | Launches `guestfish --listen` and returns a `SharedListener` |
+| `StartSharedListener()` | Launches `virt-guestfish --listen` when present (else `guestfish`) |
 | `EnvGuestfishPID` | Environment variable name for the guestfish PID |
 | `EnvKCGuestfishPID` | Environment variable name for kc-managed guestfish PID |
 
@@ -25,8 +25,11 @@ session.go      — guestfish --listen session management, SharedListener
 discover.go     — Partition and LVM discovery via guestfish
 probe.go        — Filesystem probe mount/unmount
 mount_specs.go  — Mount spec recording for session re-attach
-util.go         — quoteGuestfish, runGuestfsCmd, runGuestfishScript, pathError
+util.go         — guestfishBinary, quoteGuestfish, runGuestfsCmd, scripts
 ```
+
+On RHEL/UBI, invoke via `virt-guestfish` (image symlink) so NTFS mounts pass
+the winsupport allowlist — see [docs/privilege-model.md](../../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 Import path: `github.com/yaacov/kc-utils/pkg/guest/guestfs`
 

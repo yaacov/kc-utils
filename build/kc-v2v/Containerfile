@@ -9,11 +9,12 @@
 # Disk copy uses govmomi NFC export (pure Go, no VDDK required).
 #
 # Guest conversion assets (Forklift virt-v2v parity + kc offline Linux QGA):
-#   - virtio-win RPM → /usr/share/virtio-win/ (Windows drivers + qemu-ga MSI)
+#   - virtio-win ISOs → /usr/share/virtio-win/ (Windows drivers + qemu-ga MSI)
 #   - qemu-guest-agent RPMs → /usr/share/kc-packages/rpm/el{8,9,10}/x86_64/
 
 # ── Stage 1: Go build ────────────────────────────────────────────────
-FROM golang:1.24 AS builder
+FROM registry.access.redhat.com/ubi10/go-toolset AS builder
+USER 0
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -31,20 +32,21 @@ FROM registry.access.redhat.com/ubi10/ubi AS downloader
 COPY build/el10-repos.sh /tmp/el10-repos.sh
 RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
 
-RUN dnf install -y --setopt=install_weak_deps=False curl cpio rpm libarchive && dnf clean all
+RUN dnf install -y --setopt=install_weak_deps=False curl bsdtar && dnf clean all
 
-# virtio-win — same pin as Forklift build/virt-v2v/Containerfile-upstream-fedora
-RUN dnf install -y --setopt=install_weak_deps=False \
-        https://kojihub.stream.centos.org/kojifiles/packages/virtio-win/1.9.40/1.el9/noarch/virtio-win-1.9.40-1.el9.noarch.rpm && \
-    dnf clean all
-
-# Best-effort: stage pre–Win 8 by-os dirs (2k8, 2k3, xp, vista) when vendor/ has an RPM/ISO.
-# Optional host prep: make prepare-windows-virtio-drivers (see build/kc-v2v/vendor/README.md).
-COPY build/kc-v2v/vendor/ /tmp/virtio-win-vendor/
-COPY build/kc-v2v/stage-windows-virtio-drivers.sh /tmp/stage-windows-virtio-drivers.sh
-RUN chmod +x /tmp/stage-windows-virtio-drivers.sh && \
-    /tmp/stage-windows-virtio-drivers.sh /usr/share/virtio-win/drivers/by-os /tmp/virtio-win-vendor && \
-    rm -rf /tmp/stage-windows-virtio-drivers.sh /tmp/virtio-win-vendor
+# virtio-win drivers from public Fedora People ISOs (modern + legacy).
+# Override URLs at build time for version bumps or mirrors.
+# Place ISOs in build/kc-v2v/cache/ to avoid re-downloading on each build.
+ARG VIRTIO_WIN_MODERN_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso
+ARG VIRTIO_WIN_LEGACY_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.160-1/virtio-win-0.1.160.iso
+COPY build/kc-v2v/download-virtio-win.sh /tmp/download-virtio-win.sh
+COPY build/kc-v2v/cache/ /tmp/virtio-win-cache/
+RUN chmod +x /tmp/download-virtio-win.sh && \
+    VIRTIO_WIN_MODERN_URL="$VIRTIO_WIN_MODERN_URL" \
+    VIRTIO_WIN_LEGACY_URL="$VIRTIO_WIN_LEGACY_URL" \
+    VIRTIO_WIN_CACHE_DIR=/tmp/virtio-win-cache \
+    /tmp/download-virtio-win.sh && \
+    rm -rf /tmp/download-virtio-win.sh /tmp/virtio-win-cache
 
 # Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)
 COPY build/kc-v2v/stage-linux-packages.sh /tmp/stage-linux-packages.sh
@@ -65,8 +67,12 @@ RUN dnf install -y --setopt=install_weak_deps=False \
         fuse fuse-libs && \
     dnf clean all
 
+# RHEL/CentOS libguestfs rejects NTFS mounts unless the libguestfs program
+# name starts with "virt-" (winsupport allowlist). Symlink so argv[0] qualifies.
+# See docs/privilege-model.md.
+RUN ln -sf guestfish /usr/bin/virt-guestfish
+
 COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/
-RUN rm -f /usr/share/virtio-win/virtio-win*.iso
 COPY --from=downloader /usr/share/kc-packages/ /usr/share/kc-packages/
 
 RUN mkdir -p /usr/lib/kc-utils

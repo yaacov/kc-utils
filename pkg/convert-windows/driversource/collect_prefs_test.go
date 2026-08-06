@@ -108,7 +108,7 @@ func TestCollectDriversPreWin8MissingDirHint(t *testing.T) {
 		t.Fatal("expected error when xp dir is missing")
 	}
 	msg := err.Error()
-	for _, want := range []string{"xp", "winxp", "build/kc-v2v/vendor/README.md"} {
+	for _, want := range []string{"xp", "winxp"} {
 		if !strings.Contains(msg, want) {
 			t.Fatalf("error %q missing %q", msg, want)
 		}
