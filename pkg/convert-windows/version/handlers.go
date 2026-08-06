@@ -24,6 +24,8 @@ func (unknownHandler) DiskOnlineMode() DiskOnlineKind  { return DiskOnlineGetDis
 func (unknownHandler) VMwareCleanupMode() VMwareCleanupKind {
 	return VMwareCleanupPNP
 }
+func (unknownHandler) DriverRegistrarName() string { return "driverdb" }
+func (unknownHandler) NeedsNTFSHeadsFix() bool     { return false }
 
 var handlerUnknown VersionHandler = unknownHandler{baseHandler{name: "winunknown"}}
 
@@ -41,6 +43,8 @@ func (win11) SupportsPowerShell() bool             { return true }
 func (win11) StaticIPMode() StaticIPKind           { return StaticIPNetCmdlet }
 func (win11) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineGetDisk }
 func (win11) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupPNP }
+func (win11) DriverRegistrarName() string          { return "driverdb" }
+func (win11) NeedsNTFSHeadsFix() bool              { return false }
 
 type win10 struct{ baseHandler }
 
@@ -56,6 +60,8 @@ func (win10) SupportsPowerShell() bool             { return true }
 func (win10) StaticIPMode() StaticIPKind           { return StaticIPNetCmdlet }
 func (win10) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineGetDisk }
 func (win10) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupPNP }
+func (win10) DriverRegistrarName() string          { return "driverdb" }
+func (win10) NeedsNTFSHeadsFix() bool              { return false }
 
 type win81 struct{ baseHandler }
 
@@ -71,6 +77,8 @@ func (win81) SupportsPowerShell() bool             { return true }
 func (win81) StaticIPMode() StaticIPKind           { return StaticIPNetCmdlet }
 func (win81) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineGetDisk }
 func (win81) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupPNP }
+func (win81) DriverRegistrarName() string          { return "driverdb" }
+func (win81) NeedsNTFSHeadsFix() bool              { return false }
 
 type win8 struct{ baseHandler }
 
@@ -86,6 +94,8 @@ func (win8) SupportsPowerShell() bool             { return true }
 func (win8) StaticIPMode() StaticIPKind           { return StaticIPNetCmdlet }
 func (win8) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineGetDisk }
 func (win8) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupPNP }
+func (win8) DriverRegistrarName() string          { return "driverdb" }
+func (win8) NeedsNTFSHeadsFix() bool              { return false }
 
 type win7 struct{ baseHandler }
 
@@ -105,6 +115,8 @@ func (win7) SupportsPowerShell() bool             { return true }
 func (win7) StaticIPMode() StaticIPKind           { return StaticIPRegistry }
 func (win7) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineWMIDiskpart }
 func (win7) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (win7) DriverRegistrarName() string          { return "criticaldb" }
+func (win7) NeedsNTFSHeadsFix() bool              { return false }
 
 type win2008r2 struct{ baseHandler }
 
@@ -124,6 +136,8 @@ func (win2008r2) SupportsPowerShell() bool             { return true }
 func (win2008r2) StaticIPMode() StaticIPKind           { return StaticIPRegistry }
 func (win2008r2) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineWMIDiskpart }
 func (win2008r2) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (win2008r2) DriverRegistrarName() string          { return "criticaldb" }
+func (win2008r2) NeedsNTFSHeadsFix() bool              { return false }
 
 type win2008 struct{ baseHandler }
 
@@ -143,6 +157,8 @@ func (win2008) SupportsPowerShell() bool             { return true }
 func (win2008) StaticIPMode() StaticIPKind           { return StaticIPWMINetsh }
 func (win2008) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineSkip }
 func (win2008) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (win2008) DriverRegistrarName() string          { return "criticaldb" }
+func (win2008) NeedsNTFSHeadsFix() bool              { return false }
 
 type winvista struct{ baseHandler }
 
@@ -162,6 +178,8 @@ func (winvista) SupportsPowerShell() bool             { return true }
 func (winvista) StaticIPMode() StaticIPKind           { return StaticIPWMINetsh }
 func (winvista) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineWMIDiskpart }
 func (winvista) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (winvista) DriverRegistrarName() string          { return "criticaldb" }
+func (winvista) NeedsNTFSHeadsFix() bool              { return false }
 
 type win2003 struct{ baseHandler }
 
@@ -181,6 +199,8 @@ func (win2003) SupportsPowerShell() bool             { return false }
 func (win2003) StaticIPMode() StaticIPKind           { return StaticIPRegistry }
 func (win2003) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineWMIDiskpart }
 func (win2003) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (win2003) DriverRegistrarName() string          { return "criticaldb" }
+func (win2003) NeedsNTFSHeadsFix() bool              { return true }
 
 type winxp struct{ baseHandler }
 
@@ -200,3 +220,5 @@ func (winxp) SupportsPowerShell() bool             { return false }
 func (winxp) StaticIPMode() StaticIPKind           { return StaticIPRegistry }
 func (winxp) DiskOnlineMode() DiskOnlineKind       { return DiskOnlineSkip }
 func (winxp) VMwareCleanupMode() VMwareCleanupKind { return VMwareCleanupDevconBat }
+func (winxp) DriverRegistrarName() string          { return "criticaldb" }
+func (winxp) NeedsNTFSHeadsFix() bool              { return true }

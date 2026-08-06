@@ -92,3 +92,47 @@ func TestClassifyWin11(t *testing.T) {
 		t.Fatalf("got handler %q, want win11", h.Name())
 	}
 }
+
+func TestDriverRegistrarName(t *testing.T) {
+	tests := []struct {
+		name    string
+		inspect types.InspectData
+		want    string
+	}{
+		{"win10 uses driverdb", types.InspectData{MajorVersion: 10, ProductName: "Windows 10 Pro"}, "driverdb"},
+		{"win8 uses driverdb", types.InspectData{MajorVersion: 6, MinorVersion: 2, ProductName: "Windows 8"}, "driverdb"},
+		{"win7 uses criticaldb", types.InspectData{MajorVersion: 6, MinorVersion: 1, ProductName: "Windows 7 Professional"}, "criticaldb"},
+		{"win2008 uses criticaldb", types.InspectData{MajorVersion: 6, MinorVersion: 0, ProductName: "Windows Server 2008 Enterprise"}, "criticaldb"},
+		{"winxp uses criticaldb", types.InspectData{MajorVersion: 5, MinorVersion: 1, ProductName: "Windows XP"}, "criticaldb"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := version.Classify(&tt.inspect)
+			if got := h.DriverRegistrarName(); got != tt.want {
+				t.Fatalf("handler %q: DriverRegistrarName() = %q, want %q", h.Name(), got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNeedsNTFSHeadsFix(t *testing.T) {
+	tests := []struct {
+		name    string
+		inspect types.InspectData
+		want    bool
+	}{
+		{"win10 no fix", types.InspectData{MajorVersion: 10, ProductName: "Windows 10 Pro"}, false},
+		{"win7 no fix", types.InspectData{MajorVersion: 6, MinorVersion: 1, ProductName: "Windows 7 Professional"}, false},
+		{"winvista no fix", types.InspectData{MajorVersion: 6, MinorVersion: 0, ProductName: "Windows Vista"}, false},
+		{"win2003 needs fix", types.InspectData{MajorVersion: 5, MinorVersion: 2, ProductName: "Windows Server 2003 Standard"}, true},
+		{"winxp needs fix", types.InspectData{MajorVersion: 5, MinorVersion: 1, ProductName: "Windows XP"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := version.Classify(&tt.inspect)
+			if got := h.NeedsNTFSHeadsFix(); got != tt.want {
+				t.Fatalf("handler %q: NeedsNTFSHeadsFix() = %v, want %v", h.Name(), got, tt.want)
+			}
+		})
+	}
+}

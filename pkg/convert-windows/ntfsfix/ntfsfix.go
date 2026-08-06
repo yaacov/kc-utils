@@ -13,8 +13,8 @@ import (
 
 // Fix patches the NTFS boot sector number-of-heads field on pre-Vista Windows.
 // Thresholds match virt-v2v convert_windows.ml fix_ntfs_heads.
-func Fix(majorVersion int, disks []types.DiskInfo) {
-	if majorVersion >= 6 {
+func Fix(needsFix bool, disks []types.DiskInfo) {
+	if !needsFix {
 		return
 	}
 	if len(disks) == 0 {

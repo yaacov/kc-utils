@@ -56,6 +56,9 @@ type VersionHandler interface {
 	StaticIPMode() StaticIPKind
 	DiskOnlineMode() DiskOnlineKind
 	VMwareCleanupMode() VMwareCleanupKind
+
+	DriverRegistrarName() string
+	NeedsNTFSHeadsFix() bool
 }
 
 // Handlers is the global registry of Windows version handlers.

@@ -122,7 +122,7 @@ func Run(cfg *Config) error {
 
 	// Block 6 (pluggable): Register drivers in registry
 	slog.Debug("registering drivers")
-	registerDrivers(systemHive, ccs, copiedDriverNames, majorVersion, minorVersion, caps.Arch)
+	registerDrivers(systemHive, ccs, copiedDriverNames, versionHandler, caps.Arch)
 
 	// Block 7: Update DevicePath registry key
 	slog.Debug("updating device path")
@@ -165,7 +165,7 @@ func Run(cfg *Config) error {
 
 	// Block 13: NTFS boot sector fix
 	slog.Debug("NTFS heads fix")
-	ntfsfix.Fix(majorVersion, cfg.PrepareData.Disks)
+	ntfsfix.Fix(versionHandler.NeedsNTFSHeadsFix(), cfg.PrepareData.Disks)
 
 	// Block 14 (pluggable): UEFI BCD fixup on ESP partitions
 	slog.Debug("UEFI BCD fixup")
@@ -248,7 +248,7 @@ func openHives(g *guest.Guest, iw *types.WindowsInspect) (systemGuest, systemHos
 	return
 }
 
-func registerDrivers(systemHive registry.Hive, ccs string, copiedDriverNames []string, majorVersion, minorVersion int, arch string) {
+func registerDrivers(systemHive registry.Hive, ccs string, copiedDriverNames []string, vh version.VersionHandler, arch string) {
 	storageDrivers := []string{"viostor", "vioscsi"}
 	for _, drvName := range storageDrivers {
 		found := false
@@ -262,12 +262,7 @@ func registerDrivers(systemHive registry.Hive, ccs string, copiedDriverNames []s
 			continue
 		}
 		driverPath := fmt.Sprintf(`system32\drivers\%s.sys`, drvName)
-		var regName string
-		if majorVersion < 6 || (majorVersion == 6 && minorVersion < 2) {
-			regName = "criticaldb"
-		} else {
-			regName = "driverdb"
-		}
+		regName := vh.DriverRegistrarName()
 		registrar, regOK := drivers.Registrars.Get(regName)
 		if !regOK {
 			slog.Warn("driver registrar not found", "registrar", regName)

@@ -141,19 +141,19 @@ under `/usr/share/virtio-win/guest-agent/`; the `qemuga` firstboot contributor
 runs only when `qemu-ga` appears in `DriverFiles`. **—** means GA is not
 collected for that handler.
 
-| Handler | Virtio-win OS dir | Firstboot launcher | Static IP | Disk online | VMware cleanup | QEMU-GA |
-|---------|-------------------|--------------------|-----------|-------------|----------------|---------|
-| `win11` | `w11` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
-| `win10` | `w10` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
-| `win81` | `w8.1` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
-| `win8` | `w8` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
-| `win7` | `w7` | PS 1.0 (reg execution policy) | Registry PS | WMI + diskpart | `.bat` | yes‡ |
-| `win2008r2` | `2k8r2` | PS 1.0 | Registry PS | WMI + diskpart | `.bat` | yes‡ |
-| `win2008` | `2k8` (fallback `2k8R2`) | PS 1.0 | WMI + netsh | **skipped** | `.bat` | — |
-| `winvista` | `vista` † | PS 1.0 | WMI + netsh | WMI + diskpart | `.bat` | — |
-| `win2003` | `2k3` † | Batch only | Registry `.bat` | WMI + diskpart | `.bat` | — |
-| `winxp` | `xp` † | Batch only | Registry `.bat` | **skipped** | `.bat` | — |
-| `winunknown` | generic alias match | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | yes‡ |
+| Handler | Virtio-win OS dir | Firstboot launcher | Static IP | Disk online | VMware cleanup | Driver registrar | NTFS heads fix | QEMU-GA |
+|---------|-------------------|--------------------|-----------|-------------|----------------|------------------|----------------|---------|
+| `win11` | `w11` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
+| `win10` | `w10` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
+| `win81` | `w8.1` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
+| `win8` | `w8` | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
+| `win7` | `w7` | PS 1.0 (reg execution policy) | Registry PS | WMI + diskpart | `.bat` | `criticaldb` | no | yes‡ |
+| `win2008r2` | `2k8r2` | PS 1.0 | Registry PS | WMI + diskpart | `.bat` | `criticaldb` | no | yes‡ |
+| `win2008` | `2k8` (fallback `2k8R2`) | PS 1.0 | WMI + netsh | **skipped** | `.bat` | `criticaldb` | no | — |
+| `winvista` | `vista` † | PS 1.0 | WMI + netsh | WMI + diskpart | `.bat` | `criticaldb` | no | — |
+| `win2003` | `2k3` † | Batch only | Registry `.bat` | WMI + diskpart | `.bat` | `criticaldb` | yes | — |
+| `winxp` | `xp` † | Batch only | Registry `.bat` | **skipped** | `.bat` | `criticaldb` | yes | — |
+| `winunknown` | generic alias match | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
 
 **Launcher kinds** ([`pkg/convert-windows/firstboot/firstboot.go`](../pkg/convert-windows/firstboot/firstboot.go)):
 
@@ -170,16 +170,8 @@ collected for that handler.
 | Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` runs when `qemu-ga` is in `DriverFiles` |
 | Static IP scripts | [`staticip`](../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
 | VMware cleanup | [`vmwarecleanup`](../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../pkg/convert-windows/staticip/staticip.go) |
-
-### Version-specific logic outside the handler (NT major/minor)
-
-These paths still use raw `inspect.major_version` / `minor_version` rather than
-the classified handler:
-
-| Concern | Threshold | Code | Behavior |
-|---------|-----------|------|----------|
-| Boot-time driver registration | NT &lt; 6.2 → `criticaldb`; ≥ 6.2 → `driverdb` | [`internal/convert-windows/pipeline.go`](../internal/convert-windows/pipeline.go) `registerDrivers` | Pre-Win8 guests need CriticalDeviceDatabase entries so viostor/vioscsi load before PnP |
-| NTFS boot sector heads | NT major &lt; 6 (pre-Vista) | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../pkg/convert-windows/ntfsfix/ntfsfix.go) | Patch `$NumberOfHeads` in the NTFS boot sector for virt-v2v parity |
+| Driver registration | [`internal/convert-windows/pipeline.go`](../internal/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
+| NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only) |
 
 ### Pre–Win 8 virtio-win drivers
 
