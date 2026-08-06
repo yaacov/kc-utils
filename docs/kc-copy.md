@@ -14,7 +14,8 @@ Uses pure Go govmomi NFC export -- no VDDK, nbdkit, or nbdcopy required.
 
 `cmd/kc-copy/main.go` — minimal flags or `--input` JSON; calls `copy.Run()` directly.
 Does **not** load full `V2V_*` config or decide whether copy is needed — that
-stays in `kc-v2v` (`env.NeedsCopy`, `ValidateCopyMode`, `ResolveCopySources`).
+stays in `kc-v2v` (`env.NeedsCopy`, `ValidateCopyMode`, `ResolveCopySources`,
+`ValidateCopySourceCount`).
 
 ## CLI
 
@@ -60,9 +61,12 @@ EOF
 kc-copy --input copy-input.json
 ```
 
+`source_disks` / `--disk-path` selects which NFC lease disks to copy (required).
+
 The orchestrator (`kc-v2v`) decides whether copy is needed via `env.NeedsCopy()`
 (`!V2V_inPlace`; default copy), validates disk state with
 `env.ValidateCopyMode()`, resolves source disks via `env.ResolveCopySources()`,
+gates source count vs empty PVCs with `env.ValidateCopySourceCount()`,
 writes `copy-input.json`, and runs `kc-copy --input …` from `KC_BIN_DIR`
 (default `/usr/lib/kc-utils`). See [kc-v2v.md](kc-v2v.md).
 
@@ -73,7 +77,7 @@ writes `copy-input.json`, and runs `kc-copy --input …` from `KC_BIN_DIR`
 | `--libvirt-url` / `vcenter_url` | `V2V_libvirtURL` | (required) |
 | `--vm-name` / `vm_name` | `V2V_vmName` | (required) |
 | `--fingerprint` / `fingerprint` | `V2V_fingerprint` | (required) |
-| `--disk-path` / `source_disks` | `V2V_diskPath` | (required) |
+| `--disk-path` / `source_disks` | `V2V_diskPath` | (required) — VMDKs to select from the NFC lease |
 | `--work-dir` / `workdir` | — | `/var/tmp/v2v` |
 | `--copy-concurrency` / `copy_concurrency` | `V2V_copyConcurrency` | `4` (capped at disk count; `1` = sequential) |
 
@@ -89,14 +93,33 @@ Progress is written to `$WORKDIR/copy-progress.json` (default workdir:
 
 ## Copy Flow
 
-For each source vmdk → empty PVC target (up to `copy_concurrency` disks in parallel):
+For each selected source disk → empty PVC target (up to `copy_concurrency` disks in parallel):
 
 1. Connect to vCenter via govmomi, export VM via NFC lease
-2. Match source count to empty target count
-3. Per disk (worker pool): HTTP GET NFC URL → `StreamToRaw` VMDK-to-raw converter → direct write to target
-4. On first disk failure, cancel remaining in-flight copies
-5. For block device targets, `fsync` the device before closing
-6. Complete NFC lease
+2. Filter lease URLs to disks matching `source_disks` (normalized path; list order preserved)
+3. Require selected count equals empty target count
+4. Per disk (worker pool): HTTP GET NFC URL → `StreamToRaw` VMDK-to-raw converter → direct write to target
+5. On first disk failure, cancel remaining in-flight copies
+6. For block device targets, `fsync` the device before closing
+7. Complete NFC lease
+
+Count gates:
+
+| Stage | Gate |
+|-------|------|
+| `kc-v2v` | `len(ResolveCopySources)` == empty PVC count |
+| `kc-copy` | `len(FilterDiskURLs(...))` == empty PVC count |
+
+### Disk selection and PVC ordering
+
+1. `source_disks` lists the VMDKs to copy (from inventory / `V2V_diskPath`).
+2. NFC lease items are matched by normalized path (`disk-000001.vmdk` → `disk.vmdk`).
+3. Selected disks keep **source_disks order**; lease disks not in the list are skipped.
+4. Empty PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
+5. Pairing is `targets[i]` ← `selected[i]`.
+
+Forklift must attach PVCs in the same order as `source_disks` (same contract as
+virt-v2v). Omitting a disk from the list (e.g. a shared disk) skips copying it.
 
 ### VMDK stream-to-raw conversion
 

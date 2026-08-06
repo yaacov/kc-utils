@@ -45,7 +45,7 @@ It runs the optional copy stage when needed, then the same four-binary pipeline:
 ```text
 Conversion pod
   → kc-v2v (pkg/v2v: config, env, vsphere, inspection)
-      → env.NeedsCopy?  → ResolveCopySources → write copy-input.json → kc-copy
+      → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → DiscoverDisks
       → kc-prepare → kc-convert-* → kc-finalize
       → inspection XML + HTTP :8080
@@ -158,7 +158,7 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 
 | Step | Actor | Action |
 |------|-------|--------|
-| 0 | kc-v2v | If `env.NeedsCopy()` (`!V2V_inPlace`, default): resolve sources, write `copy-input.json`, spawn `kc-copy` |
+| 0 | kc-v2v | If `env.NeedsCopy()` (`!V2V_inPlace`, default): resolve sources, validate count vs empty PVCs, write `copy-input.json`, spawn `kc-copy` |
 | 1 | kc-v2v | Discover disks on PVC mounts, write `PrepareInput` JSON, invoke `kc-prepare` |
 | 2 | kc-v2v | Read `PrepareOutput.converter`, invoke `kc-convert-linux` or `kc-convert-windows` |
 | 3 | kc-v2v | Invoke `kc-finalize` |

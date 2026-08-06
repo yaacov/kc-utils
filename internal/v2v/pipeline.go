@@ -41,6 +41,9 @@ func Run(cfg *env.Config) error {
 			return fmt.Errorf("resolve copy sources: %w", err)
 		}
 		slog.Info("resolved copy sources", "count", len(sources), "disks", sources)
+		if err := env.ValidateCopySourceCount(sources); err != nil {
+			return fmt.Errorf("copy source count: %w", err)
+		}
 		input := env.BuildCopyInput(cfg, sources)
 		inputPath := filepath.Join(cfg.Workdir, "copy-input.json")
 		if err := types.WriteJSON(inputPath, input); err != nil {

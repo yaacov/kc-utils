@@ -1,5 +1,11 @@
-FROM registry.fedoraproject.org/fedora:latest
+FROM registry.access.redhat.com/ubi10/ubi
 
-RUN dnf install -y golang hivex perl-hivex jq make libguestfs-tools fuse fuse-libs ntfs-3g ntfsprogs && dnf clean all
+COPY build/el10-repos.sh /tmp/el10-repos.sh
+RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
+
+RUN dnf install -y --setopt=install_weak_deps=False \
+        golang hivex perl-hivex jq make guestfs-tools \
+        fuse fuse-libs ntfs-3g ntfsprogs && \
+    dnf clean all
 
 WORKDIR /workspace/kc-utils

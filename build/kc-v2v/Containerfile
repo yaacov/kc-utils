@@ -3,7 +3,8 @@
 # Three-stage build:
 #   1. builder     — compile Go binaries
 #   2. downloader  — fetch guest conversion assets (no runtime bloat in final image)
-#   3. runtime     — minimal Fedora with only the tools and files we need
+#   3. runtime     — UBI 10 with only the tools and files we need
+#                    (CentOS Stream 10 + EPEL 10 for packages outside UBI repos)
 #
 # Disk copy uses govmomi NFC export (pure Go, no VDDK required).
 #
@@ -25,7 +26,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-prep
     CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-copy ./cmd/kc-copy
 
 # ── Stage 2: download guest conversion assets ────────────────────────
-FROM registry.fedoraproject.org/fedora:41 AS downloader
+FROM registry.access.redhat.com/ubi10/ubi AS downloader
+
+COPY build/el10-repos.sh /tmp/el10-repos.sh
+RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
 
 RUN dnf install -y --setopt=install_weak_deps=False curl cpio rpm libarchive && dnf clean all
 
@@ -49,11 +53,15 @@ RUN chmod +x /tmp/stage-linux-packages.sh && \
     rm -f /tmp/stage-linux-packages.sh
 
 # ── Stage 3: runtime ─────────────────────────────────────────────────
-FROM registry.fedoraproject.org/fedora:41
+FROM registry.access.redhat.com/ubi10/ubi
+
+COPY build/el10-repos.sh /tmp/el10-repos.sh
+RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
+
 RUN dnf install -y --setopt=install_weak_deps=False \
         qemu-img cryptsetup lvm2 clevis clevis-luks \
         hivex perl-hivex ntfs-3g e2fsprogs xfsprogs btrfs-progs \
-        libguestfs libguestfs-tools-c libguestfs-xfs \
+        libguestfs guestfs-tools libguestfs-xfs libguestfs-winsupport \
         fuse fuse-libs && \
     dnf clean all
 

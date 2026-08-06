@@ -17,7 +17,7 @@ Forklift-compatible inspection XML and HTTP API.
 env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → LinkCertificates / EnsureWorkdir
   → internal/v2v.Run(cfg)
-      → env.NeedsCopy?  → ResolveCopySources → write copy-input.json → kc-copy
+      → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → DiscoverDisks
       → if V2V_guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
       → kc-prepare → kc-convert-* → kc-finalize

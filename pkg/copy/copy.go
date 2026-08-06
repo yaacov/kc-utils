@@ -21,7 +21,7 @@ type CopyInput struct {
 	VMName          string   `json:"vm_name"`
 	VMMoref         string   `json:"vm_moref,omitempty"`
 	Fingerprint     string   `json:"fingerprint"`
-	SourceDisks     []string `json:"source_disks"`
+	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
 	Workdir         string   `json:"workdir"`
 	CopyConcurrency int      `json:"copy_concurrency,omitempty"`
 }
@@ -83,19 +83,13 @@ func Run(input *CopyInput) error {
 	if len(targets) == 0 {
 		return fmt.Errorf("no empty PVC targets found")
 	}
-	if len(input.SourceDisks) != len(targets) {
-		return fmt.Errorf("disk count mismatch: %d source vmdk(s) vs %d empty target(s)", len(input.SourceDisks), len(targets))
-	}
-
-	total := len(targets)
-	concurrency := ClampConcurrency(input.CopyConcurrency, total)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	slog.Info("NFC disk copy starting",
-		"disks", total,
-		"concurrency", concurrency,
+		"source_disks", len(input.SourceDisks),
+		"empty_targets", len(targets),
 		"vm", input.VMName,
 	)
 
@@ -104,10 +98,23 @@ func Run(input *CopyInput) error {
 		return fmt.Errorf("NFC export: %w", err)
 	}
 
-	if len(lease.DiskURLs) < total {
+	selected, err := FilterDiskURLs(lease.DiskURLs, input.SourceDisks)
+	if err != nil {
 		_ = lease.Abort(ctx)
-		return fmt.Errorf("NFC lease has %d disk URL(s) but need %d", len(lease.DiskURLs), total)
+		return fmt.Errorf("filter NFC disks: %w", err)
 	}
+	if len(selected) != len(targets) {
+		_ = lease.Abort(ctx)
+		return fmt.Errorf("disk count mismatch: %d selected source disk(s) vs %d empty target(s)", len(selected), len(targets))
+	}
+
+	total := len(targets)
+	concurrency := ClampConcurrency(input.CopyConcurrency, total)
+	slog.Info("NFC disks selected",
+		"selected", total,
+		"lease", len(lease.DiskURLs),
+		"concurrency", concurrency,
+	)
 
 	httpClient := newInsecureHTTPClient()
 	progress := Progress{}
@@ -119,7 +126,7 @@ func Run(input *CopyInput) error {
 
 	for i, target := range targets {
 		i, target := i, target
-		diskURL := lease.DiskURLs[i]
+		diskURL := selected[i]
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

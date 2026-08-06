@@ -185,7 +185,7 @@ test-image: check_container_runtime
 test-image-rebuild: check_container_runtime
 	$(CONTAINER_CMD) build --no-cache -t $(TEST_IMAGE) -f tests/Containerfile .
 
-## [container] Run e2e tests in a Fedora container (all tests, incl. Windows)
+## [container] Run e2e tests in a UBI 10 container (all tests, incl. Windows)
 test-e2e-container: test-image
 	$(CONTAINER_CMD) run --rm --privileged \
 	    $(KC_UTILS_WORKSPACE_MOUNT) \

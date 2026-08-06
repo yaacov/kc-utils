@@ -141,3 +141,41 @@ func TestValidateCopyModeNoTargets(t *testing.T) {
 		t.Fatalf("expected no targets error, got %v", err)
 	}
 }
+
+func TestValidateCopySourceCountOK(t *testing.T) {
+	_, restore := setupCopyTestTargets(t, true)
+	defer restore()
+
+	if err := ValidateCopySourceCount([]string{"[ds] vm/a.vmdk"}); err != nil {
+		t.Fatalf("expected OK: %v", err)
+	}
+}
+
+func TestValidateCopySourceCountMismatch(t *testing.T) {
+	_, restore := setupCopyTestTargets(t, true)
+	defer restore()
+
+	err := ValidateCopySourceCount([]string{"[ds] vm/a.vmdk", "[ds] vm/b.vmdk"})
+	if err == nil || !strings.Contains(err.Error(), "disk count mismatch") {
+		t.Fatalf("expected count mismatch error, got %v", err)
+	}
+}
+
+func TestBuildCopyInputKeepsSourceDisks(t *testing.T) {
+	cfg := &Config{
+		LibvirtURL:      "vpx://user@vcenter/dc/host/esxi",
+		VmName:          "my-vm",
+		Fingerprint:     "aa:bb",
+		Workdir:         "/tmp/work",
+		CopyConcurrency: 2,
+		Source:          "ec2", // skip inventory lookup
+	}
+	sources := []string{"[ds] vm/a.vmdk"}
+	in := BuildCopyInput(cfg, sources)
+	if len(in.SourceDisks) != 1 || in.SourceDisks[0] != sources[0] {
+		t.Fatalf("SourceDisks = %v, want debug metadata retained", in.SourceDisks)
+	}
+	if in.VCenterURL != cfg.LibvirtURL || in.VMName != cfg.VmName {
+		t.Fatalf("unexpected input: %+v", in)
+	}
+}

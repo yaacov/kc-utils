@@ -2,6 +2,10 @@
 
 `kc-v2v` is a drop-in replacement for Forklift's `virt-v2v` image, running the kc-utils pipeline (`kc-prepare` → `kc-convert-*` → `kc-finalize`).
 
+The image is based on **UBI 10** (`registry.access.redhat.com/ubi10/ubi`), with
+CentOS Stream 10 and EPEL 10 enabled for packages outside the free UBI repos
+(see [`../el10-repos.sh`](../el10-repos.sh)).
+
 Binary documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md).
 
 When Forklift attaches **blank PVCs** (cold vSphere, `useV2vForTransfer` path), kc-v2v optionally spawns **`kc-copy`** for NFC disk copy before conversion. Disk copy uses pure Go govmomi NFC export (no VDDK required).

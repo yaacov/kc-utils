@@ -22,7 +22,7 @@ func main() {
 	libvirtURL := flag.String("libvirt-url", os.Getenv(config.EnvLibvirtURL), "vCenter URL (vpx://...)")
 	vmName := flag.String("vm-name", os.Getenv(config.EnvVmName), "VM name")
 	fingerprint := flag.String("fingerprint", os.Getenv(config.EnvFingerprint), "vCenter SSL thumbprint")
-	diskPath := flag.String("disk-path", os.Getenv(config.EnvDiskPath), "comma-separated source vmdk paths")
+	diskPath := flag.String("disk-path", os.Getenv(config.EnvDiskPath), "comma-separated source vmdk paths to copy")
 	workdir := flag.String("work-dir", config.DefaultWorkdir, "working directory")
 	copyConcurrency := flag.Int("copy-concurrency", envInt(config.EnvCopyConcurrency, kccopy.DefaultCopyConcurrency), "max parallel disk copies")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
@@ -70,12 +70,11 @@ func loadInput(inputFile, libvirtURL, vmName, fingerprint, diskPath, workdir str
 		return input, nil
 	}
 
-	sources := splitDiskPath(diskPath)
 	input := kccopy.CopyInput{
 		VCenterURL:      libvirtURL,
 		VMName:          vmName,
 		Fingerprint:     fingerprint,
-		SourceDisks:     sources,
+		SourceDisks:     splitDiskPath(diskPath),
 		Workdir:         workdir,
 		CopyConcurrency: copyConcurrency,
 	}

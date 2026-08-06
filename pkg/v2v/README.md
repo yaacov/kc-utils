@@ -22,7 +22,7 @@ Documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md),
 env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → LinkCertificates / EnsureWorkdir
   → internal/v2v.Run(cfg)
-      → env.NeedsCopy?  → ResolveCopySources → write copy-input.json → kc-copy
+      → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → env.DiscoverDisks
       → kc-prepare → kc-convert-* → kc-finalize
       → inspection/xml.WriteInspectionXML
@@ -84,7 +84,8 @@ kc-prepare. Called by [`internal/v2v/pipeline.go`](../../internal/v2v/pipeline.g
 | `EnsureWorkdir()` | `load.go` | Create `/var/tmp/v2v` |
 | `NeedsCopy()` | `copy.go` | Flag-only: `!IsInPlace` (default copy) |
 | `ValidateCopyMode()` | `copy.go` | Fail if PVC state mismatches the flag |
-| `ResolveCopySources()` | `copy.go` | Ordered vmdk paths for disk copy |
+| `ResolveCopySources()` | `copy.go` | Ordered vmdk paths (count gate + kc-copy selection list) |
+| `ValidateCopySourceCount()` | `copy.go` | Fail if source count ≠ empty PVC count |
 | `BuildCopyInput()` | `copy.go` | Build `copy.CopyInput` JSON for `kc-copy` |
 
 `Load()` calls `ValidateCopyMode()`. Copy vs skip is decided only by
@@ -139,7 +140,8 @@ standalone package. It uses pure Go govmomi NFC export (no VDDK required).
 | `NeedsCopy()` | `copy.go` | `!IsInPlace` — flag only (default copy) |
 | `ValidateCopyMode()` | `copy.go` | Heuristics must match flag or fail |
 | `ResolveCopySources()` | `copy.go` | `V2V_diskPath` or `vsphere.LoadInventory` |
-| `BuildCopyInput()` | `copy.go` | Map config + disks → `copy.CopyInput` |
+| `ValidateCopySourceCount()` | `copy.go` | Source count must equal empty PVC count |
+| `BuildCopyInput()` | `copy.go` | Map config + disks → `copy.CopyInput` (`source_disks` selects NFC streams) |
 | `IsVSphereSource()` | `copy.go` | Source type check |
 
 | `V2V_inPlace` | Behavior | Expected disk state |
@@ -155,7 +157,7 @@ copy requested but PVCs already populated, or `V2V_inPlace=1` with empty PVCs).
 ```text
 kc-v2v
   → internal/v2v.Run
-      → env.NeedsCopy? (!V2V_inPlace) → ResolveCopySources → kc-copy (NFC)
+      → env.NeedsCopy? (!V2V_inPlace) → ResolveCopySources → ValidateCopySourceCount → kc-copy (NFC)
       → DiscoverDisks → kc-prepare → kc-convert-* → kc-finalize
 ```
 
@@ -171,14 +173,18 @@ Pipeline binaries including `kc-copy` are under `KC_BIN_DIR`
 Also required for copy: `V2V_libvirtURL`, `V2V_fingerprint`, `V2V_vmName`,
 vSphere credentials at `/etc/secret/accessKeyId` and `/etc/secret/secretKey`.
 Source vmdk paths are resolved by `env.ResolveCopySources()` (govmomi inventory
-or optional `V2V_diskPath` override). Disks are copied in parallel (worker pool);
-the first failure cancels siblings.
+or optional `V2V_diskPath` override) for the count gate and as `source_disks` in
+`copy-input.json`. `kc-copy` filters the NFC lease to those paths (normalized),
+preserves list order, and maps `selected[i]` → empty PVC `targets[i]`. Disks not
+in the list are skipped. Disks are copied in parallel (worker pool); the first
+failure cancels siblings.
 
 ### Package layout (`pkg/copy/`)
 
 | File | Role |
 |---|---|
 | `copy.go` | `CopyInput`, `Run()` (parallel), progress |
+| `filter.go` | Match `source_disks` to NFC lease URLs (normalized paths) |
 | `target.go` | Discover PVC mounts, emptiness checks |
 | `vsphere.go` | NFC export via govmomi (`ExportVM`, `Lease`) |
 | `vmdk.go` | Stream-optimized VMDK reader (grain parsing, zlib) |
@@ -195,7 +201,7 @@ Queries vCenter via govmomi (no libvirt/CGO). Replaces the libvirt
 
 Used by:
 
-- `env.ResolveCopySources()` — ordered vmdk paths for disk copy (via `env` package)
+- `env.ResolveCopySources()` — ordered vmdk paths for count gate + kc-copy selection (via `env` package)
 - `env.FetchSourceMeta()` — NIC MACs, firmware, guest hostname
 
 ### Connection

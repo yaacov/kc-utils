@@ -85,7 +85,20 @@ func ResolveCopySources(cfg *Config) ([]string, error) {
 	return nil, fmt.Errorf("source disk paths required: set V2V_diskPath or vSphere credentials (V2V_libvirtURL, V2V_vmName)")
 }
 
+// ValidateCopySourceCount checks that resolved source disks match empty PVC targets.
+func ValidateCopySourceCount(sources []string) error {
+	targets, err := kccopy.EmptyTargets()
+	if err != nil {
+		return fmt.Errorf("discover empty PVC targets: %w", err)
+	}
+	if len(sources) != len(targets) {
+		return fmt.Errorf("disk count mismatch: %d source vmdk(s) vs %d empty target(s)", len(sources), len(targets))
+	}
+	return nil
+}
+
 // BuildCopyInput maps a loaded config and resolved source disks to copy input.
+// SourceDisks selects which NFC lease disks kc-copy will stream.
 func BuildCopyInput(cfg *Config, sources []string) *kccopy.CopyInput {
 	in := &kccopy.CopyInput{
 		VCenterURL:      cfg.LibvirtURL,

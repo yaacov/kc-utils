@@ -58,7 +58,7 @@ These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 | Tool | Package | Used For |
 |------|---------|----------|
 | `clevis` | clevis | Tang/TPM-bound LUKS unlock |
-| `guestfish` | libguestfs-tools | Guestfs mode (`--guestfs` / `V2V_guestfs=true`) |
+| `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs mode (`--guestfs` / `V2V_guestfs=true`) |
 
 For Windows conversions, also install VirtIO-Win drivers on the host (RPM places
 files under `/usr/share/virtio-win/` for `kc-convert-windows`):
@@ -79,13 +79,15 @@ For testing and development (`make test-e2e`, `make test-e2e-disk`, `make lint`)
 
 ```bash
 sudo dnf install -y \
-  golang make jq perl-hivex hivex libguestfs-tools ntfs-3g ntfsprogs
+  golang make jq perl-hivex hivex guestfs-tools ntfs-3g ntfsprogs
 ```
 
-(`perl-hivex` provides `hivexregedit`; `hivex` provides `hivexget`.)
+(`perl-hivex` provides `hivexregedit`; `hivex` provides `hivexget`.
+On Fedora, `libguestfs-tools` still provides `guestfish` if `guestfs-tools`
+is unavailable.)
 
 Disk-image e2e tests need a privileged container (`make test-e2e-disk`); guestfs
-disk e2e also needs `libguestfs-tools` (`make test-e2e-disk-guestfs`).
+disk e2e also needs `guestfs-tools` (`make test-e2e-disk-guestfs`).
 
 ## Build
 
@@ -116,7 +118,7 @@ make test                 # unit tests
 make lint                 # golangci-lint (auto-installs pinned golangci-lint)
 make check                # fmt + vet + lint + unit tests
 make test-e2e             # shell e2e tests (see below)
-make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
+make test-e2e-container   # e2e in a UBI 10 container (all test-e2e scripts)
 make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
@@ -154,20 +156,21 @@ only Windows e2e script that needs the `hivex` package in addition to
 **Root-selection tests** create disk images with `guestfish`, attach loop
 devices, and verify `kc-prepare` root picking. They require root, working loop
 partition nodes (`/dev/loopNp1` after `losetup --partscan`), and
-`libguestfs-tools`. If `losetup` fails (common inside nested containers or
+`guestfs-tools`. If `losetup` fails (common inside nested containers or
 restricted VMs), all six `test-root-*.sh` scripts skip with
 `losetup failed, skipping`:
 
 ```bash
-sudo dnf install -y libguestfs-tools
+sudo dnf install -y guestfs-tools
 sudo make test-e2e
 ```
 
 On hosts where loop partitions are unavailable, use disk e2e in a privileged
 container instead: `make test-e2e-disk`.
 
-To run the full suite without installing host packages, use the test container
-(built from `tests/Containerfile`). The container runs **privileged** so loop
+To run the full suite without installing host packages, use the UBI 10 test
+container (built from `tests/Containerfile`, with CentOS Stream 10 + EPEL for
+guestfs/hivex/ntfs packages). The container runs **privileged** so loop
 devices are available when Podman/Docker is rootful; **root-selection tests
 still skip under rootless Podman** (`losetup: Permission denied`):
 
