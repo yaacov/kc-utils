@@ -1,0 +1,597 @@
+time=2026-08-05T20:44:08.165Z level=INFO msg="copy mode validation" inPlace=false needsCopy=true source=vSphere targets=1 emptyTargets=1 hasEmpty=true
+time=2026-08-05T20:44:08.166Z level=INFO msg="linked vSphere CA bundle" src=/etc/pki/tls/certs/ca-bundle.crt.bak srcKind=system dest=/opt/ca-bundle.crt replaced=false
+time=2026-08-05T20:44:08.167Z level=INFO msg="disk copy enabled" inPlace=false source=vSphere vm=mtv-func-cold-rhel9-staticips
+time=2026-08-05T20:44:08.269Z level=INFO msg="loaded vSphere inventory" vm=mtv-func-cold-rhel9-staticips moref=vm-1074 disks=1 nics=2 firmware=uefi guestId=rhel9_64Guest guestName="Red Hat Enterprise Linux 9 (64-bit)"
+time=2026-08-05T20:44:08.269Z level=INFO msg="vSphere source disk" index=0 path="[mtv-nfs-rhos-v8] mtv-func-cold-rhel9-staticips/mtv-func-cold-rhel9-staticips.vmdk"
+time=2026-08-05T20:44:08.274Z level=INFO msg="resolved copy sources" count=1 disks="[[mtv-nfs-rhos-v8] mtv-func-cold-rhel9-staticips/mtv-func-cold-rhel9-staticips.vmdk]"
+time=2026-08-05T20:44:08.275Z level=INFO msg=exec bin=/usr/lib/kc-utils/kc-copy args="[--input /var/tmp/v2v/copy-input.json --log-level info]"
+time=2026-08-05T20:44:08.284Z level=INFO msg="linked vSphere CA bundle" src=/etc/pki/tls/certs/ca-bundle.crt.bak srcKind=system dest=/opt/ca-bundle.crt replaced=true
+time=2026-08-05T20:44:08.284Z level=INFO msg="discovered PVC targets" count=1
+time=2026-08-05T20:44:08.285Z level=INFO msg="copy target" index=0 path=/dev/block0 kind=block empty=true
+time=2026-08-05T20:44:08.285Z level=INFO msg="NFC disk copy starting" disks=1 concurrency=1 vm=mtv-func-cold-rhel9-staticips
+time=2026-08-05T20:44:08.405Z level=INFO msg="NFC export lease acquired" vm=mtv-func-cold-rhel9-staticips disks=2
+time=2026-08-05T20:44:08.405Z level=INFO msg="copying disk via NFC" disk=1/1 index=0 source=disk-0.vmdk target=/dev/block0 block=true
+time=2026-08-05T20:44:08.405Z level=INFO msg="starting disk download" index=0 source=disk-0.vmdk target=/dev/block0 block=true size=17179869184
+time=2026-08-05T20:44:08.458Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=0
+time=2026-08-05T20:46:04.454Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=5
+time=2026-08-05T20:47:50.790Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=10
+time=2026-08-05T20:49:30.995Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=15
+time=2026-08-05T20:50:06.550Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=20
+time=2026-08-05T20:51:26.629Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=25
+time=2026-08-05T20:52:07.042Z level=INFO msg="disk copy progress" index=0 source=disk-0.vmdk target=/dev/block0 percent=30
+time=2026-08-05T20:53:13.643Z level=INFO msg="disk download finished" index=0 source=disk-0.vmdk target=/dev/block0 duration=9m5s
+time=2026-08-05T20:53:13.646Z level=INFO msg="disk copy recorded" completed=1/1 index=0
+time=2026-08-05T20:53:13.661Z level=INFO msg="NFC disk copy complete" disks=1
+time=2026-08-05T20:53:13.668Z level=INFO msg="discovered conversion disks" count=1
+time=2026-08-05T20:53:13.668Z level=INFO msg="conversion disk" index=0 path=/dev/block0 kind=block
+time=2026-08-05T20:53:13.668Z level=INFO msg="qcow2 overlay enabled" disks=1 workdir=/var/tmp/v2v
+time=2026-08-05T20:53:13.668Z level=INFO msg="creating qcow2 overlay" index=0 backing=/dev/block0 overlay=/var/tmp/v2v/overlay-0-block0.qcow2
+Formatting '/var/tmp/v2v/overlay-0-block0.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=17179869184 backing_file=/dev/block0 backing_fmt=raw lazy_refcounts=off refcount_bits=16
+time=2026-08-05T20:53:13.700Z level=INFO msg="qcow2 overlays ready" count=1
+time=2026-08-05T20:53:13.788Z level=INFO msg="guestfish listen socket ready" pid=101 socket=/tmp/.guestfish-107/socket-101
+time=2026-08-05T20:53:13.789Z level=INFO msg="guestfish shared listener started" pid=101
+time=2026-08-05T20:53:13.789Z level=INFO msg=exec bin=/usr/lib/kc-utils/kc-prepare args="[--input /var/tmp/v2v/prepare-input.json --output /var/tmp/v2v/prepare-out.json --mount-root /tmp/kc-guest --log-level info --guestfs]"
+time=2026-08-05T20:53:13.793Z level=INFO msg="kc-prepare starting" input=/var/tmp/v2v/prepare-input.json output=/var/tmp/v2v/prepare-out.json mountRoot=/tmp/kc-guest guestfs=true logLevel=info
+time=2026-08-05T20:53:13.794Z level=INFO msg="kc-prepare input loaded" disks=1 root=first firmwareHint=uefi sourceType=vsphere
+time=2026-08-05T20:53:13.794Z level=INFO msg="opening guest disks" backend=guestfs disks=1 mountRoot=/tmp/kc-guest
+time=2026-08-05T20:53:13.794Z level=INFO msg="guestfish adopting shared session" pid=101 guestfishPID=101 shared=true HOME=/var/tmp socket=/tmp/.guestfish-107/socket-101
+time=2026-08-05T20:53:13.794Z level=INFO msg="guestfish ensureLaunched" pid=101 disks=1 paths=[/var/tmp/v2v/overlay-0-block0.qcow2] HOME=/var/tmp LIBGUESTFS_BACKEND=direct socket=/tmp/.guestfish-107/socket-101 sessionAlive=true
+time=2026-08-05T20:53:13.795Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-list-devices
+time=2026-08-05T20:53:13.834Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=0 output=""
+time=2026-08-05T20:53:13.834Z level=INFO msg="guestfish ready probe" pid=101 ready=false devices=""
+time=2026-08-05T20:53:13.834Z level=INFO msg="guestfish launching appliance" pid=101 disks=1
+time=2026-08-05T20:53:13.834Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=2 script="-add-drive-opts /var/tmp/v2v/overlay-0-block0.qcow2 readonly:false\n-run"
+time=2026-08-05T20:53:23.405Z level=INFO msg="guestfs exec ok" bin=guestfish duration=9.571s outputBytes=0 output=""
+time=2026-08-05T20:53:23.405Z level=INFO msg="guestfish launch script finished" pid=101 sessionAlive=true
+time=2026-08-05T20:53:23.405Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-list-devices
+time=2026-08-05T20:53:23.467Z level=INFO msg="guestfs exec ok" bin=guestfish duration=62ms outputBytes=9 output=/dev/sda
+time=2026-08-05T20:53:23.467Z level=INFO msg="guestfish ready probe" pid=101 ready=true devices=/dev/sda
+time=2026-08-05T20:53:23.467Z level=INFO msg="guestfish appliance launched" pid=101 disks=1 devices=/dev/sda
+time=2026-08-05T20:53:23.467Z level=INFO msg="guestfs backend setup" disks=1 mountRoot=/tmp/kc-guest LIBGUESTFS_BACKEND=direct paths=[/var/tmp/v2v/overlay-0-block0.qcow2] guestfishPID=101 shared=true
+time=2026-08-05T20:53:23.468Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- list-devices]"
+time=2026-08-05T20:53:23.533Z level=INFO msg="guestfs exec ok" bin=guestfish duration=65ms outputBytes=9 output=/dev/sda
+time=2026-08-05T20:53:23.533Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- list-filesystems]"
+time=2026-08-05T20:53:24.369Z level=INFO msg="guestfs exec ok" bin=guestfish duration=836ms outputBytes=100 output="/dev/sda1: vfat\n/dev/sda2: xfs\n/dev/rhel_dhcp-6-46-218/root: xfs\n/dev/rhel_dhcp-6-46-218/swap: swap"
+time=2026-08-05T20:53:24.369Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-blockdev-getsize64 /dev/sda1"
+time=2026-08-05T20:53:24.444Z level=INFO msg="guestfs exec ok" bin=guestfish duration=74ms outputBytes=10 output=629145600
+time=2026-08-05T20:53:24.444Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-blockdev-getsize64 /dev/sda2"
+time=2026-08-05T20:53:24.512Z level=INFO msg="guestfs exec ok" bin=guestfish duration=69ms outputBytes=11 output=1073741824
+time=2026-08-05T20:53:24.512Z level=INFO msg="discovered partition" disk=/var/tmp/v2v/overlay-0-block0.qcow2 index=1 device=/dev/sda1 fstype=vfat
+time=2026-08-05T20:53:24.512Z level=INFO msg="discovered partition" disk=/var/tmp/v2v/overlay-0-block0.qcow2 index=2 device=/dev/sda2 fstype=xfs
+time=2026-08-05T20:53:24.513Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-lvs
+time=2026-08-05T20:53:24.597Z level=INFO msg="guestfs exec ok" bin=guestfish duration=85ms outputBytes=58 output="/dev/rhel_dhcp-6-46-218/root\n/dev/rhel_dhcp-6-46-218/swap"
+time=2026-08-05T20:53:24.597Z level=INFO msg="LVM discovered" volumes=2 paths="[/dev/rhel_dhcp-6-46-218/root /dev/rhel_dhcp-6-46-218/swap]"
+time=2026-08-05T20:53:24.598Z level=INFO msg="guest disk layout" disks=1 partitions=2 lvs=2
+time=2026-08-05T20:53:24.598Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- xfs-repair /dev/sda2]"
+time=2026-08-05T20:53:24.890Z level=INFO msg="guestfs exec ok" bin=guestfish duration=293ms outputBytes=2 output=2
+time=2026-08-05T20:53:24.891Z level=INFO msg="detected firmware" type=uefi espDevices=[/dev/sda1]
+time=2026-08-05T20:53:24.892Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=12 script="-umount-all\n-mount /dev/sda1 /\n-copy-out /etc/os-release /tmp/kc-scan-_dev_sda1/etc\n-copy-out /etc/redhat-release /tmp/kc-scan-_dev_sda1/etc\n-copy-out /etc/debian_version /tmp/kc-scan-_dev_sda1/etc\n-copy-out /Windows/System32/config/SYSTEM /tmp/kc-scan-_de…"
+time=2026-08-05T20:53:25.118Z level=INFO msg="guestfs exec ok" bin=guestfish duration=226ms outputBytes=0 output=""
+time=2026-08-05T20:53:25.120Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=12 script="-umount-all\n-mount /dev/sda2 /\n-copy-out /etc/os-release /tmp/kc-scan-_dev_sda2/etc\n-copy-out /etc/redhat-release /tmp/kc-scan-_dev_sda2/etc\n-copy-out /etc/debian_version /tmp/kc-scan-_dev_sda2/etc\n-copy-out /Windows/System32/config/SYSTEM /tmp/kc-scan-_de…"
+time=2026-08-05T20:53:26.721Z level=INFO msg="guestfs exec ok" bin=guestfish duration=1.601s outputBytes=0 output=""
+time=2026-08-05T20:53:26.722Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-type /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:26.804Z level=INFO msg="guestfs exec ok" bin=guestfish duration=81ms outputBytes=4 output=xfs
+time=2026-08-05T20:53:26.806Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=12 script="-umount-all\n-mount /dev/rhel_dhcp-6-46-218/root /\n-copy-out /etc/os-release /tmp/kc-scan-_dev_rhel_dhcp_6_46_218_root/etc\n-copy-out /etc/redhat-release /tmp/kc-scan-_dev_rhel_dhcp_6_46_218_root/etc\n-copy-out /etc/debian_version /tmp/kc-scan-_dev_rhel_dhcp_…"
+time=2026-08-05T20:53:27.407Z level=INFO msg="guestfs exec ok" bin=guestfish duration=602ms outputBytes=0 output=""
+time=2026-08-05T20:53:27.409Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-type /dev/rhel_dhcp-6-46-218/swap"
+time=2026-08-05T20:53:27.521Z level=INFO msg="guestfs exec ok" bin=guestfish duration=113ms outputBytes=5 output=swap
+time=2026-08-05T20:53:27.521Z level=INFO msg="root candidates" count=1 selector=first
+time=2026-08-05T20:53:27.521Z level=INFO msg="root candidate" index=1 device=/dev/rhel_dhcp-6-46-218/root product="Red Hat Enterprise Linux release 9.4 (Plow)" os=linux distro=rhel
+time=2026-08-05T20:53:27.521Z level=INFO msg="selected root" device=/dev/rhel_dhcp-6-46-218/root product="Red Hat Enterprise Linux release 9.4 (Plow)" selector=first os=linux
+time=2026-08-05T20:53:27.521Z level=INFO msg="mount planner selected" planner=linux initialMounts=1
+time=2026-08-05T20:53:27.521Z level=INFO msg="mounting filesystem" device=/dev/rhel_dhcp-6-46-218/root mountpoint=/ fstype=xfs readOnly=false
+time=2026-08-05T20:53:27.521Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-type /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:27.674Z level=INFO msg="guestfs exec ok" bin=guestfish duration=152ms outputBytes=4 output=xfs
+time=2026-08-05T20:53:27.674Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-inspect-os
+time=2026-08-05T20:53:32.285Z level=INFO msg="guestfs exec ok" bin=guestfish duration=4.612s outputBytes=29 output=/dev/rhel_dhcp-6-46-218/root
+time=2026-08-05T20:53:32.286Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-inspect-get-mountpoints /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:32.363Z level=INFO msg="guestfs exec ok" bin=guestfish duration=77ms outputBytes=70 output="/boot/efi: /dev/sda1\n/boot: /dev/sda2\n/: /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:32.363Z level=INFO msg="discovered mount points via inspection" count=3
+time=2026-08-05T20:53:32.363Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=4 script="-umount-all\n-mount /dev/rhel_dhcp-6-46-218/root /\n-mount /dev/sda2 /boot\n-mount /dev/sda1 /boot/efi"
+time=2026-08-05T20:53:32.664Z level=INFO msg="guestfs exec ok" bin=guestfish duration=301ms outputBytes=0 output=""
+time=2026-08-05T20:53:32.664Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/fstab /tmp/kc-gfs-read-2007970820"
+time=2026-08-05T20:53:32.739Z level=INFO msg="guestfs exec ok" bin=guestfish duration=75ms outputBytes=0 output=""
+time=2026-08-05T20:53:32.739Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-uuid /dev/sda1"
+time=2026-08-05T20:53:32.828Z level=INFO msg="guestfs exec ok" bin=guestfish duration=89ms outputBytes=10 output=BEB5-D71D
+time=2026-08-05T20:53:32.828Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-label /dev/sda1"
+time=2026-08-05T20:53:32.910Z level=INFO msg="guestfs exec ok" bin=guestfish duration=81ms outputBytes=1 output=""
+time=2026-08-05T20:53:32.910Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-uuid /dev/sda2"
+time=2026-08-05T20:53:32.984Z level=INFO msg="guestfs exec ok" bin=guestfish duration=74ms outputBytes=37 output=82975b63-ed83-421a-8f82-b00889cac052
+time=2026-08-05T20:53:32.984Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-label /dev/sda2"
+time=2026-08-05T20:53:33.049Z level=INFO msg="guestfs exec ok" bin=guestfish duration=65ms outputBytes=1 output=""
+time=2026-08-05T20:53:33.049Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-uuid /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:33.132Z level=INFO msg="guestfs exec ok" bin=guestfish duration=82ms outputBytes=37 output=52987855-aca6-413c-b939-298cff335ec2
+time=2026-08-05T20:53:33.132Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-label /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:33.201Z level=INFO msg="guestfs exec ok" bin=guestfish duration=69ms outputBytes=1 output=""
+time=2026-08-05T20:53:33.201Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-uuid /dev/rhel_dhcp-6-46-218/swap"
+time=2026-08-05T20:53:33.310Z level=INFO msg="guestfs exec ok" bin=guestfish duration=108ms outputBytes=37 output=6fcaa4ef-6e65-434a-bc65-a3882d36c0f8
+time=2026-08-05T20:53:33.310Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-label /dev/rhel_dhcp-6-46-218/swap"
+time=2026-08-05T20:53:33.416Z level=INFO msg="guestfs exec ok" bin=guestfish duration=106ms outputBytes=1 output=""
+time=2026-08-05T20:53:33.416Z level=INFO msg="expanding mount plan" extraMounts=2
+time=2026-08-05T20:53:33.416Z level=INFO msg="mounting filesystem" device=/dev/sda2 mountpoint=/boot fstype=xfs readOnly=false
+time=2026-08-05T20:53:33.416Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-type /dev/sda2"
+time=2026-08-05T20:53:33.480Z level=INFO msg="guestfs exec ok" bin=guestfish duration=64ms outputBytes=4 output=xfs
+time=2026-08-05T20:53:33.480Z level=INFO msg="mounting filesystem" device=/dev/sda1 mountpoint=/boot/efi fstype=vfat readOnly=false
+time=2026-08-05T20:53:33.480Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-vfs-type /dev/sda1"
+time=2026-08-05T20:53:33.543Z level=INFO msg="guestfs exec ok" bin=guestfish duration=62ms outputBytes=5 output=vfat
+time=2026-08-05T20:53:33.543Z level=INFO msg="firmware after mount" type=uefi espDevices=[/dev/sda1]
+time=2026-08-05T20:53:33.543Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot"
+time=2026-08-05T20:53:33.585Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.585Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot"
+time=2026-08-05T20:53:33.636Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.636Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /boot"
+time=2026-08-05T20:53:33.693Z level=INFO msg="guestfs exec ok" bin=guestfish duration=57ms outputBytes=147 output="bsize: 4096\nfrsize: 4096\nblocks: 245760\nbfree: 170005\nbavail: 170005\nfiles: 524288\nffree: 524266\nfavail: 524266\nfsid: 2050\nflag: 4096\nnamemax: 255"
+time=2026-08-05T20:53:33.693Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /"
+time=2026-08-05T20:53:33.733Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.733Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /"
+time=2026-08-05T20:53:33.772Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.772Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /"
+time=2026-08-05T20:53:33.810Z level=INFO msg="guestfs exec ok" bin=guestfish duration=38ms outputBytes=154 output="bsize: 4096\nfrsize: 4096\nblocks: 3341312\nbfree: 2232968\nbavail: 2232968\nfiles: 6715392\nffree: 6583348\nfavail: 6583348\nfsid: 64513\nflag: 4096\nnamemax: 255"
+time=2026-08-05T20:53:33.810Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot/efi"
+time=2026-08-05T20:53:33.849Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.849Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/efi"
+time=2026-08-05T20:53:33.906Z level=INFO msg="guestfs exec ok" bin=guestfish duration=57ms outputBytes=5 output=true
+time=2026-08-05T20:53:33.906Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /boot/efi"
+time=2026-08-05T20:53:33.951Z level=INFO msg="guestfs exec ok" bin=guestfish duration=45ms outputBytes=133 output="bsize: 4096\nfrsize: 4096\nblocks: 153296\nbfree: 151495\nbavail: 151495\nfiles: 0\nffree: 0\nfavail: 0\nfsid: 2049\nflag: 4096\nnamemax: 1530"
+time=2026-08-05T20:53:33.951Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /Windows/System32"
+time=2026-08-05T20:53:34.004Z level=INFO msg="guestfs exec ok" bin=guestfish duration=53ms outputBytes=6 output=false
+time=2026-08-05T20:53:34.004Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /windows/system32"
+time=2026-08-05T20:53:34.047Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=6 output=false
+time=2026-08-05T20:53:34.047Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /WINDOWS/system32"
+time=2026-08-05T20:53:34.090Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=6 output=false
+time=2026-08-05T20:53:34.099Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/os-release"
+time=2026-08-05T20:53:34.139Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.139Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/os-release /tmp/kc-gfs-read-1803984324"
+time=2026-08-05T20:53:34.211Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=0 output=""
+time=2026-08-05T20:53:34.211Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /lib/modules"
+time=2026-08-05T20:53:34.260Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.260Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /lib/modules"
+time=2026-08-05T20:53:34.327Z level=INFO msg="guestfs exec ok" bin=guestfish duration=67ms outputBytes=237 output="total 8\ndrwxr-xr-x.  4 root root   71 Jul  1  2025 .\ndr-xr-xr-x. 38 root root 4096 Jul  1  2025 ..\ndrwxr-xr-x.  3 root root   19 Jul  1  2025 5.14.0-421.el9.x86_64\ndrwxr-xr-x.  7 root root 4096 Jul  1  2025 5.14.0-427.13.1.el9_4.x86_64"
+time=2026-08-05T20:53:34.327Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot/grub2/grub.cfg"
+time=2026-08-05T20:53:34.370Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.370Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /"
+time=2026-08-05T20:53:34.417Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.418Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot"
+time=2026-08-05T20:53:34.463Z level=INFO msg="guestfs exec ok" bin=guestfish duration=45ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.463Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot/efi"
+time=2026-08-05T20:53:34.511Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.511Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /"
+time=2026-08-05T20:53:34.562Z level=INFO msg="guestfs exec ok" bin=guestfish duration=51ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.562Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /"
+time=2026-08-05T20:53:34.610Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.610Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /"
+time=2026-08-05T20:53:34.662Z level=INFO msg="guestfs exec ok" bin=guestfish duration=52ms outputBytes=154 output="bsize: 4096\nfrsize: 4096\nblocks: 3341312\nbfree: 2232968\nbavail: 2232968\nfiles: 6715392\nffree: 6583348\nfavail: 6583348\nfsid: 64513\nflag: 4096\nnamemax: 255"
+time=2026-08-05T20:53:34.662Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot"
+time=2026-08-05T20:53:34.707Z level=INFO msg="guestfs exec ok" bin=guestfish duration=45ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.707Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot"
+time=2026-08-05T20:53:34.755Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.755Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /boot"
+time=2026-08-05T20:53:34.805Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=147 output="bsize: 4096\nfrsize: 4096\nblocks: 245760\nbfree: 170005\nbavail: 170005\nfiles: 524288\nffree: 524266\nfavail: 524266\nfsid: 2050\nflag: 4096\nnamemax: 255"
+time=2026-08-05T20:53:34.805Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot/efi"
+time=2026-08-05T20:53:34.844Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.844Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/efi"
+time=2026-08-05T20:53:34.896Z level=INFO msg="guestfs exec ok" bin=guestfish duration=52ms outputBytes=5 output=true
+time=2026-08-05T20:53:34.896Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /boot/efi"
+time=2026-08-05T20:53:34.945Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=133 output="bsize: 4096\nfrsize: 4096\nblocks: 153296\nbfree: 151495\nbavail: 151495\nfiles: 0\nffree: 0\nfavail: 0\nfsid: 2049\nflag: 4096\nnamemax: 1530"
+time=2026-08-05T20:53:34.946Z level=INFO msg="pipeline complete"
+time=2026-08-05T20:53:34.946Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-umount-all
+time=2026-08-05T20:53:35.061Z level=INFO msg="guestfs exec ok" bin=guestfish duration=115ms outputBytes=0 output=""
+time=2026-08-05T20:53:35.061Z level=INFO msg="kc-prepare completed" output=/var/tmp/v2v/prepare-out.json
+time=2026-08-05T20:53:35.065Z level=INFO msg=exec bin=/usr/lib/kc-utils/kc-convert-linux args="[--prepare-data /var/tmp/v2v/prepare-out.json --output /var/tmp/v2v/convert-out.json --mount-root /tmp/kc-guest --log-level info --guestfs]"
+time=2026-08-05T20:53:35.072Z level=INFO msg="guestfish adopting shared session" pid=101 guestfishPID=101 shared=true
+time=2026-08-05T20:53:35.072Z level=INFO msg="guestfish ensureLaunched" pid=101 disks=1 paths=[/var/tmp/v2v/overlay-0-block0.qcow2] HOME=/var/tmp LIBGUESTFS_BACKEND=direct socket=/tmp/.guestfish-107/socket-101 sessionAlive=true
+time=2026-08-05T20:53:35.072Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-list-devices
+time=2026-08-05T20:53:35.146Z level=INFO msg="guestfs exec ok" bin=guestfish duration=74ms outputBytes=9 output=/dev/sda
+time=2026-08-05T20:53:35.146Z level=INFO msg="guestfish ready probe" pid=101 ready=true devices=/dev/sda
+time=2026-08-05T20:53:35.146Z level=INFO msg="guestfish session already launched" pid=101 devices=/dev/sda
+time=2026-08-05T20:53:35.146Z level=INFO msg="matched distro handler" name=rhel
+time=2026-08-05T20:53:35.146Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-inspect-os
+time=2026-08-05T20:53:38.833Z level=INFO msg="guestfs exec ok" bin=guestfish duration=3.686s outputBytes=29 output=/dev/rhel_dhcp-6-46-218/root
+time=2026-08-05T20:53:38.833Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-inspect-get-mountpoints /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:38.906Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=70 output="/boot/efi: /dev/sda1\n/boot: /dev/sda2\n/: /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:53:38.906Z level=INFO msg="discovered mount points via inspection" count=3
+time=2026-08-05T20:53:38.906Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=4 script="-umount-all\n-mount /dev/rhel_dhcp-6-46-218/root /\n-mount /dev/sda2 /boot\n-mount /dev/sda1 /boot/efi"
+time=2026-08-05T20:53:39.168Z level=INFO msg="guestfs exec ok" bin=guestfish duration=262ms outputBytes=0 output=""
+time=2026-08-05T20:53:39.168Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:39.218Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.218Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:39.267Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=292 output="total 8\ndrwx------. 2 root root 134 Jul  1  2025 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 546 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-rw-r--r--. 1 root root 508 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf"
+time=2026-08-05T20:53:39.267Z level=INFO msg="found bootloader" name=bls
+time=2026-08-05T20:53:39.267Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /lib/modules"
+time=2026-08-05T20:53:39.327Z level=INFO msg="guestfs exec ok" bin=guestfish duration=59ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.327Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /lib/modules"
+time=2026-08-05T20:53:39.368Z level=INFO msg="guestfs exec ok" bin=guestfish duration=41ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.368Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /lib/modules"
+time=2026-08-05T20:53:39.411Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=237 output="total 8\ndrwxr-xr-x.  4 root root   71 Jul  1  2025 .\ndr-xr-xr-x. 38 root root 4096 Jul  1  2025 ..\ndrwxr-xr-x.  3 root root   19 Jul  1  2025 5.14.0-421.el9.x86_64\ndrwxr-xr-x.  7 root root 4096 Jul  1  2025 5.14.0-427.13.1.el9_4.x86_64"
+time=2026-08-05T20:53:39.411Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot"
+time=2026-08-05T20:53:39.465Z level=INFO msg="guestfs exec ok" bin=guestfish duration=54ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.465Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot"
+time=2026-08-05T20:53:39.517Z level=INFO msg="guestfs exec ok" bin=guestfish duration=51ms outputBytes=1157 output="total 260660\ndr-xr-xr-x.  5 root root      4096 Jul  1  2025 .\ndr-xr-xr-x. 20 root root       257 Jul  1  2025 ..\n-rw-r--r--.  1 root root       167 Apr 10  2024 .vmlinuz-5.14.0-427.13.1.el9_4.x86_64.hmac\n-rw-------.  1 root root   8629622 Apr 10  2024 System.map-5.14.0-427.13.1.el9_4.x86_64\n-rw-r--r--.  1 root root    223205 Apr 10  2024 config-5.14.0-427.13.1.el9_4.x86_64\ndrwxr-xr-x   3 root root      4096 Jan  1  1970 efi\ndrwx------.  3 root root        50 Jan 14  2026 grub2\n-rw-------.  1 root root 1382…"
+time=2026-08-05T20:53:39.517Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /lib/modules"
+time=2026-08-05T20:53:39.622Z level=INFO msg="guestfs exec ok" bin=guestfish duration=105ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.622Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /lib/modules/5.14.0-427.13.1.el9_4.x86_64/kernel/drivers"
+time=2026-08-05T20:53:39.683Z level=INFO msg="guestfs exec ok" bin=guestfish duration=61ms outputBytes=5 output=true
+time=2026-08-05T20:53:39.684Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-find /lib/modules/5.14.0-427.13.1.el9_4.x86_64/kernel/drivers"
+time=2026-08-05T20:53:40.139Z level=INFO msg="guestfs exec ok" bin=guestfish duration=456ms outputBytes=49293 output="/acpi\n/acpi/acpi_extlog.ko.xz\n/acpi/acpi_ipmi.ko.xz\n/acpi/acpi_pad.ko.xz\n/acpi/acpi_tad.ko.xz\n/acpi/apei\n/acpi/apei/einj.ko.xz\n/acpi/dptf\n/acpi/dptf/dptf_pch_fivr.ko.xz\n/acpi/dptf/dptf_power.ko.xz\n/acpi/nfit\n/acpi/nfit/nfit.ko.xz\n/acpi/pfr_telemetry.ko.xz\n/acpi/pfr_update.ko.xz\n/acpi/platform_profile.ko.xz\n/acpi/sbs.ko.xz\n/acpi/sbshc.ko.xz\n/acpi/video.ko.xz\n/ata\n/ata/ahci.ko.xz\n/ata/ahci_platform.ko.xz\n/ata/ata_generic.ko.xz\n/ata/ata_piix.ko.xz\n/ata/libahci.ko.xz\n/ata/libahci_platform.ko.xz\n/ata/libata.ko.x…"
+time=2026-08-05T20:53:40.141Z level=INFO msg="found kernels" count=2 scanner=rpm
+time=2026-08-05T20:53:40.141Z level=INFO msg="remapping devices" plugins=[standard]
+time=2026-08-05T20:53:40.141Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/fstab"
+time=2026-08-05T20:53:40.181Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=5 output=true
+time=2026-08-05T20:53:40.181Z level=INFO msg="running device remapper" name=standard
+time=2026-08-05T20:53:40.182Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/fstab /tmp/kc-gfs-read-2540573882"
+time=2026-08-05T20:53:40.257Z level=INFO msg="guestfs exec ok" bin=guestfish duration=75ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.257Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /etc\n-upload /tmp/kc-gfs-write-2879794193 /etc/fstab\n-chmod 0644 /etc/fstab"
+time=2026-08-05T20:53:40.341Z level=INFO msg="guestfs exec ok" bin=guestfish duration=84ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.341Z level=INFO msg="remapped block devices to virtio" file=etc/fstab
+time=2026-08-05T20:53:40.342Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/crypttab /tmp/kc-gfs-read-2218230510"
+time=2026-08-05T20:53:40.405Z level=INFO msg="guestfs exec ok" bin=guestfish duration=63ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.405Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /etc\n-upload /tmp/kc-gfs-write-1508466467 /etc/crypttab\n-chmod 0644 /etc/crypttab"
+time=2026-08-05T20:53:40.480Z level=INFO msg="guestfs exec ok" bin=guestfish duration=75ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.481Z level=INFO msg="remapped block devices to virtio" file=etc/crypttab
+time=2026-08-05T20:53:40.481Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/default/grub /tmp/kc-gfs-read-538058635"
+time=2026-08-05T20:53:40.550Z level=INFO msg="guestfs exec ok" bin=guestfish duration=69ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.550Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:40.608Z level=INFO msg="guestfs exec ok" bin=guestfish duration=57ms outputBytes=5 output=true
+time=2026-08-05T20:53:40.608Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:40.656Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=292 output="total 8\ndrwx------. 2 root root 134 Jul  1  2025 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 546 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-rw-r--r--. 1 root root 508 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf"
+time=2026-08-05T20:53:40.657Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-1715285732"
+time=2026-08-05T20:53:40.722Z level=INFO msg="guestfs exec ok" bin=guestfish duration=65ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.722Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-1727738344"
+time=2026-08-05T20:53:40.787Z level=INFO msg="guestfs exec ok" bin=guestfish duration=64ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.787Z level=INFO msg="device remapper complete" name=standard
+time=2026-08-05T20:53:40.788Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-statvfs /boot/efi"
+time=2026-08-05T20:53:40.834Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=133 output="bsize: 4096\nfrsize: 4096\nblocks: 153296\nbfree: 151495\nbavail: 151495\nfiles: 0\nffree: 0\nfavail: 0\nfsid: 2049\nflag: 4096\nnamemax: 1530"
+time=2026-08-05T20:53:40.835Z level=INFO msg="running UEFI editor" editor=bcd esp=/dev/sda1
+time=2026-08-05T20:53:40.835Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/Microsoft/Boot/BCD"
+time=2026-08-05T20:53:40.882Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=6 output=false
+time=2026-08-05T20:53:40.882Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /dev/sda1/EFI/Boot"
+time=2026-08-05T20:53:40.940Z level=INFO msg="guestfs exec ok" bin=guestfish duration=58ms outputBytes=0 output=""
+time=2026-08-05T20:53:40.940Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/Microsoft/Boot/bootmgfw.efi"
+time=2026-08-05T20:53:40.976Z level=INFO msg="guestfs exec ok" bin=guestfish duration=35ms outputBytes=6 output=false
+time=2026-08-05T20:53:40.976Z level=WARN msg="Microsoft bootloader not found, skipping fallback copy" path=/tmp/kc-guest/dev/sda1/EFI/Microsoft/Boot/bootmgfw.efi
+time=2026-08-05T20:53:40.976Z level=INFO msg="UEFI editor complete" editor=bcd esp=/dev/sda1
+time=2026-08-05T20:53:40.976Z level=INFO msg="running UEFI editor" editor=grub-fallback esp=/dev/sda1
+time=2026-08-05T20:53:40.976Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/BOOT/bootx64.efi"
+time=2026-08-05T20:53:41.018Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.018Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/BOOT/bootaa64.efi"
+time=2026-08-05T20:53:41.062Z level=INFO msg="guestfs exec ok" bin=guestfish duration=44ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.062Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/BOOT/BOOTX64.EFI"
+time=2026-08-05T20:53:41.108Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.109Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/BOOT/BOOTAA64.EFI"
+time=2026-08-05T20:53:41.149Z level=INFO msg="guestfs exec ok" bin=guestfish duration=41ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.149Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/redhat/shimx64.efi"
+time=2026-08-05T20:53:41.191Z level=INFO msg="guestfs exec ok" bin=guestfish duration=41ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.191Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/redhat/grubx64.efi"
+time=2026-08-05T20:53:41.233Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.234Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/centos/shimx64.efi"
+time=2026-08-05T20:53:41.273Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.273Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/ubuntu/shimx64.efi"
+time=2026-08-05T20:53:41.312Z level=INFO msg="guestfs exec ok" bin=guestfish duration=38ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.312Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/ubuntu/grubx64.efi"
+time=2026-08-05T20:53:41.352Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.352Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/debian/grubx64.efi"
+time=2026-08-05T20:53:41.394Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.394Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/suse/shim.efi"
+time=2026-08-05T20:53:41.433Z level=INFO msg="guestfs exec ok" bin=guestfish duration=38ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.433Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/suse/grubx64.efi"
+time=2026-08-05T20:53:41.469Z level=INFO msg="guestfs exec ok" bin=guestfish duration=36ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.469Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/fedora/shimx64.efi"
+time=2026-08-05T20:53:41.506Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.506Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/fedora/grubx64.efi"
+time=2026-08-05T20:53:41.546Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.547Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/redhat/shimaa64.efi"
+time=2026-08-05T20:53:41.585Z level=INFO msg="guestfs exec ok" bin=guestfish duration=39ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.585Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /dev/sda1/EFI/redhat/grubaa64.efi"
+time=2026-08-05T20:53:41.622Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:41.623Z level=INFO msg="UEFI editor complete" editor=grub-fallback esp=/dev/sda1
+time=2026-08-05T20:53:41.623Z level=INFO msg="selected kernel" version=5.14.0-427.13.1.el9_4.x86_64
+time=2026-08-05T20:53:41.623Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:41.679Z level=INFO msg="guestfs exec ok" bin=guestfish duration=57ms outputBytes=5 output=true
+time=2026-08-05T20:53:41.679Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:41.733Z level=INFO msg="guestfs exec ok" bin=guestfish duration=53ms outputBytes=292 output="total 8\ndrwx------. 2 root root 134 Jul  1  2025 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 546 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-rw-r--r--. 1 root root 508 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf"
+time=2026-08-05T20:53:41.733Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-3469342823"
+time=2026-08-05T20:53:41.800Z level=INFO msg="guestfs exec ok" bin=guestfish duration=66ms outputBytes=0 output=""
+time=2026-08-05T20:53:41.800Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-1641820905"
+time=2026-08-05T20:53:41.880Z level=INFO msg="guestfs exec ok" bin=guestfish duration=80ms outputBytes=0 output=""
+time=2026-08-05T20:53:41.884Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mv /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf"
+time=2026-08-05T20:53:41.934Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=0 output=""
+time=2026-08-05T20:53:41.934Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:41.982Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=5 output=true
+time=2026-08-05T20:53:41.982Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:42.043Z level=INFO msg="guestfs exec ok" bin=guestfish duration=60ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 508 Jul  1  2025 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 546 Jul  1  2025 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:42.043Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-709573849"
+time=2026-08-05T20:53:42.110Z level=INFO msg="guestfs exec ok" bin=guestfish duration=66ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.110Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2204465153 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.co…"
+time=2026-08-05T20:53:42.173Z level=INFO msg="guestfs exec ok" bin=guestfish duration=63ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.175Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-1028773261"
+time=2026-08-05T20:53:42.262Z level=INFO msg="guestfs exec ok" bin=guestfish duration=87ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.262Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2445089518 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:42.340Z level=INFO msg="guestfs exec ok" bin=guestfish duration=78ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.341Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:42.388Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=5 output=true
+time=2026-08-05T20:53:42.388Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:42.431Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 502 Aug  5 20:53 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 540 Aug  5 20:53 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:42.431Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-1519836944"
+time=2026-08-05T20:53:42.509Z level=INFO msg="guestfs exec ok" bin=guestfish duration=78ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.509Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2159433732 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.co…"
+time=2026-08-05T20:53:42.610Z level=INFO msg="guestfs exec ok" bin=guestfish duration=101ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.611Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-3143968935"
+time=2026-08-05T20:53:42.696Z level=INFO msg="guestfs exec ok" bin=guestfish duration=85ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.697Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-676436408 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:42.793Z level=INFO msg="guestfs exec ok" bin=guestfish duration=96ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.794Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:42.844Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=5 output=true
+time=2026-08-05T20:53:42.844Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:42.888Z level=INFO msg="guestfs exec ok" bin=guestfish duration=44ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 496 Aug  5 20:53 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 534 Aug  5 20:53 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:42.889Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-3064480095"
+time=2026-08-05T20:53:42.958Z level=INFO msg="guestfs exec ok" bin=guestfish duration=70ms outputBytes=0 output=""
+time=2026-08-05T20:53:42.959Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2613350752 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.co…"
+time=2026-08-05T20:53:43.048Z level=INFO msg="guestfs exec ok" bin=guestfish duration=89ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.049Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-1011875246"
+time=2026-08-05T20:53:43.132Z level=INFO msg="guestfs exec ok" bin=guestfish duration=83ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.132Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2864191624 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:43.205Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.205Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:43.245Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=5 output=true
+time=2026-08-05T20:53:43.245Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:43.292Z level=INFO msg="guestfs exec ok" bin=guestfish duration=46ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 510 Aug  5 20:53 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 548 Aug  5 20:53 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:43.292Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-2034232396"
+time=2026-08-05T20:53:43.361Z level=INFO msg="guestfs exec ok" bin=guestfish duration=69ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.362Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-305949610 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.con…"
+time=2026-08-05T20:53:43.455Z level=INFO msg="guestfs exec ok" bin=guestfish duration=93ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.456Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-3632937698"
+time=2026-08-05T20:53:43.528Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.528Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-542316262 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:43.602Z level=INFO msg="guestfs exec ok" bin=guestfish duration=74ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.603Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:43.649Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=5 output=true
+time=2026-08-05T20:53:43.649Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:43.696Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 510 Aug  5 20:53 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 548 Aug  5 20:53 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:43.697Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-940823987"
+time=2026-08-05T20:53:43.759Z level=INFO msg="guestfs exec ok" bin=guestfish duration=63ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.760Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-4111581898 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.co…"
+time=2026-08-05T20:53:43.842Z level=INFO msg="guestfs exec ok" bin=guestfish duration=82ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.842Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-2184423691"
+time=2026-08-05T20:53:43.909Z level=INFO msg="guestfs exec ok" bin=guestfish duration=67ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.910Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2898939961 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:43.976Z level=INFO msg="guestfs exec ok" bin=guestfish duration=66ms outputBytes=0 output=""
+time=2026-08-05T20:53:43.976Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /boot/loader/entries"
+time=2026-08-05T20:53:44.042Z level=INFO msg="guestfs exec ok" bin=guestfish duration=66ms outputBytes=5 output=true
+time=2026-08-05T20:53:44.042Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /boot/loader/entries"
+time=2026-08-05T20:53:44.085Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=294 output="total 8\ndrwx------. 2 root root 136 Aug  5 20:53 .\ndrwxr-xr-x. 3 root root  21 Jul  1  2025 ..\n-rw-r--r--. 1 root root 510 Aug  5 20:53 0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-rw-r--r--. 1 root root 548 Aug  5 20:53 c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:44.085Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf /tmp/kc-gfs-read-1223982066"
+time=2026-08-05T20:53:44.152Z level=INFO msg="guestfs exec ok" bin=guestfish duration=67ms outputBytes=0 output=""
+time=2026-08-05T20:53:44.153Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-2908412705 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.conf\n-chmod 0644 /boot/loader/entries/0-c175420caa354ef68edccf1fa2f94219-5.14.0-427.13.1.el9_4.x86_64.co…"
+time=2026-08-05T20:53:44.239Z level=INFO msg="guestfs exec ok" bin=guestfish duration=86ms outputBytes=0 output=""
+time=2026-08-05T20:53:44.239Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf /tmp/kc-gfs-read-2351992348"
+time=2026-08-05T20:53:44.313Z level=INFO msg="guestfs exec ok" bin=guestfish duration=73ms outputBytes=0 output=""
+time=2026-08-05T20:53:44.313Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot/loader/entries\n-upload /tmp/kc-gfs-write-523518457 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf\n-chmod 0644 /boot/loader/entries/c175420caa354ef68edccf1fa2f94219-0-rescue.conf"
+time=2026-08-05T20:53:44.390Z level=INFO msg="guestfs exec ok" bin=guestfish duration=77ms outputBytes=0 output=""
+time=2026-08-05T20:53:44.390Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/X11/xorg.conf"
+time=2026-08-05T20:53:44.449Z level=INFO msg="guestfs exec ok" bin=guestfish duration=58ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.449Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/X11/XF86Config"
+time=2026-08-05T20:53:44.515Z level=INFO msg="guestfs exec ok" bin=guestfish duration=66ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.515Z level=INFO msg="cleaning up hypervisor artifacts" plugins="[ec2 hyperv kudzu nutanix parallels vmware xen citrix virtualbox]"
+time=2026-08-05T20:53:44.515Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/sysconfig/kernel /tmp/kc-gfs-read-2568541560"
+time=2026-08-05T20:53:44.643Z level=INFO msg="guestfs exec ok" bin=guestfish duration=129ms outputBytes=0 output=""
+time=2026-08-05T20:53:44.644Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/hv_kvp_daemon"
+time=2026-08-05T20:53:44.755Z level=INFO msg="guestfs exec ok" bin=guestfish duration=111ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.755Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/hv_fcopy_daemon"
+time=2026-08-05T20:53:44.799Z level=INFO msg="guestfs exec ok" bin=guestfish duration=44ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.799Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/hv_vss_daemon"
+time=2026-08-05T20:53:44.835Z level=INFO msg="guestfs exec ok" bin=guestfish duration=36ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.835Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/init.d/kudzu"
+time=2026-08-05T20:53:44.872Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.872Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/bin/prlsrvctl"
+time=2026-08-05T20:53:44.923Z level=INFO msg="guestfs exec ok" bin=guestfish duration=51ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.923Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/prltoolsd"
+time=2026-08-05T20:53:44.960Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:44.960Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/lib/parallels-tools/install"
+time=2026-08-05T20:53:45.003Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.003Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/xensource-inventory"
+time=2026-08-05T20:53:45.046Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.046Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/xe-daemon"
+time=2026-08-05T20:53:45.083Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.083Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/bin/VBoxService"
+time=2026-08-05T20:53:45.138Z level=INFO msg="guestfs exec ok" bin=guestfish duration=54ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.138Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/VBoxService"
+time=2026-08-05T20:53:45.202Z level=INFO msg="guestfs exec ok" bin=guestfish duration=64ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.202Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /var/lib/VBoxGuestAdditions/config"
+time=2026-08-05T20:53:45.255Z level=INFO msg="guestfs exec ok" bin=guestfish duration=53ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.255Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/bin/amazon-ssm-agent"
+time=2026-08-05T20:53:45.302Z level=INFO msg="guestfs exec ok" bin=guestfish duration=47ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.302Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/amazon/ssm"
+time=2026-08-05T20:53:45.342Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.342Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/bin/ec2-instance-connect"
+time=2026-08-05T20:53:45.392Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.394Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/cloud/cloud.cfg"
+time=2026-08-05T20:53:45.431Z level=INFO msg="guestfs exec ok" bin=guestfish duration=37ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.432Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/local/nutanix/ngt"
+time=2026-08-05T20:53:45.477Z level=INFO msg="guestfs exec ok" bin=guestfish duration=45ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.477Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/rc.d/init.d/ngt_guest_agent"
+time=2026-08-05T20:53:45.527Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=6 output=false
+time=2026-08-05T20:53:45.527Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/vmware-tools"
+time=2026-08-05T20:53:45.588Z level=INFO msg="guestfs exec ok" bin=guestfish duration=61ms outputBytes=5 output=true
+time=2026-08-05T20:53:45.588Z level=INFO msg="running hypervisor cleanup" name=vmware
+time=2026-08-05T20:53:45.588Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/multi-user.target.wants/vmtoolsd.service"
+time=2026-08-05T20:53:45.662Z level=INFO msg="guestfs exec ok" bin=guestfish duration=74ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.663Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/default.target.wants/vmtoolsd.service"
+time=2026-08-05T20:53:45.714Z level=INFO msg="guestfs exec ok" bin=guestfish duration=52ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.715Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /usr/lib/systemd/system/multi-user.target.wants/vmtoolsd.service"
+time=2026-08-05T20:53:45.789Z level=INFO msg="guestfs exec ok" bin=guestfish duration=75ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.804Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/systemd/system"
+time=2026-08-05T20:53:45.860Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.860Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/vmtoolsd.service"
+time=2026-08-05T20:53:45.911Z level=INFO msg="guestfs exec ok" bin=guestfish duration=51ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.911Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ln-s /dev/null /etc/systemd/system/vmtoolsd.service"
+time=2026-08-05T20:53:45.978Z level=INFO msg="guestfs exec ok" bin=guestfish duration=67ms outputBytes=0 output=""
+time=2026-08-05T20:53:45.978Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/multi-user.target.wants/open-vm-tools.service"
+time=2026-08-05T20:53:46.033Z level=INFO msg="guestfs exec ok" bin=guestfish duration=56ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.034Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/default.target.wants/open-vm-tools.service"
+time=2026-08-05T20:53:46.089Z level=INFO msg="guestfs exec ok" bin=guestfish duration=55ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.089Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /usr/lib/systemd/system/multi-user.target.wants/open-vm-tools.service"
+time=2026-08-05T20:53:46.139Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.139Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/systemd/system"
+time=2026-08-05T20:53:46.197Z level=INFO msg="guestfs exec ok" bin=guestfish duration=59ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.197Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/open-vm-tools.service"
+time=2026-08-05T20:53:46.252Z level=INFO msg="guestfs exec ok" bin=guestfish duration=55ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.252Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ln-s /dev/null /etc/systemd/system/open-vm-tools.service"
+time=2026-08-05T20:53:46.306Z level=INFO msg="guestfs exec ok" bin=guestfish duration=54ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.306Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/multi-user.target.wants/vgauthd.service"
+time=2026-08-05T20:53:46.360Z level=INFO msg="guestfs exec ok" bin=guestfish duration=53ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.360Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/default.target.wants/vgauthd.service"
+time=2026-08-05T20:53:46.414Z level=INFO msg="guestfs exec ok" bin=guestfish duration=55ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.414Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /usr/lib/systemd/system/multi-user.target.wants/vgauthd.service"
+time=2026-08-05T20:53:46.462Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.462Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/systemd/system"
+time=2026-08-05T20:53:46.504Z level=INFO msg="guestfs exec ok" bin=guestfish duration=42ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.504Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/vgauthd.service"
+time=2026-08-05T20:53:46.562Z level=INFO msg="guestfs exec ok" bin=guestfish duration=57ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.562Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ln-s /dev/null /etc/systemd/system/vgauthd.service"
+time=2026-08-05T20:53:46.610Z level=INFO msg="guestfs exec ok" bin=guestfish duration=48ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.610Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /etc/yum.repos.d"
+time=2026-08-05T20:53:46.671Z level=INFO msg="guestfs exec ok" bin=guestfish duration=61ms outputBytes=5 output=true
+time=2026-08-05T20:53:46.671Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /etc/yum.repos.d"
+time=2026-08-05T20:53:46.735Z level=INFO msg="guestfs exec ok" bin=guestfish duration=64ms outputBytes=213 output="total 20\ndrwxr-xr-x.   2 root root   42 Jul 23  2025 .\ndrwxr-xr-x. 132 root root 8192 Jan 14  2026 ..\n-rw-r--r--.   1 root root  358 Jul  8  2025 redhat.repo\n-rw-r--r--.   1 root root  207 Jul 23  2025 rhel.repo"
+time=2026-08-05T20:53:46.736Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/yum.repos.d/redhat.repo /tmp/kc-gfs-read-183319117"
+time=2026-08-05T20:53:46.817Z level=INFO msg="guestfs exec ok" bin=guestfish duration=82ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.818Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/yum.repos.d/rhel.repo /tmp/kc-gfs-read-2505618479"
+time=2026-08-05T20:53:46.897Z level=INFO msg="guestfs exec ok" bin=guestfish duration=79ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.897Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm-rf /etc/vmware-tools"
+time=2026-08-05T20:53:46.985Z level=INFO msg="guestfs exec ok" bin=guestfish duration=89ms outputBytes=0 output=""
+time=2026-08-05T20:53:46.986Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm-rf /usr/lib/vmware-tools"
+time=2026-08-05T20:53:47.030Z level=INFO msg="guestfs exec ok" bin=guestfish duration=44ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.030Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm-rf /usr/lib64/vmware-tools"
+time=2026-08-05T20:53:47.125Z level=INFO msg="guestfs exec ok" bin=guestfish duration=95ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.125Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /var/lib/kc-firstboot"
+time=2026-08-05T20:53:47.177Z level=INFO msg="guestfs exec ok" bin=guestfish duration=52ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.178Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /var/lib/kc-firstboot\n-upload /tmp/kc-gfs-write-711008788 /var/lib/kc-firstboot/remove-vmware-pkgs.sh\n-chmod 0755 /var/lib/kc-firstboot/remove-vmware-pkgs.sh"
+time=2026-08-05T20:53:47.247Z level=INFO msg="guestfs exec ok" bin=guestfish duration=69ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.247Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/systemd/system"
+time=2026-08-05T20:53:47.288Z level=INFO msg="guestfs exec ok" bin=guestfish duration=40ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.288Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /etc/systemd/system\n-upload /tmp/kc-gfs-write-1639253785 /etc/systemd/system/kc-remove-vmware.service\n-chmod 0644 /etc/systemd/system/kc-remove-vmware.service"
+time=2026-08-05T20:53:47.376Z level=INFO msg="guestfs exec ok" bin=guestfish duration=88ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.376Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/systemd/system/multi-user.target.wants"
+time=2026-08-05T20:53:47.410Z level=INFO msg="guestfs exec ok" bin=guestfish duration=34ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.410Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/systemd/system/multi-user.target.wants/kc-remove-vmware.service"
+time=2026-08-05T20:53:47.454Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.454Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ln-s /etc/systemd/system/kc-remove-vmware.service /etc/systemd/system/multi-user.target.wants/kc-remove-vmware.service"
+time=2026-08-05T20:53:47.498Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.498Z level=INFO msg="hypervisor cleanup complete" name=vmware
+time=2026-08-05T20:53:47.498Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/bin/qemu-ga"
+time=2026-08-05T20:53:47.550Z level=INFO msg="guestfs exec ok" bin=guestfish duration=52ms outputBytes=5 output=true
+time=2026-08-05T20:53:47.551Z level=INFO msg="qemu-guest-agent already installed"
+time=2026-08-05T20:53:47.551Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/blkid.tab"
+time=2026-08-05T20:53:47.616Z level=INFO msg="guestfs exec ok" bin=guestfish duration=65ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.616Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /run/blkid/blkid.tab"
+time=2026-08-05T20:53:47.684Z level=INFO msg="guestfs exec ok" bin=guestfish duration=68ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.684Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /etc/lvm/cache/.cache"
+time=2026-08-05T20:53:47.733Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.733Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-find /var/lib/rpm"
+time=2026-08-05T20:53:47.783Z level=INFO msg="guestfs exec ok" bin=guestfish duration=50ms outputBytes=61 output="/.rpm.lock\n/rpmdb.sqlite\n/rpmdb.sqlite-shm\n/rpmdb.sqlite-wal"
+time=2026-08-05T20:53:47.783Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-is-dir /etc/modprobe.d"
+time=2026-08-05T20:53:47.830Z level=INFO msg="guestfs exec ok" bin=guestfish duration=46ms outputBytes=5 output=true
+time=2026-08-05T20:53:47.830Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-ll /etc/modprobe.d"
+time=2026-08-05T20:53:47.885Z level=INFO msg="guestfs exec ok" bin=guestfish duration=55ms outputBytes=225 output="total 20\ndrwxr-xr-x.   2 root root   54 Jul  1  2025 .\ndrwxr-xr-x. 131 root root 8192 Aug  5 20:53 ..\n-rw-r--r--.   1 root root  158 Nov  6  2023 firewalld-sysctls.conf\n-rw-r--r--.   1 root root  674 Feb 22  2024 tuned.conf"
+time=2026-08-05T20:53:47.885Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/modprobe.d/firewalld-sysctls.conf /tmp/kc-gfs-read-3850478899"
+time=2026-08-05T20:53:47.994Z level=INFO msg="guestfs exec ok" bin=guestfish duration=108ms outputBytes=0 output=""
+time=2026-08-05T20:53:47.994Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/modprobe.d/tuned.conf /tmp/kc-gfs-read-2478863216"
+time=2026-08-05T20:53:48.100Z level=INFO msg="guestfs exec ok" bin=guestfish duration=106ms outputBytes=0 output=""
+time=2026-08-05T20:53:48.101Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/modprobe.d/kc-virtio.conf"
+time=2026-08-05T20:53:48.177Z level=INFO msg="guestfs exec ok" bin=guestfish duration=76ms outputBytes=6 output=false
+time=2026-08-05T20:53:48.185Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-mkdir-p /etc/modprobe.d"
+time=2026-08-05T20:53:48.264Z level=INFO msg="guestfs exec ok" bin=guestfish duration=71ms outputBytes=0 output=""
+time=2026-08-05T20:53:48.264Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /etc/modprobe.d\n-upload /tmp/kc-gfs-write-3418653785 /etc/modprobe.d/kc-virtio.conf\n-chmod 0644 /etc/modprobe.d/kc-virtio.conf"
+time=2026-08-05T20:53:48.365Z level=INFO msg="guestfs exec ok" bin=guestfish duration=100ms outputBytes=0 output=""
+time=2026-08-05T20:53:48.365Z level=INFO msg="initramfs rebuild"
+time=2026-08-05T20:53:48.365Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img"
+time=2026-08-05T20:53:48.437Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=5 output=true
+time=2026-08-05T20:53:48.437Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img /tmp/kc-gfs-read-2398235357"
+time=2026-08-05T20:53:49.564Z level=INFO msg="guestfs exec ok" bin=guestfish duration=1.126s outputBytes=0 output=""
+time=2026-08-05T20:53:49.733Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-mkdir-p /boot\n-upload /tmp/kc-gfs-write-2093058497 /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img.pre-v2v\n-chmod 0644 /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img.pre-v2v"
+time=2026-08-05T20:53:50.790Z level=INFO msg="guestfs exec ok" bin=guestfish duration=1.057s outputBytes=0 output=""
+time=2026-08-05T20:53:50.804Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=6 script="-mkdir-p /proc\n-mkdir-p /sys\n-mkdir-p /dev\n-mount-vfs \"\" proc /proc /proc\n-mount-vfs \"\" sysfs /sys /sys\n-mount-vfs \"\" devtmpfs /dev /dev"
+time=2026-08-05T20:53:50.995Z level=INFO msg="guestfs exec ok" bin=guestfish duration=188ms outputBytes=0 output=""
+time=2026-08-05T20:53:50.995Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-sh \"dracut --force --add-drivers 'virtio virtio_ring virtio_blk virtio_scsi virtio_net virtio_pci xts bochs-drm bochs' /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img 5.14.0-427.13.1.el9_4.x86_64 2>&1\""
+time=2026-08-05T20:55:32.857Z level=INFO msg="guestfs exec ok" bin=guestfish duration=1m41.862s outputBytes=277 output="dracut-install: Failed to find module 'bochs_drm'\ndracut: FAILED:  /usr/lib/dracut/dracut-install -D /var/tmp/dracut.dwevD4/initramfs --kerneldir /lib/modules/5.14.0-427.13.1.el9_4.x86_64/ -m virtio virtio_ring virtio_blk virtio_scsi virtio_net virtio_pci xts bochs_drm bochs"
+time=2026-08-05T20:55:32.857Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-umount /dev\n-umount /sys\n-umount /proc"
+time=2026-08-05T20:55:33.026Z level=INFO msg="guestfs exec ok" bin=guestfish duration=168ms outputBytes=0 output=""
+time=2026-08-05T20:55:33.026Z level=INFO msg="dracut completed" kernel=5.14.0-427.13.1.el9_4.x86_64 output="dracut-install: Failed to find module 'bochs_drm'\ndracut: FAILED:  /usr/lib/dracut/dracut-install -D /var/tmp/dracut.dwevD4/initramfs --kerneldir /lib/modules/5.14.0-427.13.1.el9_4.x86_64/ -m virtio virtio_ring virtio_blk virtio_scsi virtio_net virtio_pci xts bochs_drm bochs\n\n"
+time=2026-08-05T20:55:33.026Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img.pre-v2v /tmp/kc-gfs-read-3202028942"
+time=2026-08-05T20:55:33.464Z level=INFO msg="guestfs exec ok" bin=guestfish duration=437ms outputBytes=0 output=""
+time=2026-08-05T20:55:33.546Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /boot/initramfs-5.14.0-427.13.1.el9_4.x86_64.img /tmp/kc-gfs-read-1206809119"
+time=2026-08-05T20:55:33.870Z level=INFO msg="guestfs exec ok" bin=guestfish duration=324ms outputBytes=0 output=""
+time=2026-08-05T20:55:33.948Z level=INFO msg="initramfs size changed after rebuild" before=58745261 after=57245277
+time=2026-08-05T20:55:33.948Z level=INFO msg="rebuilt initramfs with dracut" kernel=5.14.0-427.13.1.el9_4.x86_64
+time=2026-08-05T20:55:33.957Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/selinux"
+time=2026-08-05T20:55:34.011Z level=INFO msg="guestfs exec ok" bin=guestfish duration=54ms outputBytes=5 output=true
+time=2026-08-05T20:55:34.011Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-download /etc/selinux/config /tmp/kc-gfs-read-641337471"
+time=2026-08-05T20:55:34.104Z level=INFO msg="guestfs exec ok" bin=guestfish duration=93ms outputBytes=0 output=""
+time=2026-08-05T20:55:34.104Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /etc/selinux/targeted/contexts/files/file_contexts"
+time=2026-08-05T20:55:34.164Z level=INFO msg="guestfs exec ok" bin=guestfish duration=59ms outputBytes=5 output=true
+time=2026-08-05T20:55:34.164Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-exists /usr/sbin/setfiles"
+time=2026-08-05T20:55:34.207Z level=INFO msg="guestfs exec ok" bin=guestfish duration=43ms outputBytes=5 output=true
+time=2026-08-05T20:55:34.207Z level=INFO msg="running offline SELinux relabel" policy=targeted targets=3
+time=2026-08-05T20:55:34.207Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=6 script="-mkdir-p /proc\n-mkdir-p /sys\n-mkdir-p /dev\n-mount-vfs \"\" proc /proc /proc\n-mount-vfs \"\" sysfs /sys /sys\n-mount-vfs \"\" devtmpfs /dev /dev"
+time=2026-08-05T20:55:34.310Z level=INFO msg="guestfs exec ok" bin=guestfish duration=103ms outputBytes=0 output=""
+time=2026-08-05T20:55:34.311Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-sh \"/usr/sbin/setfiles -r / /etc/selinux/targeted/contexts/files/file_contexts / /boot/efi /boot 2>&1\""
+time=2026-08-05T20:55:34.426Z level=INFO msg="guestfs exec ok" bin=guestfish duration=115ms outputBytes=0 output=""
+time=2026-08-05T20:55:34.426Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=3 script="-umount /dev\n-umount /sys\n-umount /proc"
+time=2026-08-05T20:55:34.589Z level=INFO msg="guestfs exec ok" bin=guestfish duration=162ms outputBytes=0 output=""
+time=2026-08-05T20:55:34.589Z level=INFO msg="offline SELinux relabel complete" policy=targeted
+time=2026-08-05T20:55:34.589Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-rm /.autorelabel"
+time=2026-08-05T20:55:34.637Z level=INFO msg="guestfs exec ok" bin=guestfish duration=49ms outputBytes=0 output=""
+time=2026-08-05T20:55:34.638Z level=INFO msg="pipeline complete"
+time=2026-08-05T20:55:34.668Z level=INFO msg=exec bin=/usr/lib/kc-utils/kc-finalize args="[--prepare-data /var/tmp/v2v/prepare-out.json --convert-data /var/tmp/v2v/convert-out.json --output /var/tmp/v2v/target-meta.json --mount-root /tmp/kc-guest --log-level info --guestfs]"
+time=2026-08-05T20:55:34.676Z level=INFO msg="guestfish adopting shared session" pid=101 guestfishPID=101 shared=true
+time=2026-08-05T20:55:34.676Z level=INFO msg="guestfish ensureLaunched" pid=101 disks=1 paths=[/var/tmp/v2v/overlay-0-block0.qcow2] HOME=/var/tmp LIBGUESTFS_BACKEND=direct socket=/tmp/.guestfish-107/socket-101 sessionAlive=true
+time=2026-08-05T20:55:34.676Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-list-devices
+time=2026-08-05T20:55:34.771Z level=INFO msg="guestfs exec ok" bin=guestfish duration=95ms outputBytes=9 output=/dev/sda
+time=2026-08-05T20:55:34.771Z level=INFO msg="guestfish ready probe" pid=101 ready=true devices=/dev/sda
+time=2026-08-05T20:55:34.771Z level=INFO msg="guestfish session already launched" pid=101 devices=/dev/sda
+time=2026-08-05T20:55:34.771Z level=INFO msg="running customizations" plugins="[dynamicscripts native]"
+time=2026-08-05T20:55:34.771Z level=INFO msg="running customizer" name=dynamicscripts
+time=2026-08-05T20:55:34.771Z level=INFO msg="customizer complete" name=dynamicscripts
+time=2026-08-05T20:55:34.771Z level=INFO msg="running customizer" name=native
+time=2026-08-05T20:55:34.771Z level=INFO msg="skipping /.autorelabel, offline SELinux relabel was performed during conversion"
+time=2026-08-05T20:55:34.771Z level=INFO msg="customizer complete" name=native
+time=2026-08-05T20:55:34.771Z level=INFO msg="syncing guest tree to disks" backend=guestfs
+time=2026-08-05T20:55:34.771Z level=INFO msg="trimming filesystems" backend=guestfs mounts=3
+time=2026-08-05T20:55:34.771Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-inspect-os
+time=2026-08-05T20:55:38.567Z level=INFO msg="guestfs exec ok" bin=guestfish duration=3.796s outputBytes=29 output=/dev/rhel_dhcp-6-46-218/root
+time=2026-08-05T20:55:38.568Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-inspect-get-mountpoints /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:55:38.652Z level=INFO msg="guestfs exec ok" bin=guestfish duration=85ms outputBytes=70 output="/boot/efi: /dev/sda1\n/boot: /dev/sda2\n/: /dev/rhel_dhcp-6-46-218/root"
+time=2026-08-05T20:55:38.652Z level=INFO msg="discovered mount points via inspection" count=3
+time=2026-08-05T20:55:38.652Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=4 script="-umount-all\n-mount /dev/rhel_dhcp-6-46-218/root /\n-mount /dev/sda2 /boot\n-mount /dev/sda1 /boot/efi"
+time=2026-08-05T20:55:38.977Z level=INFO msg="guestfs exec ok" bin=guestfish duration=324ms outputBytes=0 output=""
+time=2026-08-05T20:55:38.977Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-fstrim /"
+time=2026-08-05T20:55:39.132Z level=INFO msg="guestfs exec ok" bin=guestfish duration=155ms outputBytes=0 output=""
+time=2026-08-05T20:55:39.132Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-fstrim /boot"
+time=2026-08-05T20:55:39.230Z level=INFO msg="guestfs exec ok" bin=guestfish duration=98ms outputBytes=0 output=""
+time=2026-08-05T20:55:39.230Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script="-fstrim /boot/efi"
+time=2026-08-05T20:55:39.339Z level=INFO msg="guestfs exec ok" bin=guestfish duration=108ms outputBytes=0 output=""
+time=2026-08-05T20:55:39.339Z level=INFO msg="tearing down guest" backend=guestfs mountRoot=/tmp/kc-guest
+time=2026-08-05T20:55:39.339Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-umount-all
+time=2026-08-05T20:55:39.401Z level=INFO msg="guestfs exec ok" bin=guestfish duration=62ms outputBytes=0 output=""
+time=2026-08-05T20:55:39.401Z level=INFO msg="checking filesystems" backend=guestfs
+time=2026-08-05T20:55:39.401Z level=INFO msg="guestfish adopting shared session" pid=101 guestfishPID=101 shared=true HOME=/var/tmp socket=/tmp/.guestfish-107/socket-101
+time=2026-08-05T20:55:39.401Z level=INFO msg="guestfish ensureLaunched" pid=101 disks=1 paths=[/var/tmp/v2v/overlay-0-block0.qcow2] HOME=/var/tmp LIBGUESTFS_BACKEND=direct socket=/tmp/.guestfish-107/socket-101 sessionAlive=true
+time=2026-08-05T20:55:39.401Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101]" scriptLines=1 script=-list-devices
+time=2026-08-05T20:55:39.474Z level=INFO msg="guestfs exec ok" bin=guestfish duration=72ms outputBytes=9 output=/dev/sda
+time=2026-08-05T20:55:39.474Z level=INFO msg="guestfish ready probe" pid=101 ready=true devices=/dev/sda
+time=2026-08-05T20:55:39.474Z level=INFO msg="guestfish session already launched" pid=101 devices=/dev/sda
+time=2026-08-05T20:55:39.474Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- xfs-repair /dev/sda2]"
+time=2026-08-05T20:55:40.067Z level=INFO msg="guestfs exec ok" bin=guestfish duration=593ms outputBytes=2 output=0
+time=2026-08-05T20:55:40.067Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- xfs-repair /dev/rhel_dhcp-6-46-218/root]"
+time=2026-08-05T20:55:45.303Z level=INFO msg="guestfs exec ok" bin=guestfish duration=5.235s outputBytes=2 output=0
+time=2026-08-05T20:55:45.303Z level=INFO msg="pipeline complete"
+time=2026-08-05T20:55:45.306Z level=INFO msg="guestfish shared listener exit" pid=101
+time=2026-08-05T20:55:45.306Z level=INFO msg="guestfs exec" bin=guestfish args="[--remote=101 -- exit]"
+time=2026-08-05T20:55:45.493Z level=INFO msg="guestfs exec ok" bin=guestfish duration=187ms outputBytes=0 output=""
+time=2026-08-05T20:55:45.493Z level=INFO msg="committing qcow2 overlay" overlay=/var/tmp/v2v/overlay-0-block0.qcow2 backing=/dev/block0
+Image committed.
+time=2026-08-05T20:55:47.338Z level=INFO msg="qcow2 overlays committed" count=1
+time=2026-08-05T20:55:47.338Z level=INFO msg="wrote inspection XML" path=/var/tmp/v2v/inspection.xml
+time=2026-08-05T20:55:47.339Z level=INFO msg="pipeline output" target_meta="{\n  \"guestcaps\": {\n    \"block_bus\": \"virtio\",\n    \"net_bus\": \"virtio\",\n    \"virtio_rng\": true,\n    \"virtio_balloon\": true,\n    \"virtio_socket\": true,\n    \"isa_pvpanic\": true,\n    \"machine_type\": \"q35\",\n    \"arch\": \"x86_64\",\n    \"virtio_1_0\": true,\n    \"rtc_utc\": true\n  },\n  \"target_buses\": {\n    \"virtio_blk\": [\n      {\n        \"index\": 0,\n        \"source_disk\": 0\n      }\n    ]\n  },\n  \"target_nics\": [\n    {\n      \"mac\": \"00:50:56:9c:89:ce\",\n      \"model\": \"virtio\"\n    },\n    {\n      \"mac\": \"00:50:56:9c:da:05\",\n      \"model\": \"virtio\"\n    }\n  ],\n  \"target_firmware\": \"uefi\",\n  \"boot_device\": {\n    \"disk_index\": 0,\n    \"part_index\": 2,\n    \"bootloader_type\": \"grub2\"\n  },\n  \"disks\": [\n    {\n      \"path\": \"/var/tmp/v2v/overlay-0-block0.qcow2\",\n      \"size_bytes\": 0,\n      \"format\": \"raw\",\n      \"partitions\": [\n        {\n          \"index\": 1,\n          \"size_bytes\": 629145600,\n          \"fs_type\": \"vfat\",\n          \"mount_point\": \"/boot/efi\",\n          \"device_path\": \"/dev/sda1\"\n        },\n        {\n          \"index\": 2,\n          \"size_bytes\": 1073741824,\n          \"fs_type\": \"xfs\",\n          \"mount_point\": \"/boot\",\n          \"device_path\": \"/dev/sda2\"\n        },\n        {\n          \"index\": 0,\n          \"size_bytes\": 0,\n          \"fs_type\": \"xfs\",\n          \"mount_point\": \"/\",\n          \"device_path\": \"/dev/rhel_dhcp-6-46-218/root\"\n        }\n      ]\n    }\n  ],\n  \"inspect\": {\n    \"type\": \"linux\",\n    \"distro\": \"rhel\",\n    \"major_version\": 9,\n    \"minor_version\": 4,\n    \"arch\": \"x86_64\",\n    \"product_name\": \"Red Hat Enterprise Linux 9.4 (Plow)\"\n  }\n}"
+Starting server on :8080
+Shutdown request received. Shutting down server.

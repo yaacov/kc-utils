@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MTV Conversion Pod — ref vs kc-v2v</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:#f8f9fa;color:#1a1a1a;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}
+h1{font-size:22px;margin:0 0 4px}
+h2{font-size:16px;margin:32px 0 8px;border-bottom:1px solid #dee2e6;padding-bottom:4px}
+.meta{color:#666;font-size:13px;margin-bottom:24px}
+.chart-box{position:relative;height:280px;margin-bottom:8px}
+.chart-box.short{height:240px}
+.caption{color:#888;font-size:12px;margin-bottom:16px}
+table{border-collapse:collapse;width:100%;margin-bottom:16px;font-size:14px}
+th,td{text-align:left;padding:6px 12px;border-bottom:1px solid #dee2e6}
+th{background:#f1f3f5;font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+hr{border:none;border-top:1px solid #dee2e6;margin:24px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Conversion pod — ref vs kc-v2v</h1>
+<p class="meta">
+  Memory = cgroup RSS (Mi) · CPU = metrics-server (millicores) · Net = cumulative /proc/net/dev (Mi)<br>
+  cold · qemtvd-07 · ref 20260805T211538Z · kc 20260805T204233Z · quay.io/yaacov/kc-v2v:devel-amd64
+</p>
+
+<h2>RHEL conversion pod — memory &amp; CPU over time</h2>
+<div class="chart-box"><canvas id="rhelMemCpu"></canvas></div>
+<p class="caption">x-axis = elapsed seconds since monitor start</p>
+
+<h2>Windows conversion pod — memory &amp; CPU over time</h2>
+<div class="chart-box"><canvas id="winMemCpu"></canvas></div>
+
+<hr>
+
+<h2>Peak resource usage</h2>
+<table>
+<tr><th>VM</th><th>ref peak mem</th><th>kc peak mem</th><th>ref peak CPU</th><th>kc peak CPU</th></tr>
+<tr><td>RHEL</td><td>1894 Mi</td><td>1804 Mi</td><td>2851 m</td><td>1029 m</td></tr>
+<tr><td>Windows</td><td>1526 Mi</td><td>962 Mi</td><td>1343 m</td><td>493 m</td></tr>
+</table>
+
+<hr>
+
+<h2>RHEL conversion pod — network RX over time</h2>
+<div class="chart-box short"><canvas id="rhelNet"></canvas></div>
+<p class="caption">Cumulative bytes received from /proc/net/dev (all non-lo interfaces)</p>
+
+<h2>Windows conversion pod — network RX over time</h2>
+<div class="chart-box short"><canvas id="winNet"></canvas></div>
+
+<h2>Network totals</h2>
+<table>
+<tr><th>VM</th><th>ref RX</th><th>kc RX</th><th>ref TX</th><th>kc TX</th></tr>
+<tr><td>RHEL</td><td>6343 Mi</td><td>2795 Mi</td><td>34 Mi</td><td>6 Mi</td></tr>
+<tr><td>Windows</td><td>11719 Mi</td><td>4257 Mi</td><td>49 Mi</td><td>9 Mi</td></tr>
+</table>
+
+<hr>
+
+<div class="grid2">
+<div>
+<h2>RHEL conversion duration</h2>
+<table>
+<tr><th>Block</th><th>ref</th><th>kc-v2v</th><th>Delta</th></tr>
+<tr><td>ImageConversion</td><td>4m 43s</td><td>11m 59s</td><td>+7m 16s</td></tr>
+<tr><td>DiskTransferV2v</td><td>9m 56s</td><td>4s</td><td>&#8722;9m 52s</td></tr>
+<tr><td>Combined</td><td>14m 39s</td><td>12m 3s</td><td>&#8722;2m 36s</td></tr>
+<tr><td>Plan wall (all steps)</td><td>15m 21s</td><td>12m 31s</td><td>&#8722;2m 50s</td></tr>
+</table>
+</div>
+<div>
+<h2>Windows conversion duration</h2>
+<table>
+<tr><th>Block</th><th>ref</th><th>kc-v2v</th><th>Delta</th></tr>
+<tr><td>ImageConversion</td><td>3m 24s</td><td>12m 47s</td><td>+9m 23s</td></tr>
+<tr><td>DiskTransferV2v</td><td>9m 58s</td><td>3s</td><td>&#8722;9m 55s</td></tr>
+<tr><td>Combined</td><td>13m 22s</td><td>12m 50s</td><td>&#8722;32s</td></tr>
+<tr><td>Plan wall (all steps)</td><td>14m 6s</td><td>13m 32s</td><td>&#8722;34s</td></tr>
+</table>
+</div>
+</div>
+
+</div>
+<script>
+const RHEL_REF=[{t:54,mem:78,cpu:null,rx:0},{t:74,mem:904,cpu:null,rx:3},{t:95,mem:1030,cpu:null,rx:29},{t:115,mem:1070,cpu:408,rx:63},{t:136,mem:1137,cpu:542,rx:79},{t:157,mem:1414,cpu:1398,rx:226},{t:177,mem:1639,cpu:807,rx:299},{t:199,mem:1678,cpu:752,rx:319},{t:220,mem:1822,cpu:1127,rx:382},{t:240,mem:1878,cpu:2836,rx:382},{t:261,mem:1880,cpu:1373,rx:386},{t:281,mem:1838,cpu:1779,rx:404},{t:302,mem:1894,cpu:2851,rx:429},{t:323,mem:634,cpu:2336,rx:477},{t:343,mem:1002,cpu:1155,rx:1011},{t:364,mem:1001,cpu:257,rx:1557},{t:384,mem:1002,cpu:173,rx:2101},{t:405,mem:1183,cpu:173,rx:2598},{t:425,mem:1524,cpu:227,rx:3095},{t:446,mem:1538,cpu:352,rx:3610},{t:474,mem:1683,cpu:342,rx:4296},{t:495,mem:1444,cpu:334,rx:4762},{t:523,mem:1558,cpu:319,rx:5424},{t:544,mem:1396,cpu:424,rx:5904},{t:565,mem:912,cpu:335,rx:6343},{t:586,mem:1109,cpu:332,rx:6343},{t:607,mem:1145,cpu:727,rx:6343},{t:628,mem:1067,cpu:727,rx:6343},{t:651,mem:1014,cpu:1006,rx:6343},{t:672,mem:1153,cpu:1189,rx:6343},{t:694,mem:1466,cpu:1189,rx:6343},{t:717,mem:1492,cpu:1977,rx:6343},{t:738,mem:1580,cpu:1577,rx:6343},{t:764,mem:1484,cpu:2476,rx:6343},{t:785,mem:1517,cpu:2667,rx:6343},{t:811,mem:813,cpu:2081,rx:6343},{t:832,mem:996,cpu:995,rx:6343},{t:852,mem:1117,cpu:888,rx:6343},{t:873,mem:1233,cpu:927,rx:6343},{t:893,mem:1352,cpu:948,rx:6343},{t:914,mem:1249,cpu:947,rx:6343}];
+const RHEL_KC=[{t:48,mem:22,cpu:null,rx:3},{t:69,mem:29,cpu:null,rx:141},{t:94,mem:19,cpu:25,rx:331},{t:114,mem:33,cpu:111,rx:333},{t:135,mem:33,cpu:14,rx:333},{t:156,mem:28,cpu:5,rx:507},{t:180,mem:40,cpu:316,rx:765},{t:200,mem:40,cpu:475,rx:957},{t:221,mem:39,cpu:259,rx:957},{t:242,mem:40,cpu:3,rx:957},{t:262,mem:44,cpu:4,rx:1119},{t:282,mem:31,cpu:184,rx:1304},{t:303,mem:34,cpu:184,rx:1498},{t:324,mem:34,cpu:296,rx:1498},{t:345,mem:34,cpu:5,rx:1498},{t:365,mem:32,cpu:4,rx:1585},{t:387,mem:46,cpu:215,rx:1743},{t:408,mem:48,cpu:417,rx:1916},{t:429,mem:42,cpu:401,rx:2063},{t:449,mem:46,cpu:396,rx:2104},{t:470,mem:46,cpu:24,rx:2104},{t:491,mem:50,cpu:71,rx:2310},{t:513,mem:28,cpu:348,rx:2493},{t:534,mem:54,cpu:411,rx:2677},{t:557,mem:41,cpu:437,rx:2795},{t:578,mem:41,cpu:86,rx:2795},{t:599,mem:482,cpu:4,rx:2795},{t:619,mem:792,cpu:672,rx:2795},{t:640,mem:1174,cpu:824,rx:2795},{t:660,mem:1460,cpu:658,rx:2795},{t:686,mem:1683,cpu:869,rx:2795},{t:707,mem:1804,cpu:1029,rx:2795},{t:728,mem:1804,cpu:991,rx:2795}];
+const WIN_REF=[{t:64,mem:49,cpu:null,rx:0},{t:85,mem:855,cpu:null,rx:2},{t:105,mem:837,cpu:null,rx:33},{t:126,mem:950,cpu:766,rx:73},{t:151,mem:948,cpu:1276,rx:73},{t:171,mem:897,cpu:1343,rx:73},{t:192,mem:1069,cpu:1157,rx:73},{t:213,mem:1060,cpu:1200,rx:73},{t:233,mem:1096,cpu:1123,rx:73},{t:254,mem:591,cpu:1181,rx:267},{t:275,mem:1033,cpu:1002,rx:843},{t:295,mem:1258,cpu:338,rx:1412},{t:316,mem:1129,cpu:343,rx:1978},{t:345,mem:993,cpu:362,rx:2734},{t:365,mem:810,cpu:362,rx:3284},{t:386,mem:736,cpu:344,rx:3845},{t:407,mem:889,cpu:336,rx:4398},{t:432,mem:925,cpu:352,rx:5091},{t:465,mem:720,cpu:338,rx:6001},{t:486,mem:713,cpu:341,rx:6557},{t:506,mem:830,cpu:357,rx:7132},{t:527,mem:999,cpu:362,rx:7702},{t:548,mem:1001,cpu:355,rx:8267},{t:568,mem:959,cpu:348,rx:8840},{t:589,mem:960,cpu:353,rx:9407},{t:609,mem:946,cpu:185,rx:9988},{t:630,mem:946,cpu:179,rx:10581},{t:651,mem:992,cpu:168,rx:11153},{t:672,mem:1263,cpu:321,rx:11713},{t:692,mem:1169,cpu:333,rx:11719},{t:713,mem:1526,cpu:1078,rx:11719},{t:734,mem:1468,cpu:1272,rx:11719},{t:768,mem:1419,cpu:1268,rx:11719},{t:789,mem:1325,cpu:1041,rx:11719},{t:810,mem:1181,cpu:968,rx:11719},{t:830,mem:652,cpu:1191,rx:11719}];
+const WIN_KC=[{t:59,mem:51,cpu:null,rx:35},{t:79,mem:46,cpu:null,rx:233},{t:100,mem:56,cpu:306,rx:433},{t:121,mem:49,cpu:454,rx:609},{t:141,mem:36,cpu:445,rx:816},{t:162,mem:54,cpu:467,rx:1028},{t:194,mem:41,cpu:429,rx:1333},{t:215,mem:54,cpu:421,rx:1519},{t:236,mem:47,cpu:421,rx:1631},{t:259,mem:49,cpu:354,rx:1806},{t:280,mem:53,cpu:468,rx:2000},{t:302,mem:55,cpu:465,rx:2194},{t:323,mem:42,cpu:437,rx:2351},{t:345,mem:47,cpu:375,rx:2555},{t:366,mem:47,cpu:439,rx:2754},{t:387,mem:49,cpu:438,rx:2880},{t:408,mem:48,cpu:406,rx:3053},{t:429,mem:36,cpu:441,rx:3241},{t:450,mem:38,cpu:421,rx:3410},{t:471,mem:39,cpu:280,rx:3524},{t:512,mem:30,cpu:280,rx:3743},{t:533,mem:42,cpu:2,rx:3743},{t:555,mem:42,cpu:5,rx:3743},{t:575,mem:42,cpu:4,rx:3743},{t:596,mem:42,cpu:5,rx:3743},{t:617,mem:51,cpu:3,rx:3902},{t:637,mem:56,cpu:250,rx:4124},{t:658,mem:35,cpu:312,rx:4257},{t:679,mem:26,cpu:164,rx:4257},{t:700,mem:26,cpu:4,rx:4257},{t:721,mem:26,cpu:2,rx:4257},{t:749,mem:26,cpu:5,rx:4257},{t:769,mem:612,cpu:6,rx:4257},{t:797,mem:962,cpu:493,rx:4257}];
+
+function nearest(samples,t,key,win=35){
+  let best=null;
+  for(const s of samples){const v=s[key];if(v==null)continue;const d=Math.abs(s.t-t);
+    if(d<=win&&(best==null||d<best.d))best={d,v};}
+  return best?best.v:NaN;
+}
+function overlay(ref,kc,key,maxPts=22){
+  const tmax=Math.max(ref[ref.length-1].t,kc[kc.length-1].t);
+  const step=Math.max(30,Math.ceil(tmax/maxPts));
+  const labels=[],refD=[],kcD=[];
+  for(let t=0;t<=tmax;t+=step){
+    const m=Math.floor(t/60),s=t%60;
+    labels.push(s===0?m+'m':m+':'+String(s).padStart(2,'0'));
+    refD.push(nearest(ref,t,key));kcD.push(nearest(kc,t,key));
+  }
+  return{labels,refD,kcD};
+}
+
+function mkMemCpu(canvasId,ref,kc){
+  const mem=overlay(ref,kc,'mem');
+  const cpu=overlay(ref,kc,'cpu');
+  new Chart(document.getElementById(canvasId),{type:'line',
+    data:{labels:mem.labels,datasets:[
+      {label:'ref mem (Mi)',data:mem.refD,borderColor:'#868e96',backgroundColor:'rgba(134,142,150,.1)',tension:.3,pointRadius:1},
+      {label:'kc mem (Mi)',data:mem.kcD,borderColor:'#2b8a3e',backgroundColor:'rgba(43,138,62,.1)',tension:.3,pointRadius:1},
+      {label:'ref cpu (m)',data:cpu.refD,borderColor:'#1971c2',backgroundColor:'rgba(25,113,194,.1)',tension:.3,pointRadius:1,borderDash:[4,3]},
+      {label:'kc cpu (m)',data:cpu.kcD,borderColor:'#e67700',backgroundColor:'rgba(230,119,0,.1)',tension:.3,pointRadius:1,borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,title:{display:true,text:'Mi / millicores'}},
+              x:{title:{display:true,text:'Elapsed'}}},
+      plugins:{legend:{position:'bottom'}},interaction:{mode:'index',intersect:false}}
+  });
+}
+
+function mkNet(canvasId,ref,kc){
+  const rx=overlay(ref,kc,'rx');
+  new Chart(document.getElementById(canvasId),{type:'line',
+    data:{labels:rx.labels,datasets:[
+      {label:'ref RX (Mi)',data:rx.refD,borderColor:'#868e96',backgroundColor:'rgba(134,142,150,.1)',tension:.3,pointRadius:1,fill:true},
+      {label:'kc RX (Mi)',data:rx.kcD,borderColor:'#2b8a3e',backgroundColor:'rgba(43,138,62,.1)',tension:.3,pointRadius:1,fill:true},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,title:{display:true,text:'Cumulative Mi'}},
+              x:{title:{display:true,text:'Elapsed'}}},
+      plugins:{legend:{position:'bottom'}},interaction:{mode:'index',intersect:false}}
+  });
+}
+
+mkMemCpu('rhelMemCpu',RHEL_REF,RHEL_KC);
+mkMemCpu('winMemCpu',WIN_REF,WIN_KC);
+mkNet('rhelNet',RHEL_REF,RHEL_KC);
+mkNet('winNet',WIN_REF,WIN_KC);
+</script>
+</body>
+</html>
