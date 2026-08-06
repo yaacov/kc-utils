@@ -63,41 +63,13 @@ func Run(cfg *Config) error {
 		ccs = fmt.Sprintf("ControlSet%03d", cfg.PrepareData.InspectWindows.CurrentControlSet)
 	}
 
-	editor, ok := registry.Editors.Get("hivex")
-	if !ok {
-		return fmt.Errorf("registry editor 'hivex' not registered")
-	}
-
-	systemGuest := "/Windows/System32/config/SYSTEM"
-	if cfg.PrepareData.InspectWindows != nil && cfg.PrepareData.InspectWindows.SystemHive != "" {
-		systemGuest = "/" + filepath.ToSlash(strings.TrimPrefix(cfg.PrepareData.InspectWindows.SystemHive, "/"))
-	}
-	systemHost, err := g.Checkout(systemGuest)
+	systemGuest, systemHost, systemHive, softwareGuest, softwareHost, softwareHive, err := openHives(g, cfg.PrepareData.InspectWindows)
 	if err != nil {
-		return fmt.Errorf("checkout SYSTEM hive: %w", err)
+		return err
 	}
 	defer g.DiscardCheckout(systemHost)
-
-	systemHive, err := editor.OpenHive(systemHost)
-	if err != nil {
-		return fmt.Errorf("opening SYSTEM hive: %w", err)
-	}
 	defer systemHive.Close()
-
-	softwareGuest := "/Windows/System32/config/SOFTWARE"
-	if cfg.PrepareData.InspectWindows != nil && cfg.PrepareData.InspectWindows.SoftwareHive != "" {
-		softwareGuest = "/" + filepath.ToSlash(strings.TrimPrefix(cfg.PrepareData.InspectWindows.SoftwareHive, "/"))
-	}
-	softwareHost, err := g.Checkout(softwareGuest)
-	if err != nil {
-		return fmt.Errorf("checkout SOFTWARE hive: %w", err)
-	}
 	defer g.DiscardCheckout(softwareHost)
-
-	softwareHive, err := editor.OpenHive(softwareHost)
-	if err != nil {
-		return fmt.Errorf("opening SOFTWARE hive: %w", err)
-	}
 	defer softwareHive.Close()
 
 	// Block 1: Version classification
@@ -115,7 +87,7 @@ func Run(cfg *Config) error {
 		slog.Info("offline mode enabled, skipping network-dependent operations")
 	}
 
-	// Block 2: Detect antivirus
+	// Block 2b: Detect antivirus
 	slog.Debug("detecting antivirus")
 	output.Warnings = append(output.Warnings, inspect.DetectAntivirus(softwareHive)...)
 
@@ -139,7 +111,7 @@ func Run(cfg *Config) error {
 		}
 	}
 
-	// Block 5: Copy virtio drivers
+	// Block 5: Copy virtio drivers into the guest
 	slog.Debug("copying virtio drivers")
 	copiedDriverNames, err := drivers.Copy(cfg.MountRoot, driverFiles)
 	if err != nil {
@@ -152,7 +124,7 @@ func Run(cfg *Config) error {
 	slog.Debug("registering drivers")
 	registerDrivers(systemHive, ccs, copiedDriverNames, majorVersion, minorVersion, caps.Arch)
 
-	// Block 7: Update DevicePath
+	// Block 7: Update DevicePath registry key
 	slog.Debug("updating device path")
 	drivers.Update(softwareHive)
 
@@ -172,11 +144,11 @@ func Run(cfg *Config) error {
 		}
 	}
 
-	// Block 9: Disable crash auto-reboot
+	// Block 9: Disable crash auto-reboot on BSOD
 	slog.Debug("disabling crash auto-reboot")
 	crashcontrol.Disable(systemHive, ccs)
 
-	// Blocks 10-12: Firstboot scripts
+	// Blocks 10–12: Firstboot scripts
 	slog.Debug("generating firstboot scripts")
 	if err := firstboot.Configure(&firstboot.Config{
 		MountRoot:   cfg.MountRoot,
@@ -191,21 +163,21 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	// Block 13: NTFS heads fix
+	// Block 13: NTFS boot sector fix
 	slog.Debug("NTFS heads fix")
 	ntfsfix.Fix(majorVersion, cfg.PrepareData.Disks)
 
-	// Block 14 (pluggable): UEFI BCD fixup
+	// Block 14 (pluggable): UEFI BCD fixup on ESP partitions
 	slog.Debug("UEFI BCD fixup")
 	if cfg.PrepareData.Firmware.Type == "uefi" {
 		output.Errors = append(output.Errors, uefi.ConvertAllESPs(cfg.MountRoot, cfg.PrepareData.Firmware.ESPDevices)...)
 	}
 
-	// Block 15: Build output caps (EC2 cleanup runs via hypervisor remove plugins)
+	// Block 15: Build output guest capabilities
 	slog.Debug("building guest capabilities")
 	convertoutput.Build(caps, copiedDriverNames)
 
-	// Block 17: Post-convert fixup
+	// Block 17: Post-convert permission fixup
 	slog.Debug("post-convert fixup")
 	convertoutput.FixPermissions(cfg.MountRoot)
 
@@ -229,6 +201,51 @@ func Run(cfg *Config) error {
 
 	slog.Info("pipeline complete")
 	return nil
+}
+
+func openHives(g *guest.Guest, iw *types.WindowsInspect) (systemGuest, systemHost string, systemHive registry.Hive, softwareGuest, softwareHost string, softwareHive registry.Hive, err error) {
+	editor, ok := registry.Editors.Get("hivex")
+	if !ok {
+		err = fmt.Errorf("registry editor 'hivex' not registered")
+		return
+	}
+
+	systemGuest = "/Windows/System32/config/SYSTEM"
+	if iw != nil && iw.SystemHive != "" {
+		systemGuest = "/" + filepath.ToSlash(strings.TrimPrefix(iw.SystemHive, "/"))
+	}
+	systemHost, err = g.Checkout(systemGuest)
+	if err != nil {
+		err = fmt.Errorf("checkout SYSTEM hive: %w", err)
+		return
+	}
+	systemHive, err = editor.OpenHive(systemHost)
+	if err != nil {
+		g.DiscardCheckout(systemHost)
+		err = fmt.Errorf("opening SYSTEM hive: %w", err)
+		return
+	}
+
+	softwareGuest = "/Windows/System32/config/SOFTWARE"
+	if iw != nil && iw.SoftwareHive != "" {
+		softwareGuest = "/" + filepath.ToSlash(strings.TrimPrefix(iw.SoftwareHive, "/"))
+	}
+	softwareHost, err = g.Checkout(softwareGuest)
+	if err != nil {
+		systemHive.Close()
+		g.DiscardCheckout(systemHost)
+		err = fmt.Errorf("checkout SOFTWARE hive: %w", err)
+		return
+	}
+	softwareHive, err = editor.OpenHive(softwareHost)
+	if err != nil {
+		g.DiscardCheckout(softwareHost)
+		systemHive.Close()
+		g.DiscardCheckout(systemHost)
+		err = fmt.Errorf("opening SOFTWARE hive: %w", err)
+		return
+	}
+	return
 }
 
 func registerDrivers(systemHive registry.Hive, ccs string, copiedDriverNames []string, majorVersion, minorVersion int, arch string) {

@@ -29,21 +29,21 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 |---|-------|------|---------|-------------|
 | 1 | Version | pluggable: `VersionHandler` | `pkg/convert-windows/version/` | Classify Windows era (win2008, win10, …) |
 | 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted RPM tree |
-| 3 | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
-| 4 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
-| 5 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
-| 6 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
-| 7 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
-| 8 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
-| 9 | Hypervisor Services | pluggable: `WindowsServiceDisabler` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
-| 10 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
-| 11-13 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate version-appropriate firstboot scripts |
-| 14 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |
-| 15 | UEFI | pluggable: `UEFIEditor` | `pkg/common/uefi/` | Update UEFI boot entries on ESP partitions |
-| 16 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
+| 2b | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
+| 3 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
+| 4 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
+| 5 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
+| 6 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
+| 7 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
+| 9 | Hypervisor Services | pluggable: `WindowsServices` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
+| 9 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
+| 10-12 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate version-appropriate firstboot scripts |
+| 13 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |
+| 14 | UEFI | pluggable: `UEFIEditor` | `pkg/common/uefi/` | Update UEFI boot entries on ESP partitions |
+| 15 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
 | 17 | Post-Convert | strict | `pkg/convert-windows/output/` | Post-convert permission fixup |
 
-Note: Block numbers match the pipeline comments in `internal/convert-windows/pipeline.go`.
+Block numbers match the pipeline comments in `internal/convert-windows/pipeline.go`.
 
 ## Input
 

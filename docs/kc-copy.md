@@ -155,6 +155,19 @@ Target paths (conversion pod `podVolumeMounts`):
 Locally, `make build` places `kc-copy` in `bin/` next to the other pipeline
 binaries. Point `kc-v2v` at that directory with `KC_BIN_DIR=$PWD/bin`.
 
+## Package Layout (`pkg/copy/`)
+
+| File | Purpose |
+|------|---------|
+| `copy.go` | `Run()` entry point, worker pool, progress tracking |
+| `download.go` | NFC HTTP download and `StreamToRaw` orchestration |
+| `filter.go` | `FilterDiskURLs` — match NFC lease URLs to `source_disks` |
+| `target.go` | Target PVC discovery and ordering |
+| `vmdk.go` | `StreamToRaw` — stream-optimized VMDK to raw conversion |
+| `vsphere.go` | govmomi vSphere connection and NFC lease setup |
+| `drain_linux.go` | Block device `fsync` before close (Linux) |
+| `drain_other.go` | No-op drain for non-Linux builds |
+
 ## Related
 
 - [kc-v2v.md](kc-v2v.md) — full orchestrator including copy gate

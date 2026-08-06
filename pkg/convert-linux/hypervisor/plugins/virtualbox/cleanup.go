@@ -18,9 +18,9 @@ func init() {
 }
 
 func (c *Cleanup) Detect(guestRoot string) bool {
-	return fileExists(filepath.Join(guestRoot, "usr", "bin", "VBoxService")) ||
-		fileExists(filepath.Join(guestRoot, "usr", "sbin", "VBoxService")) ||
-		fileExists(filepath.Join(guestRoot, "var", "lib", "VBoxGuestAdditions", "config"))
+	return guest.FileExists(filepath.Join(guestRoot, "usr", "bin", "VBoxService")) ||
+		guest.FileExists(filepath.Join(guestRoot, "usr", "sbin", "VBoxService")) ||
+		guest.FileExists(filepath.Join(guestRoot, "var", "lib", "VBoxGuestAdditions", "config"))
 }
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
@@ -28,7 +28,6 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 		hypervisor.DisableSystemdUnit(guestRoot, unit)
 	}
 
-	// Remove tarball install directory referenced by config.
 	cfgPath := filepath.Join(guestRoot, "var", "lib", "VBoxGuestAdditions", "config")
 	if data, err := guest.FileRead(cfgPath); err == nil {
 		scanner := bufio.NewScanner(strings.NewReader(string(data)))
@@ -49,8 +48,4 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 		filepath.Join(guestRoot, "opt", "VBoxGuestAdditions"),
 	)
 	return nil
-}
-
-func fileExists(path string) bool {
-	return guest.FileExists(path)
 }
