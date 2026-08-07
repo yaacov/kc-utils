@@ -265,7 +265,7 @@ See also existing `V2V_*` flags in [`pkg/v2v/config/config.go`](../../pkg/v2v/co
 | Plan `customizationScripts` ConfigMap | Mounted at `/mnt/dynamic_scripts`; processed by kc-finalize `dynamicscripts` plugin |
 | `V2V_staticIPs` | Parsed into `PrepareInput.options.static_ips` |
 | `V2V_HOSTNAME` | Set via finalize `native` customizer |
-| `V2V_NBDE_CLEVIS` / `/etc/luks/*` | LUKS unlock in kc-prepare |
+| `V2V_NBDE_CLEVIS` / `/etc/luks/*` | Clevis unlock (`clevis-luks-unlock` in guestfs; host `clevis` in direct) or keyfiles from `/etc/luks`. Clevis wins if both are set. Tang must be reachable when Clevis is enabled. |
 | Feature flags (`V2V_vsphereVmwareDriverRemoval`, etc.) | Mapped to converter pipeline options |
 
 ### Dynamic script filename patterns

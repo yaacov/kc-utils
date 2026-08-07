@@ -98,7 +98,7 @@ overrides via `env.Load()`. Full schema:
 | `V2V_RootDisk` | `first` | Root selection policy passed to kc-prepare |
 | `V2V_staticIPs` | | Static IP mapping for Windows guests |
 | `V2V_overlayEnabled` | `true` | qcow2 overlay during conversion |
-| `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock |
+| `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock (Forklift Plan `nbdeClevis` / Conversion `diskEncryption.type=Clevis`). Guestfs enables appliance networking; Tang must be reachable from the pod. Clevis takes precedence over `/etc/luks` keyfiles. |
 | `V2V_offline` | `false` | Pass `--offline` to converters (use image-staged packages only) |
 
 The container image bakes Windows virtio-win drivers under

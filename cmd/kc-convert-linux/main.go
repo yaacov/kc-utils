@@ -65,7 +65,7 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations (use local packages only)")
-	useGuestfs := flag.Bool("guestfs", false, "use libguestfs (FUSE) instead of privileged mount syscalls")
+	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 

@@ -3,6 +3,7 @@
 package guestfs
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,7 @@ type Backend struct {
 	inspectDone  bool
 	probeActive  string
 	session      *guestfishSession
+	cryptMaps    []string
 }
 
 func New() *Backend {
@@ -299,15 +301,105 @@ func (b *Backend) FSTrim(mountpoint string) error {
 	return nil
 }
 
-func (b *Backend) Decrypt(_, _, _ string) (string, error) {
-	return "", nil
+func (b *Backend) Decrypt(device, keyFile, mapperName string) (string, error) {
+	if err := b.ensureSession(); err != nil {
+		return "", err
+	}
+	keyData, err := os.ReadFile(keyFile)
+	if err != nil {
+		return "", fmt.Errorf("read LUKS keyfile %s: %w", keyFile, err)
+	}
+	// Passphrases from Forklift /etc/luks files are typically newline-terminated text.
+	keyData = bytes.TrimRight(keyData, "\r\n")
+	keyData = append(keyData, '\n')
+
+	mapped := "/dev/mapper/" + mapperName
+	_, err = runGuestfsCmdWithStdin(keyData, guestfishBinary(),
+		b.session.remoteFlag(),
+		"--keys-from-stdin",
+		"--",
+		"cryptsetup-open", device, mapperName,
+	)
+	if err != nil {
+		return "", fmt.Errorf("cryptsetup-open %s: %w", device, err)
+	}
+	if !b.dmDevicePresent(mapped) {
+		return "", fmt.Errorf("cryptsetup-open %s: mapper %s not created", device, mapped)
+	}
+	b.cryptMaps = append(b.cryptMaps, mapperName)
+	slog.Info("guestfs LUKS decrypted with keyfile", "device", device, "mapper", mapped)
+	return mapped, nil
 }
 
-func (b *Backend) UnlockClevis(_, _ string) (string, error) {
-	return "", nil
+func (b *Backend) UnlockClevis(device, mapperName string) (string, error) {
+	if err := b.ensureSession(); err != nil {
+		return "", err
+	}
+	mapped := "/dev/mapper/" + mapperName
+	// Soft command: prepare tries every candidate; non-Clevis devices must not
+	// kill the shared listener.
+	script := "clevis-luks-unlock " + quoteGuestfish(device) + " " + quoteGuestfish(mapperName) + "\n"
+	if _, err := b.session.remoteScriptSoft(script); err != nil {
+		return "", fmt.Errorf("clevis-luks-unlock %s: %w", device, err)
+	}
+	if !b.dmDevicePresent(mapped) {
+		return "", fmt.Errorf("clevis-luks-unlock %s: mapper %s not created", device, mapped)
+	}
+	b.cryptMaps = append(b.cryptMaps, mapperName)
+	slog.Info("guestfs Clevis LUKS unlocked", "device", device, "mapper", mapped)
+	return mapped, nil
 }
 
-func (b *Backend) CloseCrypt(_ string) error { return nil }
+func (b *Backend) CloseCrypt(mapperName string) error {
+	if err := b.ensureSession(); err != nil {
+		return err
+	}
+	mapped := mapperName
+	if !strings.HasPrefix(mapped, "/dev/mapper/") {
+		mapped = "/dev/mapper/" + mapperName
+	}
+	_, err := b.session.remote("cryptsetup-close", mapped)
+	return err
+}
+
+// RescanBlock runs lvm-scan after LUKS unlock so LVs on unlocked devices appear.
+func (b *Backend) RescanBlock() error {
+	if err := b.ensureSession(); err != nil {
+		return err
+	}
+	if _, err := b.session.remoteScript("lvm-scan true\n"); err != nil {
+		return err
+	}
+	lvs, err := b.discoverLVs()
+	if err != nil {
+		return fmt.Errorf("rediscover LVs after decrypt: %w", err)
+	}
+	b.lvPaths = lvs
+	slog.Info("guestfs rescan after decrypt", "lvs", len(lvs), "paths", lvs)
+	return nil
+}
+
+func (b *Backend) dmDevicePresent(mapped string) bool {
+	out, err := b.session.remoteScriptSoft("-list-dm-devices\n")
+	if err != nil {
+		return false
+	}
+	return dmOutputContains(string(out), mapped)
+}
+
+func dmOutputContains(output, mapped string) bool {
+	base := filepath.Base(mapped)
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if line == mapped || filepath.Base(line) == base {
+			return true
+		}
+	}
+	return false
+}
 
 // mountVirtualFS mounts /proc, /sys, and /dev inside the guest so that
 // commands run via guestfish "command" (which chroots into the guest)
@@ -448,6 +540,15 @@ func (b *Backend) teardown() error {
 		if _, err := b.session.remoteScript("-umount-all\n"); err != nil && firstErr == nil {
 			slog.Debug("guestfs umount-all on teardown", "error", err)
 		}
+		for i := len(b.cryptMaps) - 1; i >= 0; i-- {
+			if err := b.CloseCrypt(b.cryptMaps[i]); err != nil {
+				slog.Debug("guestfs cryptsetup-close on teardown", "mapper", b.cryptMaps[i], "error", err)
+				if firstErr == nil {
+					firstErr = err
+				}
+			}
+		}
+		b.cryptMaps = nil
 		if err := b.session.close(); err != nil && firstErr == nil {
 			firstErr = err
 		}

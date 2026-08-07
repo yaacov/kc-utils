@@ -19,7 +19,8 @@ The following operations all require `CAP_SYS_ADMIN` or equivalent:
 | LVM volume activation | `pvscan`, `vgscan`, `vgchange`, `lvscan` | kc-prepare |
 | LVM deactivation | `vgchange -an` | kc-finalize |
 | LUKS decrypt / close | `cryptsetup open` / `close` | kc-prepare / kc-finalize |
-| Clevis LUKS unlock | `clevis luks unlock` | kc-prepare |
+| Clevis LUKS unlock (direct) | `clevis luks unlock` | kc-prepare |
+| Clevis LUKS unlock (guestfs) | guestfish `clevis-luks-unlock` + appliance network (appliance-root inside the VM; not host `CAP_SYS_ADMIN`) | kc-prepare |
 | Filesystem check | `e2fsck`, `xfs_repair`, `btrfs`, `ntfsfix` | kc-prepare, kc-finalize |
 | Filesystem trim | `fstrim` | kc-finalize |
 | Chroot into guest | `chroot` (grub-mkconfig, dynamic scripts) | kc-convert-linux, kc-finalize |
@@ -151,6 +152,25 @@ real host path (for example hivex on Windows registry hives) use
 `Guest.Checkout` / `Checkin` to download a single file to a temp path and
 upload it back. `guestmount` (FUSE) is not used. `Guest.Sync()` is a no-op —
 writes already hit the appliance-mounted filesystems.
+
+### Clevis / NBDE (Forklift `V2V_NBDE_CLEVIS`)
+
+Forklift sets `V2V_NBDE_CLEVIS=true` on the conversion pod when Plan
+`nbdeClevis` or Conversion `diskEncryption.type=Clevis` is configured. LUKS
+passphrase secrets are mounted at `/etc/luks` (no Clevis env). Clevis takes
+precedence over keyfiles when both are present.
+
+In guestfs mode, unlock uses guestfish `clevis-luks-unlock` inside the
+appliance (not host `clevis`). That requires:
+
+1. Appliance networking enabled before `run` (`set-network true`), gated on
+   Clevis via internal `KC_GUESTFS_NETWORK=1`.
+2. Tang servers from the Clevis pin tree reachable from the conversion pod
+   network (QEMU user networking).
+3. The `clevisluks` libguestfs feature (clevis packages available to supermin).
+
+After unlock, prepare rescans LVM and probes `/dev/mapper/*` devices as root
+candidates. Keyfile unlock uses `cryptsetup-open` with `--keys-from-stdin`.
 
 ### NTFS mounts on RHEL/CentOS/UBI
 

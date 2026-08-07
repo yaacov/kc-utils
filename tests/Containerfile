@@ -5,7 +5,7 @@ RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.s
 
 RUN dnf install -y --setopt=install_weak_deps=False \
         golang hivex perl-hivex jq make guestfs-tools \
-        fuse fuse-libs ntfs-3g ntfsprogs libguestfs-winsupport && \
+        ntfs-3g ntfsprogs libguestfs-winsupport && \
     dnf clean all
 
 # See build/kc-v2v/Containerfile — RHEL NTFS mounts require a virt-* program name.

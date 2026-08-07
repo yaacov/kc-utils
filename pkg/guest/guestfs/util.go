@@ -3,6 +3,7 @@
 package guestfs
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
@@ -68,9 +69,17 @@ func clearDir(dir string) error {
 }
 
 func runGuestfsCmd(name string, args ...string) ([]byte, error) {
-	slog.Info("guestfs exec", "bin", name, "args", args)
+	return runGuestfsCmdWithStdin(nil, name, args...)
+}
+
+func runGuestfsCmdWithStdin(stdin []byte, name string, args ...string) ([]byte, error) {
+	slog.Info("guestfs exec", "bin", name, "args", args, "stdinBytes", len(stdin))
 	start := time.Now()
-	out, err := exec.Command(name, args...).CombinedOutput()
+	cmd := exec.Command(name, args...)
+	if stdin != nil {
+		cmd.Stdin = bytes.NewReader(stdin)
+	}
+	out, err := cmd.CombinedOutput()
 	duration := time.Since(start).Round(time.Millisecond)
 	msg := strings.TrimSpace(string(out))
 	if err != nil {
@@ -79,6 +88,10 @@ func runGuestfsCmd(name string, args ...string) ([]byte, error) {
 			return out, fmt.Errorf("%s: %w\n%s", name, err, msg)
 		}
 		return out, fmt.Errorf("%s: %w", name, err)
+	}
+	if errMsg := extractGuestfsError(msg); errMsg != "" {
+		slog.Error("guestfs exec failed", "bin", name, "duration", duration, "error", errMsg, "output", msg)
+		return out, fmt.Errorf("%s: %s", name, errMsg)
 	}
 	slog.Info("guestfs exec ok", "bin", name, "duration", duration, "outputBytes", len(out), "output", truncateLog(msg, 512))
 	return out, nil

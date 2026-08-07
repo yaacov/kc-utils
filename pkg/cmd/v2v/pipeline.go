@@ -21,6 +21,9 @@ import (
 	"github.com/yaacov/kc-utils/pkg/v2v/inspection/xml"
 )
 
+// startSharedListener starts a shared guestfish listener; overridden in tests.
+var startSharedListener = guest.StartSharedListener
+
 // pipelineResult holds outputs from the kc-utils pipeline subprocesses.
 type pipelineResult struct {
 	Prepare types.PrepareOutput
@@ -141,6 +144,10 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		}
 		sharedListener = listener
 		stageEnv = listener.Env()
+		if cfg.NbdeClevis {
+			stageEnv = append(stageEnv, guest.EnvGuestfsNetwork+"=1")
+			slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+		}
 	}
 	defer func() {
 		if sharedListener != nil {
@@ -312,7 +319,14 @@ func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, st
 		return nil
 	}
 	slog.Warn("guestfish shared listener died, restarting", "after", stage)
-	newListener, err := guest.StartSharedListener()
+	keepNetwork := false
+	for _, e := range *stageEnv {
+		if strings.HasPrefix(e, guest.EnvGuestfsNetwork+"=") {
+			keepNetwork = true
+			break
+		}
+	}
+	newListener, err := startSharedListener()
 	if err != nil {
 		return fmt.Errorf("guestfish restart after %s: %w", stage, err)
 	}
@@ -321,6 +335,9 @@ func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, st
 	}
 	*listener = *newListener
 	*stageEnv = listener.Env()
+	if keepNetwork {
+		*stageEnv = append(*stageEnv, guest.EnvGuestfsNetwork+"=1")
+	}
 	return nil
 }
 

@@ -105,6 +105,7 @@ dependencies, build, test, and PR guidance.
 - [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
 - [docs/forklift-usage.md](docs/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
 - [docs/privilege-model.md](docs/privilege-model.md) - Privilege model: host-mount vs. libguestfs
+- [docs/guest-os-handlers.md](docs/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
 - [docs/examples/](docs/examples/README.md) - JSON samples and runnable example
 - [docs/kc-prepare.md](docs/kc-prepare.md) - kc-prepare pipeline
 - [docs/kc-convert-linux.md](docs/kc-convert-linux.md) - Linux converter pipeline

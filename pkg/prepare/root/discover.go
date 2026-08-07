@@ -61,6 +61,9 @@ func skipFSType(ft string) bool {
 	case strings.HasPrefix(ft, "swap") || strings.Contains(ft, "swap"):
 		// guestfish may report "linux-swap", "linux-swap(v1)", etc.
 		return true
+	case ft == "crypto_luks" || strings.Contains(ft, "crypto_luks") || ft == "bitlocker":
+		// Locked containers are not mountable roots; unlocked mappers are probed separately.
+		return true
 	default:
 		return false
 	}
