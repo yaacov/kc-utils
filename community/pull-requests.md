@@ -2,6 +2,17 @@
 
 Guidelines for creating branches and writing pull requests in kc-utils.
 
+## Commits vs pull requests
+
+A **pull request** is the review unit: care about the **branch name**, **PR
+title**, and **PR body**. A **commit** is the git history unit: care about the
+subject and message body (see [commits.md](commits.md)).
+
+When a change is one commit and one PR, the PR **title** often matches the
+commit **subject**. The bodies still differ: the PR body uses What / How /
+Testing for reviewers; the commit body is short what/why prose. Commits on
+the branch follow [commits.md](commits.md).
+
 ## Branch Naming
 
 Use the format `<type>/<short-description>` with lowercase words separated by
@@ -40,8 +51,8 @@ chore/bump-govmomi
 
 ### Title
 
-Follow the same `<type>: <description>` format used in branch names, but with
-a colon separator and sentence-style capitalization:
+Use `<type>: <Description>` with a colon separator and sentence-style
+capitalization (same shape as a commit subject, not a branch name):
 
 ```
 feat: Add ARM64 virtio driver injection
@@ -89,10 +100,3 @@ follow-up work planned.
   before pushing.
 - **Self-review before requesting review.** Read your own diff — catch
   leftover debug prints, TODO comments, or unintended file changes.
-
-### Commit Messages Within a PR
-
-Each commit in the branch should follow `<type>: <description>` on the subject
-line, then a blank line and a short body explaining what changed and why
-(same spirit as the PR What / How sections). Keep commits atomic — one
-logical change per commit. Squash fixup commits before requesting review.
