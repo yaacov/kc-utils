@@ -163,7 +163,7 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		}
 	}()
 
-	fail := func(err error) (*pipelineResult, error) {
+	fail := func(err error) (*pipelineResult, error) { //nolint:unparam // result is always nil for error paths
 		pipelineErr = err
 		return nil, err
 	}

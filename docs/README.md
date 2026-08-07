@@ -204,12 +204,14 @@ Each binary links only the plugins it needs via blank imports in
 - [kc-v2v.md](kc-v2v.md) — Forklift conversion pod entrypoint (copy + pipeline + HTTP)
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
 - [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
+- [../tests/scenarios/README.md](../tests/scenarios/README.md) — Cluster smoke / baseline tests (manual)
 
 ### Design
 
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [privilege-model.md](privilege-model.md) — host-mount vs. libguestfs appliance privilege trade-offs
 - [ref-baseline/README.md](ref-baseline/README.md) — MTV cold-migration ref vs kc-v2v baseline (plus dashboard)
+- [../tests/scenarios/virt-v2v-vs-kc-v2v.md](../tests/scenarios/virt-v2v-vs-kc-v2v.md) — virt-v2v vs kc-v2v comparison narrative
 
 ## Code layout
 

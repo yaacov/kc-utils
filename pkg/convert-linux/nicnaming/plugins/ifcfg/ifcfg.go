@@ -85,7 +85,7 @@ func fileContainsIP(path, ip string) bool {
 	return false
 }
 
-func extractDevice(path, mac string) string {
+func extractDevice(path, _ string) string {
 	data, err := guest.FileRead(path)
 	if err != nil {
 		return ""

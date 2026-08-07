@@ -227,6 +227,35 @@ func TestStreamToRawProgress(t *testing.T) {
 	}
 }
 
+func TestStreamToRawRejectsHugeGrainSize(t *testing.T) {
+	var hdr [sectorSize]byte
+	binary.LittleEndian.PutUint32(hdr[hdrOffMagic:], vmdkMagic)
+	binary.LittleEndian.PutUint32(hdr[hdrOffVersion:], 1)
+	binary.LittleEndian.PutUint64(hdr[hdrOffCapacity:], 8)
+	// Larger than maxGrainBytes / sectorSize — must fail before buffer alloc.
+	binary.LittleEndian.PutUint64(hdr[hdrOffGrain:], uint64(maxGrainBytes/sectorSize)+1)
+	binary.LittleEndian.PutUint64(hdr[hdrOffOverHead:], 1)
+
+	err := StreamToRaw(context.Background(), bytes.NewReader(hdr[:]), &seekBuffer{}, nil)
+	if err == nil {
+		t.Fatal("expected error for oversized grain")
+	}
+}
+
+func TestStreamToRawRejectsGrainBeyondCapacity(t *testing.T) {
+	grainSize := uint64(2)
+	grainBytes := int(grainSize) * sectorSize
+	payload := bytes.Repeat([]byte{0xCD}, grainBytes)
+	// Capacity is grainSize*4 sectors; LBA past that must be rejected.
+	lba := grainSize * 4
+	vmdk := buildTestVMDK(t, grainSize, lba, payload)
+
+	err := StreamToRaw(context.Background(), bytes.NewReader(vmdk), &seekBuffer{}, nil)
+	if err == nil {
+		t.Fatal("expected error for grain beyond capacity")
+	}
+}
+
 // seekBuffer is an in-memory io.WriteSeeker for testing.
 type seekBuffer struct {
 	buf []byte

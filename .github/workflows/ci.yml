@@ -14,12 +14,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.24"
-      - uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+      - run: make lint
         env:
           GOOS: linux
-      - run: make lint
 
   test:
     runs-on: ubuntu-latest

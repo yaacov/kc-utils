@@ -3,6 +3,10 @@
 # Sequential cold-migration runs (RHEL then Windows) with step timing +
 # conversion-pod memory sampling.
 #
+# Does NOT set virt_v2v_image_fqin — configure the conversion image yourself
+# before running (kc-v2v or default virt-v2v). For a smoke that sets the image,
+# use test-mtv-kc-v2v.sh / make test-cluster-smoke.
+#
 # Prerequisites: oc, oc mtv, jq, GOVC_URL/USERNAME/PASSWORD, VDDK configured.
 #
 # Env overrides:
@@ -14,8 +18,15 @@
 #   MEM_INTERVAL            memory sample seconds (default 10)
 #   INTERVAL                plan poll seconds (default 10)
 #   MAX_ATTEMPTS            plan poll attempts (default 180 => 30m)
+#
+# Artifacts land next to this script. To archive a published comparison, copy
+# test-mtv-ref-baseline-<ts>* into docs/ref-baseline/runs/.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=common.sh
+source "${SCRIPT_DIR}/common.sh"
 
 NS="${NS:-mtv-ref-baseline}"
 PROVIDER="${PROVIDER:-vsphere-test}"
@@ -28,24 +39,13 @@ INTERVAL="${INTERVAL:-10}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-180}"
 MEM_INTERVAL="${MEM_INTERVAL:-10}"
 V2V_LABEL="forklift.app=virt-v2v"
-SCENARIO_DIR="$(cd "$(dirname "$0")" && pwd)"
 RUN_TS="$(date -u +%Y%m%dT%H%M%SZ)"
 SUMMARY_LOG="${SCENARIO_DIR}/test-mtv-ref-baseline-${RUN_TS}.log"
 MEM_DIR="${SCENARIO_DIR}/test-mtv-ref-baseline-${RUN_TS}-mem"
 
 log() { echo "$*" | tee -a "${SUMMARY_LOG}"; }
 
-fmt_dur() {
-  local s="$1"
-  printf "%dm%02ds" $((s / 60)) $((s % 60))
-}
-
-get_plan_status() {
-  local plan="$1"
-  oc mtv get plan --name "${plan}" -n "${NS}" --output json 2>/dev/null \
-    | jq -r 'if type == "array" then .[0].status // "Unknown" else .status // "Unknown" end' 2>/dev/null \
-    || echo "Unknown"
-}
+# Baseline uses single-arg get_plan_status via common.sh (NS from env).
 
 pipeline_json() {
   local plan="$1"
@@ -302,15 +302,21 @@ log ""
 [[ -n "${GOVC_URL:-}" && -n "${GOVC_USERNAME:-}" && -n "${GOVC_PASSWORD:-}" ]] \
   || { log "ERROR: GOVC_* required"; exit 1; }
 
+# Soft MTV/VDDK check (fail fast if MTV missing)
+if ! oc mtv settings get --setting vddk_image &>/dev/null; then
+  log "ERROR: Cannot read MTV settings. Is MTV installed?"
+  exit 1
+fi
+
 if [[ "${DISABLE_WAIT_FOR_REBOOT}" == "true" ]]; then
   log "Disabling feature_windows_wait_for_reboot..."
   oc mtv settings set --setting feature_windows_wait_for_reboot --value false
 fi
 
-VDDK_IMAGE=$(oc mtv settings get --setting vddk_image 2>/dev/null | tail -1 | awk '{print $NF}')
+VDDK_IMAGE="$(mtv_setting_get vddk_image)"
 log "VDDK: ${VDDK_IMAGE}"
-log "virt_v2v_image_fqin: $(oc mtv settings get --setting virt_v2v_image_fqin 2>/dev/null | tail -1)"
-log "feature_windows_wait_for_reboot: $(oc mtv settings get --setting feature_windows_wait_for_reboot 2>/dev/null | tail -1)"
+log "virt_v2v_image_fqin: $(mtv_setting_get virt_v2v_image_fqin)"
+log "feature_windows_wait_for_reboot: $(mtv_setting_get feature_windows_wait_for_reboot)"
 log "Default SC: $(oc get sc -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}')"
 log "Ceph: $(oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}' 2>/dev/null || echo n/a)"
 log ""
@@ -326,35 +332,17 @@ cleanup() {
 trap cleanup EXIT
 
 # Fresh NS
-oc delete namespace "${NS}" --ignore-not-found 2>/dev/null || true
-for i in $(seq 1 60); do
-  oc get ns "${NS}" >/dev/null 2>&1 || break
-  sleep 2
-done
-oc create namespace "${NS}"
+fresh_namespace "${NS}"
 
 log "Creating providers..."
-oc mtv create provider --name "${PROVIDER}" --type vsphere \
-  --url "https://${GOVC_URL}/sdk" \
-  --username "${GOVC_USERNAME}" \
-  --password "${GOVC_PASSWORD}" \
-  --provider-insecure-skip-tls \
-  -n "${NS}"
-oc mtv create provider --name host --type openshift -n "${NS}"
-oc wait "provider.forklift.konveyor.io/${PROVIDER}" -n "${NS}" --for=condition=Ready --timeout=300s
-oc wait "provider.forklift.konveyor.io/host" -n "${NS}" --for=condition=Ready --timeout=300s
-log "Providers ready."
+create_vsphere_and_host_providers "${NS}" "${PROVIDER}"
 log ""
 
 if [[ -z "${RHEL_VM}" ]]; then
-  RHEL_VM=$(oc mtv get inventory vm --provider "${PROVIDER}" -n "${NS}" \
-    --query "select name where name ~= 'mtv-func.*' and (name ~= 'rhel' or guestId ~= 'rhel')" \
-    --output json 2>/dev/null | jq -r '.[].name' | sort | head -1)
+  RHEL_VM="$(pick_rhel_vm "${NS}" "${PROVIDER}")"
 fi
 if [[ -z "${WIN_VM}" ]]; then
-  WIN_VM=$(oc mtv get inventory vm --provider "${PROVIDER}" -n "${NS}" \
-    --query "select name where name ~= 'mtv-func.*' and (name ~= 'win' or guestId ~= 'win')" \
-    --output json 2>/dev/null | jq -r '.[].name' | sort | head -1)
+  WIN_VM="$(pick_win_vm "${NS}" "${PROVIDER}")"
 fi
 
 [[ -n "${RHEL_VM}" && "${RHEL_VM}" != "null" ]] || { log "ERROR: no RHEL VM"; exit 1; }
