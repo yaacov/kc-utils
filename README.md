@@ -36,7 +36,8 @@ kc-v2v runs.
 
 Two guest access modes are supported (see [docs/privilege-model.md](docs/privilege-model.md)):
 
-- **host-mount** (default) - uses `mount(8)`; requires root or `CAP_SYS_ADMIN`.
+- **host-mount** (default) - mounts guest filesystems with `mount(8)` and runs
+  guest tools via `chroot` into that tree; requires root or `CAP_SYS_ADMIN`.
 - **guestfs** (`-guestfs`) - runs a minimal [libguestfs](https://libguestfs.org/)
   appliance VM via `guestfish` (needs `/dev/kvm`); guest disks are accessed
   inside the appliance, so no host root is required.
@@ -58,8 +59,8 @@ See [docs/forklift-usage.md](docs/forklift-usage.md) for full usage instructions
 - **Pure Go core pipeline** - builds with standard `go build`, no C toolchain
   required. All binaries target Linux (`GOOS=linux`).
 - **Initramfs rebuild via guest tools** - virtio drivers are injected by running
-  the guest's own `dracut` (or `update-initramfs`/`mkinitramfs` on Debian) inside
-  the mounted guest filesystem, with automatic fallback between methods.
+  the guest's own `dracut` (or `update-initramfs`/`mkinitramfs` on Debian) via
+  `chroot` into the mounted guest root, with automatic fallback between methods.
 - **Windows offline driver injection** - virtio drivers are registered in the
   Windows registry (`CriticalDeviceDatabase` / `DriverDatabase`) offline, making
   the guest bootable on KVM. Firstboot PowerShell scripts then complete driver

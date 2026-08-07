@@ -37,14 +37,15 @@ I/O.
 
 ## Host-Mount Approach (default)
 
-kc-utils mounts guest filesystems directly on the host via `mount(8)`.
-All disk I/O goes through the host kernel's filesystem and block layers with no
-intermediary.
+kc-utils mounts guest filesystems directly on the host via `mount(8)`, then
+runs guest commands with `chroot` into that mount (for example `dracut` /
+`grub-mkconfig` during convert). All disk I/O goes through the host kernel's
+filesystem and block layers with no intermediary.
 
 ```
 Host kernel
-  ├── kc-prepare        mount(8) → guest FS visible at /tmp/kc-guest/
-  ├── kc-convert-*      read/write files under /tmp/kc-guest/
+  ├── kc-prepare        mount(8) → guest FS at /tmp/kc-guest/
+  ├── kc-convert-*      chroot /tmp/kc-guest … (and file I/O under that tree)
   └── kc-finalize       fstrim, umount(8), fsck
 ```
 
