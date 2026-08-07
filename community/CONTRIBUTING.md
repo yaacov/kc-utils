@@ -253,6 +253,8 @@ deterministic and do not depend on the guest booting successfully.
 - [ ] Run relevant e2e tests when changing convert, guest, or pipeline behavior
 - [ ] Keep the change focused
 - [ ] Follow [architecture.md](architecture.md) for structural changes
+- [ ] Branch and PR description follow [pull-requests.md](pull-requests.md)
+- [ ] Commit messages follow [commits.md](commits.md)
 
 ## Docs
 

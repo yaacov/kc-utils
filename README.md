@@ -97,7 +97,9 @@ dependencies, build, test, and PR guidance.
 
 - [community/architecture.md](community/architecture.md) - Design principles for contributors and agents
 - [community/CONTRIBUTING.md](community/CONTRIBUTING.md) - Build, test, layout, and dependencies
+- [community/commits.md](community/commits.md) - Commit subject and message body conventions
 - [community/pull-requests.md](community/pull-requests.md) - Branch naming and PR writing guidelines
+- [community/code-review.md](community/code-review.md) - Code review priorities and report shape
 - [docs/README.md](docs/README.md) - Complete conversion flow
 - [docs/kc-v2v.md](docs/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
 - [docs/kc-copy.md](docs/kc-copy.md) - NFC disk copy stage CLI
