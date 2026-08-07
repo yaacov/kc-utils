@@ -39,8 +39,8 @@ Two guest access modes are supported (see [docs/privilege-model.md](docs/privile
 - **host-mount** (default) - mounts guest filesystems with `mount(8)` and runs
   guest tools via `chroot` into that tree; requires root or `CAP_SYS_ADMIN`.
 - **guestfs** (`-guestfs`) - runs a minimal [libguestfs](https://libguestfs.org/)
-  appliance VM via `guestfish` (needs `/dev/kvm`); guest disks are accessed
-  inside the appliance, so no host root is required.
+  appliance VM via `guestfish`; guest disks are accessed inside the appliance
+  (no host root); requires Linux with `/dev/kvm`.
 
 ## Forklift (MTV) Integration
 
