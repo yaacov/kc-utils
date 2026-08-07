@@ -1,4 +1,4 @@
-# Privilege Model: Host-Mount vs. libguestfs Appliance
+# Privilege Model: Host-Mount vs. guestfish (libguestfs appliance)
 
 In host-mount mode, `kc-prepare` and `kc-finalize` require root (or
 `CAP_SYS_ADMIN`) because they mount guest filesystems directly in the host
@@ -102,6 +102,39 @@ pid 1 of a throwaway VM -- it grants no privileges on the host.
 
 kc-utils always uses `LIBGUESTFS_BACKEND=direct`: libguestfs launches QEMU
 itself. That needs `/dev/kvm` in the pod; it does not use libvirtd.
+
+### Same Go call, two backends
+
+Pipeline code always goes through `pkg/guest` (`ReadFile`, `RunCommand`, …).
+The backend chooses host paths vs. the guestfish listen socket.
+
+**Read a guest file** (`guest.ReadFile("/etc/fstab")`):
+
+```bash
+# Host-mount (direct): live path under the mount root
+cat /tmp/kc-guest/etc/fstab
+
+# Guestfs: RPC to the shared listener (socket /tmp/.guestfish-$UID/socket-$PID)
+# GUESTFISH_PID is set by kc-v2v; stages use guestfish --remote=$PID
+guestfish --remote=$GUESTFISH_PID -- download /etc/fstab /tmp/kc-fstab.$$
+cat /tmp/kc-fstab.$$
+```
+
+**Run a command in the guest** (`guest.RunCommand(..., []string{"dracut", "--force"})`):
+
+```bash
+# Host-mount (direct): chroot into the mounted tree (needs CAP_SYS_CHROOT
+# or unshare -r chroot fallback)
+chroot /tmp/kc-guest /usr/bin/dracut --force
+
+# Guestfs: guestfish "sh" inside the already-mounted appliance
+# (virtual /proc, /sys, /dev are mounted for the call, then unmounted)
+guestfish --remote=$GUESTFISH_PID -- sh 'dracut --force 2>&1'
+```
+
+In guestfs mode there is no populated host tree at `/tmp/kc-guest`; that path
+is only a key for `pkg/guest` helpers. All disk I/O goes over the listen
+socket (`/tmp/.guestfish-<uid>/socket-<pid>`).
 
 ## Comparison
 

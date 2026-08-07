@@ -12,9 +12,10 @@ see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
 - Disk copying from VMware uses pure Go
   [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
   directly into target PVCs (no VDDK or nbdkit required).
-- Guest filesystem operations can run rootless via
-  [libguestfs](https://libguestfs.org/): a minimal QEMU appliance VM mounts the
-  guest disks internally, so no host root or `CAP_SYS_ADMIN` is required.
+- Guest filesystem operations can run rootless via the
+  [libguestfs](https://libguestfs.org/) appliance, driven by the `guestfish`
+  CLI: a minimal QEMU appliance VM mounts the guest disks internally, so no
+  host root or `CAP_SYS_ADMIN` is required.
 
 <p align="center">
   <br>
@@ -37,8 +38,8 @@ Two guest access modes are supported (see [docs/privilege-model.md](docs/privile
 
 - **host-mount** (default) - uses `mount(8)`; requires root or `CAP_SYS_ADMIN`.
 - **guestfs** (`-guestfs`) - runs a minimal [libguestfs](https://libguestfs.org/)
-  appliance VM (needs `/dev/kvm`); guest disks are accessed inside the appliance, so
-  no host root is required.
+  appliance VM via `guestfish` (needs `/dev/kvm`); guest disks are accessed
+  inside the appliance, so no host root is required.
 
 ## Forklift (MTV) Integration
 
@@ -106,7 +107,7 @@ dependencies, build, test, and PR guidance.
 - [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
 - [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
 - [docs/forklift-usage.md](docs/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
-- [docs/privilege-model.md](docs/privilege-model.md) - Privilege model: host-mount vs. libguestfs
+- [docs/privilege-model.md](docs/privilege-model.md) - Privilege model: host-mount vs guestfish / libguestfs appliance
 - [docs/guest-os-handlers.md](docs/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
 - [docs/examples/](docs/examples/README.md) - JSON samples and runnable example
 - [docs/kc-prepare.md](docs/kc-prepare.md) - kc-prepare pipeline
