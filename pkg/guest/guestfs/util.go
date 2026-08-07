@@ -14,8 +14,8 @@ import (
 	"time"
 )
 
-// guestfishBinary returns virt-guestfish when present (UBI/RHEL image
-// symlink so argv[0] satisfies the winsupport NTFS allowlist), else guestfish.
+// guestfishBinary returns virt-guestfish when present (RHEL/UBI symlink so
+// argv[0] satisfies the winsupport NTFS allowlist), else guestfish.
 var (
 	guestfishBinOnce sync.Once
 	guestfishBin     string

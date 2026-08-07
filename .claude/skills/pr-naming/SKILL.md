@@ -70,34 +70,92 @@ chore/bump-govmomi
 
 ## Commit messages
 
-Format: `<type>: <description>`
+Format (subject + body — both required when drafting a commit message):
+
+```text
+<type>: <Description>
+
+<Body paragraph(s).>
+```
 
 - Same type vocabulary as branches (`feat`, `fix`, `refactor`, `docs`, `test`, `ci`, `chore`).
-- Sentence-style capitalization after the colon.
-- One logical change per commit; keep the subject under ~72 characters.
-- Focus on *why* when a short subject alone is ambiguous; otherwise a clear subject is enough.
-- Do not include secrets or dump the full diff into the message.
+- Sentence-style capitalization after the colon on the subject line.
+- Subject under ~72 characters; one logical change per commit (atomic), per
+  [community/pull-requests.md](../../../community/pull-requests.md).
+- Blank line between subject and body.
+- Body is required: short prose (1–3 sentences, wrap ~72 chars) covering
+  **what** changed and **why**, in the same spirit as the PR “What” / “How”
+  sections in `community/pull-requests.md`. Do not paste a file list or
+  dump the full diff.
+- Do not include secrets. Do not invent `Signed-off-by` (authors add that
+  with `git commit -s` if needed).
 
 Examples:
+
 ```text
 feat: Add ARM64 virtio driver injection
+
+Stage ARM64 VirtIO drivers from virtio-win so Windows guests on aarch64
+can boot after conversion without a separate driver ISO.
+```
+
+```text
 fix: Resolve LUKS unlock timeout in guestfs mode
-refactor: Extract shared registry helpers to pkg/common
-docs: Add privilege model documentation
+
+Increase the guestfish wait for cryptsetup-open so slow NBDE unlocks do
+not abort prepare before the volume is available to mount.
+```
+
+```text
+chore: Switch container images from UBI to Go and Fedora
+
+Use official golang and Fedora bases for upstream builds, and keep the
+UBI Containerfile as an undocumented example under build/kc-v2v/ubi/.
 ```
 
 ## PR titles
 
-Same `<type>: <Description>` shape as commit subjects. Keep under ~72 characters.
+Same `<type>: <Description>` shape as commit **subjects** only (no body).
+Keep under ~72 characters.
 
 ## Output
 
-Reply with:
+Return only what the user asked for. If they want both a branch name and a
+commit message, emit **two separate fenced code blocks** (one value each) so
+each can be copied on its own. Label each block with a short plain-text line
+above it (not inside the fence). Do not put branch and commit in the same
+fence or on the same line.
+
+If the user asks for only a branch name, only a commit message, or only a PR
+title, return a single labeled fence with that value alone.
+
+**Both branch and commit (default when the user asks for both / "suggest a
+branch and commit msg"):**
+
+Branch:
 
 ```text
-Branch: <type>/<short-description>
-Commit: <type>: <Description>
-PR title: <type>: <Description>
+<type>/<short-description>
 ```
 
-Omit lines the user did not ask for. If the change mixes concerns, suggest a split instead of one overloaded name.
+Commit:
+
+```text
+<type>: <Description>
+
+<Body paragraph(s).>
+```
+
+The commit fence must include the blank line and body so the user can paste
+it into `git commit` / a HEREDOC unchanged.
+
+**PR title only** (when asked):
+
+PR title:
+
+```text
+<type>: <Description>
+```
+
+If the change mixes concerns, suggest a split instead of one overloaded name.
+Keep any extra commentary outside the fences.

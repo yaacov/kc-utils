@@ -196,16 +196,17 @@ the appliance.
 **Distro difference.** Fedora and Debian libguestfs do **not** apply this
 restriction; plain `guestfish` can mount NTFS there.
 
-**Workaround in kc-utils.** The `kc-v2v` image installs a symlink:
+**Workaround in kc-utils.** On RHEL/UBI images, install a symlink:
 
 ```text
 /usr/bin/virt-guestfish → guestfish
 ```
 
-`pkg/guest/guestfs` prefers that binary via `guestfishBinary()` for
-`--listen`, `--remote`, and scripts, so `argv[0]` is `virt-guestfish` and the
-allowlist accepts NTFS mounts. No `set-program` call is required when every
-process is started as `virt-guestfish`.
+The upstream Fedora `kc-v2v` image does not need this; plain `guestfish` mounts
+NTFS there. `pkg/guest/guestfs` prefers `virt-guestfish` via `guestfishBinary()`
+when present (for `--listen`, `--remote`, and scripts), so `argv[0]` satisfies
+the RHEL allowlist. No `set-program` call is required when every process is
+started as `virt-guestfish`.
 
-**Check.** `make test-kc-v2v-image` asserts the symlink (and, with `/dev/kvm`
-and `REQUIRE_GUESTFS=1`, a real NTFS create/mount).
+**Check.** `make test-kc-v2v-image` asserts guestfish + NTFS support (and, with
+`/dev/kvm` and `REQUIRE_GUESTFS=1`, a real NTFS create/mount).

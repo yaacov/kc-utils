@@ -122,7 +122,7 @@ make test                 # unit tests
 make lint                 # golangci-lint (auto-installs pinned golangci-lint)
 make check                # fmt + vet + lint + unit tests
 make test-e2e             # shell e2e tests (see below)
-make test-e2e-container   # e2e in a UBI 10 container (all test-e2e scripts)
+make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
 make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
@@ -172,11 +172,11 @@ sudo make test-e2e
 On hosts where loop partitions are unavailable, use disk e2e in a privileged
 container instead: `make test-e2e-disk`.
 
-To run the full suite without installing host packages, use the UBI 10 test
-container (built from `tests/Containerfile`, with CentOS Stream 10 + EPEL for
-guestfs/hivex/ntfs packages). The container runs **privileged** so loop
-devices are available when Podman/Docker is rootful; **root-selection tests
-still skip under rootless Podman** (`losetup: Permission denied`):
+To run the full suite without installing host packages, use the Fedora test
+container (built from `tests/Containerfile`, with guestfs/hivex/ntfs packages).
+The container runs **privileged** so loop devices are available when
+Podman/Docker is rootful; **root-selection tests still skip under rootless
+Podman** (`losetup: Permission denied`):
 
 ```bash
 make test-e2e-container
