@@ -28,8 +28,9 @@ mount_specs.go  — Mount spec recording for session re-attach
 util.go         — guestfishBinary, quoteGuestfish, runGuestfsCmd, scripts
 ```
 
-On RHEL/UBI, invoke via `virt-guestfish` (image symlink) so NTFS mounts pass
-the winsupport allowlist — see [docs/privilege-model.md](../../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
+On RHEL/UBI, prefer `virt-guestfish` when present (symlink) so NTFS mounts pass
+the winsupport allowlist; Fedora uses plain `guestfish` — see
+[docs/privilege-model.md](../../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 Import path: `github.com/yaacov/kc-utils/pkg/guest/guestfs`
 

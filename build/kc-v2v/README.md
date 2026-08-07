@@ -2,9 +2,8 @@
 
 `kc-v2v` is a drop-in replacement for Forklift's `virt-v2v` image, running the kc-utils pipeline (`kc-prepare` → `kc-convert-*` → `kc-finalize`).
 
-The image is based on **UBI 10** (`registry.access.redhat.com/ubi10/ubi`), with
-CentOS Stream 10 and EPEL 10 enabled for packages outside the free UBI repos
-(see [`../el10-repos.sh`](../el10-repos.sh)).
+The image is built with the official **golang** image for compilation and
+**Fedora** (`registry.fedoraproject.org/fedora:44`) for the runtime.
 
 Binary documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md).
 
@@ -16,7 +15,7 @@ See [pkg/v2v/README.md](../../pkg/v2v/README.md) for copy selection logic, vsphe
 
 ```bash
 make build-kc-v2v-image
-make test-kc-v2v-image                 # RPMs + winsupport; FS mounts if /dev/kvm
+make test-kc-v2v-image                 # RPMs + NTFS; FS mounts if /dev/kvm
 REQUIRE_GUESTFS=1 make test-kc-v2v-image  # require kvm + ext4/xfs/btrfs/ntfs mounts
 ```
 
@@ -251,9 +250,9 @@ inside the appliance; stages read and write via guestfish RPC (`Checkout` for
 tools that need a host path, e.g. hivex). Set `V2V_guestfs=false` for privileged
 host mounts.
 
-On RHEL/CentOS/UBI, libguestfs only allows NTFS mounts when the program name
-starts with `virt-`. This image ships `/usr/bin/virt-guestfish` → `guestfish`
-and kc-utils prefers that binary so Windows guests work. Details:
+Fedora libguestfs mounts NTFS with plain `guestfish`. On RHEL/CentOS/UBI,
+libguestfs only allows NTFS when the program name starts with `virt-`;
+kc-utils prefers `virt-guestfish` when that binary is present. Details:
 [docs/privilege-model.md](../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 See also existing `V2V_*` flags in [`pkg/v2v/config/config.go`](../../pkg/v2v/config/config.go).

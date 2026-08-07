@@ -189,7 +189,7 @@ test-image: check_container_runtime
 test-image-rebuild: check_container_runtime
 	$(CONTAINER_CMD) build --no-cache -t $(TEST_IMAGE) -f tests/Containerfile .
 
-## [container] Run e2e tests in a UBI 10 container (all tests, incl. Windows)
+## [container] Run e2e tests in a Fedora container (all tests, incl. Windows)
 test-e2e-container: test-image
 	$(CONTAINER_CMD) run --rm --privileged \
 	    $(KC_UTILS_WORKSPACE_MOUNT) \
@@ -258,7 +258,7 @@ build-kc-v2v-image: check_container_runtime build
 push-kc-v2v-image: build-kc-v2v-image
 	$(CONTAINER_CMD) push $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
 
-## Smoke-test the built kc-v2v image (RPMs, winsupport, guestfish ext4/xfs/btrfs/ntfs)
+## Smoke-test the built kc-v2v image (RPMs, NTFS, guestfish ext4/xfs/btrfs/ntfs)
 ## Uses $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX). Pass REQUIRE_GUESTFS=1 to require /dev/kvm + FS mounts.
 ## REQUIRE_CLEVIS defaults to 1 (guestfish clevisluks must be yes).
 REQUIRE_CLEVIS ?= 1

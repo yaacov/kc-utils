@@ -1,14 +1,8 @@
-FROM registry.access.redhat.com/ubi10/ubi
-
-COPY build/el10-repos.sh /tmp/el10-repos.sh
-RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
+FROM registry.fedoraproject.org/fedora:44
 
 RUN dnf install -y --setopt=install_weak_deps=False \
         golang hivex perl-hivex jq make guestfs-tools \
-        ntfs-3g ntfsprogs libguestfs-winsupport && \
+        ntfs-3g ntfsprogs && \
     dnf clean all
-
-# See build/kc-v2v/Containerfile — RHEL NTFS mounts require a virt-* program name.
-RUN ln -sf guestfish /usr/bin/virt-guestfish
 
 WORKDIR /workspace/kc-utils

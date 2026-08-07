@@ -92,6 +92,7 @@ follow-up work planned.
 
 ### Commit Messages Within a PR
 
-Each commit in the branch should also follow `<type>: <description>` format.
-Keep commits atomic — one logical change per commit. Squash fixup commits
-before requesting review.
+Each commit in the branch should follow `<type>: <description>` on the subject
+line, then a blank line and a short body explaining what changed and why
+(same spirit as the PR What / How sections). Keep commits atomic — one
+logical change per commit. Squash fixup commits before requesting review.

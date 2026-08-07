@@ -2,8 +2,8 @@
 # Smoke-test the built kc-v2v container image.
 #
 # Run inside the image (see `make test-kc-v2v-image`):
-#   - required RPMs present (guestfs, winsupport, FS tools)
-#   - libguestfs-winsupport appliance bits installed
+#   - required RPMs present (guestfs, ntfs-3g, FS tools)
+#   - RHEL: libguestfs-winsupport appliance bits; Fedora: ntfs-3g in appliance
 #   - guestfish appliance can report + mount key filesystems (needs /dev/kvm)
 #
 # Exit 0 pass (or packages OK + appliance skipped without kvm), 1 fail.
@@ -34,7 +34,6 @@ echo "image check host=$(hostname 2>/dev/null || true) uid=$(id -u) HOME=${HOME:
 # ── Package presence (matches build/kc-v2v/Containerfile) ────────────
 for pkg in \
 	libguestfs \
-	libguestfs-winsupport \
 	libguestfs-xfs \
 	guestfs-tools \
 	ntfs-3g \
@@ -56,8 +55,15 @@ do
 	fi
 done
 
+# RHEL/UBI ships NTFS via libguestfs-winsupport; Fedora uses host ntfs-3g.
+if rpm -q libguestfs-winsupport >/dev/null 2>&1; then
+	pass "rpm libguestfs-winsupport ($(rpm -q libguestfs-winsupport))"
+else
+	skip_msg "libguestfs-winsupport absent (OK on Fedora; RHEL/UBI only)"
+fi
+
 # ── Binaries used by the pipeline ────────────────────────────────────
-for bin in guestfish virt-guestfish qemu-img hivexregedit cryptsetup kc-v2v kc-prepare kc-copy; do
+for bin in guestfish qemu-img hivexregedit cryptsetup kc-v2v kc-prepare kc-copy; do
 	if command -v "$bin" >/dev/null 2>&1 || [ -x "/usr/lib/kc-utils/$bin" ]; then
 		pass "binary $bin"
 	else
@@ -65,16 +71,19 @@ for bin in guestfish virt-guestfish qemu-img hivexregedit cryptsetup kc-v2v kc-p
 	fi
 done
 
-# RHEL winsupport only allows NTFS mounts when program name starts with virt-.
+# Optional: RHEL/UBI images may ship virt-guestfish for the winsupport NTFS
+# allowlist. Fedora does not need it; plain guestfish mounts NTFS there.
 if [ -L /usr/bin/virt-guestfish ] || [ -x /usr/bin/virt-guestfish ]; then
 	pass "virt-guestfish present (RHEL NTFS allowlist argv[0])"
 else
-	fail_msg "virt-guestfish missing — NTFS mounts via guestfish will fail on RHEL/CentOS"
+	skip_msg "virt-guestfish absent (OK on Fedora; required only on RHEL/UBI)"
 fi
-GUESTFISH=virt-guestfish
-command -v virt-guestfish >/dev/null 2>&1 || GUESTFISH=guestfish
+GUESTFISH=guestfish
+command -v virt-guestfish >/dev/null 2>&1 && GUESTFISH=virt-guestfish
 
-# ── Winsupport appliance payloads (what actually enables NTFS mount) ─
+# ── NTFS appliance payloads ──────────────────────────────────────────
+# RHEL: zz-winsupport*.tar.gz from libguestfs-winsupport.
+# Fedora: ntfs-3g is picked up by supermin; no winsupport tarball.
 libdir=
 for d in /usr/lib64/guestfs/supermin.d /usr/lib/guestfs/supermin.d; do
 	if [ -d "$d" ]; then
@@ -86,17 +95,18 @@ if [ -z "$libdir" ]; then
 	fail_msg "guestfs supermin.d directory not found"
 else
 	pass "supermin.d at $libdir"
-	for f in zz-winsupport.tar.gz zz-winsupport-deps; do
-		if [ -f "$libdir/$f" ]; then
-			pass "winsupport file $f ($(wc -c <"$libdir/$f") bytes)"
+	if [ -f "$libdir/zz-winsupport.tar.gz" ]; then
+		pass "winsupport file zz-winsupport.tar.gz ($(wc -c <"$libdir/zz-winsupport.tar.gz") bytes)"
+		if [ -f "$libdir/zz-winsupport-deps" ]; then
+			pass "winsupport file zz-winsupport-deps ($(wc -c <"$libdir/zz-winsupport-deps") bytes)"
 		else
-			if [ "$f" = "zz-winsupport.tar.gz" ]; then
-				fail_msg "missing $libdir/$f (NTFS mount will fail with 'unsupported filesystem type')"
-			else
-				echo "WARN: missing optional $libdir/$f"
-			fi
+			echo "WARN: missing optional $libdir/zz-winsupport-deps"
 		fi
-	done
+	elif rpm -q ntfs-3g >/dev/null 2>&1; then
+		skip_msg "no zz-winsupport.tar.gz (Fedora uses ntfs-3g in the appliance)"
+	else
+		fail_msg "missing NTFS support (no libguestfs-winsupport bits and no ntfs-3g)"
+	fi
 fi
 
 # Fail early on package/file problems before spending time on appliance.
@@ -134,7 +144,7 @@ fi
 pass "guestfish appliance launched (supported, bin=$GUESTFISH)"
 
 # Feature name → human label. These must be "yes" in `guestfish … supported`.
-# ntfs3g: Windows guests (via libguestfs-winsupport)
+# ntfs3g: Windows guests (ntfs-3g / libguestfs-winsupport on RHEL)
 # xfs / btrfs: Linux guests (libguestfs-xfs / btrfs-progs in appliance)
 # hivex: Windows registry offline edits
 # lvm2 / luks: common Linux disk layouts
