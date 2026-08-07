@@ -19,4 +19,5 @@ func SharedListenerAlive(l *SharedListener) bool {
 const (
 	EnvGuestfishPID   = guestfs.EnvGuestfishPID
 	EnvKCGuestfishPID = guestfs.EnvKCGuestfishPID
+	EnvGuestfsNetwork = guestfs.EnvGuestfsNetwork
 )

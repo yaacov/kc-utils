@@ -8,6 +8,7 @@
 #
 # Exit 0 pass (or packages OK + appliance skipped without kvm), 1 fail.
 # Set REQUIRE_GUESTFS=1 (or REQUIRE_NTFS=1) to require /dev/kvm + FS checks.
+# Clevis/NBDE (clevisluks=yes) is required; make test-kc-v2v-image sets REQUIRE_CLEVIS=1.
 
 set -euo pipefail
 
@@ -45,8 +46,8 @@ for pkg in \
 	qemu-img \
 	cryptsetup \
 	lvm2 \
-	fuse \
-	fuse-libs
+	clevis \
+	clevis-luks
 do
 	if rpm -q "$pkg" >/dev/null 2>&1; then
 		pass "rpm $pkg ($(rpm -q "$pkg"))"
@@ -157,6 +158,14 @@ check_supported hivex "Windows registry (hivex)"
 check_supported lvm2 "Linux LVM"
 check_supported luks "LUKS"
 
+# Clevis/NBDE — required; make test-kc-v2v-image runs with REQUIRE_CLEVIS=1
+clevis_val=$(awk '$1=="clevisluks" {print $2; exit}' "$out")
+if [ "$clevis_val" = "yes" ]; then
+	pass "guestfish supported clevisluks=yes (NBDE Clevis unlock)"
+else
+	fail_msg "guestfish supported clevisluks=${clevis_val:-missing} (want yes) — Clevis/NBDE"
+fi
+
 # ext* is usually covered by the core appliance; report but do not hard-fail
 # on a missing feature name (varies by libguestfs version).
 for feat in ext2 linuxfs; do
@@ -171,7 +180,7 @@ for feat in ext2 linuxfs; do
 done
 
 echo "--- guestfish supported (filesystem-related) ---"
-grep -Ei '^(ntfs|xfs|btrfs|ext|hivex|lvm|luks|linuxfs)' "$out" || true
+grep -Ei '^(ntfs|xfs|btrfs|ext|hivex|lvm|luks|clevis|linuxfs)' "$out" || true
 
 # Create + mount a tiny filesystem for each type we ship support for.
 # guestfish -N fs:TYPE builds a disk, formats, mounts at /, then runs the cmd.

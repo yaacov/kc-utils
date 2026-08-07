@@ -257,6 +257,8 @@ push-kc-v2v-image: build-kc-v2v-image
 
 ## Smoke-test the built kc-v2v image (RPMs, winsupport, guestfish ext4/xfs/btrfs/ntfs)
 ## Uses $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX). Pass REQUIRE_GUESTFS=1 to require /dev/kvm + FS mounts.
+## REQUIRE_CLEVIS defaults to 1 (guestfish clevisluks must be yes).
+REQUIRE_CLEVIS ?= 1
 test-kc-v2v-image: check_container_runtime
 	@if ! $(CONTAINER_CMD) image inspect $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) >/dev/null 2>&1; then \
 		echo "Image $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) not found — build with: make build-kc-v2v-image"; \
@@ -269,6 +271,7 @@ test-kc-v2v-image: check_container_runtime
 	    -e LIBGUESTFS_BACKEND=direct \
 	    -e REQUIRE_GUESTFS=$(REQUIRE_GUESTFS) \
 	    -e REQUIRE_NTFS=$(REQUIRE_NTFS) \
+	    -e REQUIRE_CLEVIS=$(REQUIRE_CLEVIS) \
 	    -v $(CURDIR)/tests/test-kc-v2v-image.sh:/tmp/test-kc-v2v-image.sh:ro,Z \
 	    $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) \
 	    /tmp/test-kc-v2v-image.sh

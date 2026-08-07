@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -53,6 +54,21 @@ func Run(cfg *Config) error {
 	mode := guest.ModeFromBool(cfg.UseGuestfs)
 	slog.Info("opening guest disks", "backend", mode.String(), "disks", len(cfg.Input.Disks), "mountRoot", cfg.MountRoot)
 
+	if cfg.UseGuestfs && cfg.Input.LUKS != nil && cfg.Input.LUKS.Clevis {
+		prevNetwork, hadNetwork := os.LookupEnv(guest.EnvGuestfsNetwork)
+		if err := os.Setenv(guest.EnvGuestfsNetwork, "1"); err != nil {
+			return fmt.Errorf("enable guestfs network for Clevis: %w", err)
+		}
+		defer func() {
+			if !hadNetwork {
+				_ = os.Unsetenv(guest.EnvGuestfsNetwork)
+				return
+			}
+			_ = os.Setenv(guest.EnvGuestfsNetwork, prevNetwork)
+		}()
+		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+	}
+
 	g, err := guest.Open(cfg.Input.Disks, cfg.MountRoot, mode)
 	if err != nil {
 		return fmt.Errorf("opening guest disks: %w", err)
@@ -83,7 +99,8 @@ func Run(cfg *Config) error {
 	candidateDevices := append([]string{}, allPartDevices...)
 	candidateDevices = append(candidateDevices, lvPaths...)
 
-	decryptDisks(g, cfg.Input.LUKS, candidateDevices)
+	unlocked := decryptDisks(g, cfg.Input.LUKS, candidateDevices)
+	lvPaths, output.Disks = rescanAfterDecrypt(g, unlocked, lvPaths, output.Disks)
 
 	for _, d := range output.Disks {
 		for _, p := range d.Partitions {
@@ -99,7 +116,9 @@ func Run(cfg *Config) error {
 		"espDevices", output.Firmware.ESPDevices,
 	)
 
-	candidates, err := root.Discover(g, output.Disks, lvPaths)
+	discoverDevices := append([]string{}, lvPaths...)
+	discoverDevices = append(discoverDevices, unlocked...)
+	candidates, err := root.Discover(g, output.Disks, discoverDevices)
 	if err != nil {
 		return err
 	}
@@ -132,7 +151,9 @@ func Run(cfg *Config) error {
 		"os", chosen.Inspect.Type,
 	)
 
-	if err := planAndMount(g, cfg, &chosen, allPartDevices, lvPaths, output); err != nil {
+	mountLVs := append([]string{}, lvPaths...)
+	mountLVs = append(mountLVs, unlocked...)
+	if err := planAndMount(g, cfg, &chosen, allPartDevices, mountLVs, output); err != nil {
 		return err
 	}
 
@@ -198,34 +219,64 @@ func writeMultibootError(outputPath string, output *types.PrepareOutput, mb *roo
 	_ = types.WriteJSON(outputPath, output)
 }
 
-func decryptDisks(g *guest.Guest, luks *types.LUKSSpec, candidateDevices []string) {
+func rescanAfterDecrypt(g *guest.Guest, unlocked, lvPaths []string, disks []types.DiskInfo) ([]string, []types.DiskInfo) {
+	if len(unlocked) == 0 {
+		return lvPaths, disks
+	}
+	if err := g.RescanBlock(); err != nil {
+		slog.Warn("block rescan after decrypt failed", "error", err)
+	}
+	lvPaths = g.LVPaths()
+	disks = g.DiskInfos()
+	slog.Info("post-decrypt layout",
+		"unlocked", len(unlocked),
+		"lvs", len(lvPaths),
+		"mappers", unlocked,
+	)
+	return lvPaths, disks
+}
+
+func decryptDisks(g *guest.Guest, luks *types.LUKSSpec, candidateDevices []string) []string {
+	var unlocked []string
 	if luks != nil && len(luks.KeyFiles) > 0 {
 		for device, keyFile := range luks.KeyFiles {
 			if device == "" || device == "all" || strings.HasPrefix(device, "all-") {
 				for _, d := range candidateDevices {
 					mapper := "v2v-luks-keyfile-" + sanitizeMapper(d)
-					if _, err := g.Decrypt(d, keyFile, mapper); err != nil {
+					mapped, err := g.Decrypt(d, keyFile, mapper)
+					if err != nil {
 						slog.Debug("LUKS keyfile try failed", "device", d, "error", err)
 						continue
 					}
-					slog.Info("LUKS decrypted with keyfile", "device", d)
+					slog.Info("LUKS decrypted with keyfile", "device", d, "mapper", mapped)
+					unlocked = append(unlocked, mapped)
 				}
 				continue
 			}
 			mapper := "v2v-luks-keyfile-" + sanitizeMapper(device)
-			if _, err := g.Decrypt(device, keyFile, mapper); err != nil {
+			mapped, err := g.Decrypt(device, keyFile, mapper)
+			if err != nil {
 				slog.Warn("LUKS decrypt failed", "device", device, "error", err)
+				continue
 			}
+			slog.Info("LUKS decrypted with keyfile", "device", device, "mapper", mapped)
+			unlocked = append(unlocked, mapped)
 		}
 	}
 
 	if luks != nil && luks.Clevis {
 		for _, device := range candidateDevices {
-			if _, err := g.UnlockClevis(device, "v2v-luks-clevis"); err != nil {
+			mapper := "v2v-luks-clevis-" + sanitizeMapper(device)
+			mapped, err := g.UnlockClevis(device, mapper)
+			if err != nil {
 				slog.Debug("clevis decrypt skipped", "device", device, "error", err)
+				continue
 			}
+			slog.Info("LUKS unlocked with Clevis", "device", device, "mapper", mapped)
+			unlocked = append(unlocked, mapped)
 		}
 	}
+	return unlocked
 }
 
 func planAndMount(g *guest.Guest, cfg *Config, chosen *types.RootCandidate, allPartDevices, lvPaths []string, output *types.PrepareOutput) error {

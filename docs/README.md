@@ -53,7 +53,8 @@ Conversion pod
 
 Set `virt_v2v_image_fqin` to the kc-v2v container image. `kc-v2v` loads `V2V_*`
 env vars, discovers disks on conversion-pod PVC mounts, and spawns the pipeline
-binaries (including `kc-copy` when copy is needed).
+binaries (including `kc-copy` when copy is needed). See
+[forklift-usage.md](forklift-usage.md) for full MTV / Forklift setup.
 
 To run copy alone (without conversion), use [kc-copy.md](kc-copy.md).
 
@@ -202,11 +203,13 @@ Each binary links only the plugins it needs via blank imports in
 
 - [kc-v2v.md](kc-v2v.md) — Forklift conversion pod entrypoint (copy + pipeline + HTTP)
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
+- [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
 
 ### Design
 
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [privilege-model.md](privilege-model.md) — host-mount vs. libguestfs appliance privilege trade-offs
+- [ref-baseline/README.md](ref-baseline/README.md) — MTV cold-migration ref vs kc-v2v baseline (plus dashboard)
 
 ## Code layout
 

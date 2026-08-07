@@ -160,6 +160,34 @@ func TestEnsureGuestfishEnvSetsDefaults(t *testing.T) {
 	}
 }
 
+func TestGuestfsNetworkEnabled(t *testing.T) {
+	t.Setenv(EnvGuestfsNetwork, "")
+	if guestfsNetworkEnabled() {
+		t.Fatal("empty env should be disabled")
+	}
+	t.Setenv(EnvGuestfsNetwork, "1")
+	if !guestfsNetworkEnabled() {
+		t.Fatal("KC_GUESTFS_NETWORK=1 should enable")
+	}
+	t.Setenv(EnvGuestfsNetwork, "true")
+	if !guestfsNetworkEnabled() {
+		t.Fatal("KC_GUESTFS_NETWORK=true should enable")
+	}
+	t.Setenv(EnvGuestfsNetwork, "false")
+	if guestfsNetworkEnabled() {
+		t.Fatal("KC_GUESTFS_NETWORK=false should disable")
+	}
+}
+
+func TestSharedListenerEnvOmitsNetwork(t *testing.T) {
+	l := &SharedListener{PID: 42}
+	for _, e := range l.Env() {
+		if strings.HasPrefix(e, EnvGuestfsNetwork+"=") {
+			t.Fatalf("SharedListener.Env must not set %s (pipeline adds it when Clevis)", EnvGuestfsNetwork)
+		}
+	}
+}
+
 func TestEnsureGuestfishEnvV2VWins(t *testing.T) {
 	t.Setenv("V2V_memSize", "2048")
 	t.Setenv("V2V_smp", "6")

@@ -23,7 +23,16 @@ import (
 const (
 	EnvGuestfishPID   = "GUESTFISH_PID"
 	EnvKCGuestfishPID = "KC_GUESTFISH_PID"
+	// EnvGuestfsNetwork enables QEMU user networking in the appliance before
+	// launch. Set to "1" or "true" when Clevis/NBDE unlock is required
+	// (Forklift V2V_NBDE_CLEVIS). Must be set before ensureLaunched / run.
+	EnvGuestfsNetwork = "KC_GUESTFS_NETWORK"
 )
+
+func guestfsNetworkEnabled() bool {
+	v := strings.TrimSpace(os.Getenv(EnvGuestfsNetwork))
+	return v == "1" || strings.EqualFold(v, "true")
+}
 
 var guestfishPIDRE = regexp.MustCompile(`GUESTFISH_PID=(\d+)`)
 
@@ -384,13 +393,18 @@ func (s *guestfishSession) ensureLaunched(diskPaths []string) error {
 	}
 
 	var script strings.Builder
+	network := guestfsNetworkEnabled()
+	if network {
+		script.WriteString("set-network true\n")
+		slog.Info("guestfish enabling appliance network for Clevis/NBDE", "pid", s.pid)
+	}
 	for _, dp := range diskPaths {
 		script.WriteString("-add-drive-opts ")
 		script.WriteString(quoteGuestfish(dp))
 		script.WriteString(" readonly:false\n")
 	}
 	script.WriteString("-run\n")
-	slog.Info("guestfish launching appliance", "pid", s.pid, "disks", len(diskPaths))
+	slog.Info("guestfish launching appliance", "pid", s.pid, "disks", len(diskPaths), "network", network)
 	out, err := s.remoteScript(script.String())
 	launchOut := strings.TrimSpace(string(out))
 	if err != nil {

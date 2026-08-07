@@ -176,6 +176,30 @@ func (b *Backend) CloseCrypt(mapperName string) error {
 	return luks.Close(mapperName)
 }
 
+// RescanBlock re-activates LVM after LUKS unlock so volumes on decrypted
+// devices appear in LVPaths.
+func (b *Backend) RescanBlock() error {
+	var devices []string
+	for _, ds := range b.disks {
+		for _, pd := range ds.Partitions {
+			devices = append(devices, pd.DevicePath)
+		}
+	}
+	for _, name := range b.cryptMaps {
+		devices = append(devices, "/dev/mapper/"+name)
+	}
+	if len(devices) == 0 {
+		return nil
+	}
+	lvs, err := lvm.ScanAndActivate(devices)
+	if err != nil {
+		return fmt.Errorf("LVM rescan after decrypt: %w", err)
+	}
+	b.lvPaths = lvs
+	slog.Info("direct rescan after decrypt", "lvs", len(lvs), "paths", lvs)
+	return nil
+}
+
 func (b *Backend) RunCommand(guestRoot string, cmd []string) ([]byte, error) {
 	return runInGuestRoot(guestRoot, cmd)
 }

@@ -37,11 +37,15 @@ type Backend interface {
 	FSCheck(device, fstype string) error
 	FSTrim(mountpoint string) error
 
-	// Decrypt opens a LUKS mapping with a key file. Guestfs mode is a no-op.
+	// Decrypt opens a LUKS mapping with a key file.
 	Decrypt(device, keyFile, mapperName string) (mappedPath string, err error)
-	// UnlockClevis unlocks a Clevis-bound LUKS volume. Guestfs mode is a no-op.
+	// UnlockClevis unlocks a Clevis-bound LUKS volume (NBDE / Tang).
+	// Guestfs mode requires appliance networking (see EnvGuestfsNetwork).
 	UnlockClevis(device, mapperName string) (mappedPath string, err error)
 	CloseCrypt(mapperName string) error
+
+	// RescanBlock refreshes LVM (and related) discovery after LUKS unlock.
+	RescanBlock() error
 
 	// RunCommand executes cmd in the guest (chroot or guestfish command).
 	RunCommand(guestRoot string, cmd []string) ([]byte, error)

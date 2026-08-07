@@ -209,6 +209,12 @@ func (g *Guest) CloseCrypt(mapperName string) error {
 	return g.backend.CloseCrypt(mapperName)
 }
 
+// RescanBlock refreshes LVM discovery after LUKS unlock so newly visible
+// volumes appear in LVPaths.
+func (g *Guest) RescanBlock() error {
+	return g.backend.RescanBlock()
+}
+
 func (g *Guest) RunCommand(guestRoot string, cmd []string) ([]byte, error) {
 	return g.backend.RunCommand(normalizeGuestPath(guestRoot), cmd)
 }
