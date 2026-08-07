@@ -36,7 +36,7 @@ Run the following and capture any output:
 
 1. `GOOS=linux go vet ./pkg/... ./cmd/...`
 2. `GOOS=linux make lint` (golangci-lint)
-3. `GOOS=linux go test ./pkg/... ./cmd/...` (or `make test`)
+3. `make test` (unit tests)
 
 Report any lint/vet/test findings verbatim at the top of the review under a
 **Lint & Vet** heading before the priority sections. If clean, say so briefly.

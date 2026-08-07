@@ -68,8 +68,8 @@ Debian/SUSE guests are not covered by the baked matrix; without a matching local
 | 11 | Hypervisor | pluggable: `LinuxCleanup` | `pkg/convert-linux/hypervisor/` | Remove source hypervisor tools |
 | 12 | Guest Agent | pluggable | `pkg/convert-linux/guestagent/` | Install qemu-guest-agent, static IP firstboot, local packages |
 | 13 | Guest Cleanup | strict | `pkg/convert-linux/guestcleanup/` | Remove blkid/LVM caches and update modprobe aliases |
-| 15 | Initramfs | strict | `pkg/convert-linux/initramfs/` | Rebuild initramfs with virtio drivers |
-| 15.5 | Static IP / NIC Naming | pluggable: `NICNamer` | `pkg/convert-linux/nicnaming/` | Preserve NIC names and static IP configuration |
+| 14 | Initramfs | strict | `pkg/convert-linux/initramfs/` | Rebuild initramfs with virtio drivers |
+| 15 | Static IP / NIC Naming | pluggable: `NICNamer` | `pkg/convert-linux/nicnaming/` | Preserve NIC names and static IP configuration |
 | 16 | SELinux Relabel | strict | `pkg/convert-linux/selinux/` | Offline SELinux relabel via `setfiles` |
 | 17 | GuestCaps | strict | `pkg/convert-linux/guestcaps/` | Derive guest capabilities for KVM |
 

@@ -6,16 +6,29 @@ virt-v2v image (**ref**) against the kc-v2v replacement image (**kc-v2v**).
 Each run migrates two VMware VMs to OpenShift Virtualization while sampling
 CPU, memory, and network traffic of the conversion pod every ~10 s.
 
+**Runnable scripts** live under [`tests/scenarios/`](../../tests/scenarios/)
+(see also the [scenarios README](../../tests/scenarios/README.md) and
+[virt-v2v vs kc-v2v](../../tests/scenarios/virt-v2v-vs-kc-v2v.md) narrative).
+This directory keeps the dashboard, archived runs, and result tables.
+
 ## Quick start
 
 ```bash
-# kc-v2v run (set image override first)
+# From repo root — kc-v2v run (set image override first)
 oc mtv settings set --setting virt_v2v_image_fqin --value "quay.io/yaacov/kc-v2v:devel-amd64"
-NS=mtv-kc-v2v-ref KEEP_BETWEEN_TESTS=true bash test-mtv-ref-baseline.sh
+NS=mtv-kc-v2v-ref KEEP_BETWEEN_TESTS=true make test-cluster-baseline
+# or: NS=mtv-kc-v2v-ref KEEP_BETWEEN_TESTS=true bash tests/scenarios/test-mtv-ref-baseline.sh
 
 # ref run (unset image override to use the operator default)
 oc mtv settings set --setting virt_v2v_image_fqin --value ""
-NS=mtv-ref-baseline KEEP_BETWEEN_TESTS=true bash test-mtv-ref-baseline.sh
+NS=mtv-ref-baseline KEEP_BETWEEN_TESTS=true make test-cluster-baseline
+```
+
+For a lighter pass/fail check that **sets** `virt_v2v_image_fqin` for you:
+
+```bash
+make build-kc-v2v-image push-kc-v2v-image
+make test-cluster-smoke
 ```
 
 ### Prerequisites
@@ -39,12 +52,18 @@ environment variables pointing to a vSphere with `mtv-func*` VMs.
 
 ### Output files
 
-Each run produces:
+Each run writes under `tests/scenarios/`:
 
 - `test-mtv-ref-baseline-<timestamp>.log` — full run log
 - `test-mtv-ref-baseline-<timestamp>-mem/` — per-VM CSVs with columns:
   `timestamp_utc, elapsed_s, pod, node, mem_working_set_mi, mem_rss_mi_cgroup,
   cpu_m, net_rx_bytes, net_tx_bytes, phase`
+
+To archive a published comparison, copy those artifacts into `runs/` here
+(and update the table below).
+
+Parse kc-v2v pod logs with
+[`tests/scenarios/parse-kc-v2v-pod-phases.sh`](../../tests/scenarios/parse-kc-v2v-pod-phases.sh).
 
 ---
 

@@ -105,34 +105,11 @@ func Run(cfg *Config) error {
 
 	// Block 7 (pluggable): UEFI fixup
 	slog.Debug("UEFI fixup")
-	if types.FirmwareType(cfg.PrepareData.Firmware.Type) == types.FirmwareUEFI {
-		efiPath := filepath.Join(cfg.MountRoot, "boot", "efi")
-		if _, freeInodes, err := guest.FileStatFS(efiPath); err == nil && freeInodes >= 0 && freeInodes < 10 {
-			slog.Warn("EFI partition has insufficient free inodes, skipping UEFI fixup", "path", efiPath, "freeInodes", freeInodes)
-			output.Errors = append(output.Errors, types.BlockError{
-				Block: "uefi/pre-check", Message: fmt.Sprintf("EFI partition has %d free inodes", freeInodes),
-			})
-		} else {
-			output.Errors = append(output.Errors, uefi.ConvertAllESPs(cfg.MountRoot, cfg.PrepareData.Firmware.ESPDevices)...)
-		}
-	}
+	output.Errors = append(output.Errors, fixupUEFI(cfg.MountRoot, cfg.PrepareData.Firmware)...)
 
 	// Block 8: Kernel selection
 	slog.Debug("finalizing kernel selection")
-	var selectedKernel *types.KernelInfo
-	if len(allKernels) > 0 {
-		selectedKernel = kernel.Best(allKernels)
-	}
-	if selectedKernel == nil {
-		slog.Warn("no bootable kernel with virtio support found, defaulting to virtio caps", "scanned", len(allKernels))
-	} else {
-		slog.Info("selected kernel", "version", selectedKernel.Version)
-		if activeHandler != nil {
-			if err := activeHandler.SetDefaultKernel(cfg.MountRoot, selectedKernel.Version); err != nil {
-				slog.Warn("setting default kernel failed", "error", err)
-			}
-		}
-	}
+	selectedKernel := selectKernelAndSetDefault(cfg.MountRoot, allKernels, activeHandler)
 
 	// Block 9: Console configuration
 	slog.Debug("configuring console")
@@ -175,7 +152,7 @@ func Run(cfg *Config) error {
 	slog.Debug("cleaning guest artifacts")
 	guestcleanup.Run(cfg.MountRoot)
 
-	// Block 15: Initramfs injection — rebuild to ensure virtio drivers are
+	// Block 14: Initramfs injection — rebuild to ensure virtio drivers are
 	// included in the initramfs (on-disk modules alone are not sufficient for
 	// early boot). Matching virt-v2v which always rebuilds for the best kernel.
 	if selectedKernel != nil {
@@ -187,30 +164,9 @@ func Run(cfg *Config) error {
 		slog.Warn("skipping initramfs rebuild, no kernel selected")
 	}
 
-	// Block 15.5: Static IP configuration + NIC naming preservation
+	// Block 15: Static IP configuration + NIC naming preservation
 	if len(cfg.PrepareData.Options.StaticIPs) > 0 {
-		slog.Debug("preserving NIC naming")
-		if err := nicnaming.Apply(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs); err != nil {
-			slog.Warn("NIC naming preservation failed", "error", err)
-			output.Errors = append(output.Errors, types.BlockError{
-				Block: "nic-naming", Message: err.Error(),
-			})
-		}
-
-		slog.Debug("configuring static IPs")
-		if err := guestagent.WriteMacToIP(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs); err != nil {
-			slog.Warn("writing macToIP failed", "error", err)
-			output.Errors = append(output.Errors, types.BlockError{
-				Block: "static-ip", Message: err.Error(),
-			})
-		} else if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
-			if err := fbHandler.Install(cfg.MountRoot, guestagent.FirstbootCommands()); err != nil {
-				slog.Warn("static IP firstboot install failed", "error", err)
-				output.Errors = append(output.Errors, types.BlockError{
-					Block: "static-ip/firstboot", Message: err.Error(),
-				})
-			}
-		}
+		output.Errors = append(output.Errors, configureStaticIPs(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs)...)
 	}
 
 	// Block 16: Offline SELinux relabel — run setfiles against the guest
@@ -254,6 +210,70 @@ func guestMountPoints(disks []types.DiskInfo) []string {
 		}
 	}
 	return mps
+}
+
+func fixupUEFI(mountRoot string, firmware types.FirmwareInfo) []types.BlockError {
+	if types.FirmwareType(firmware.Type) != types.FirmwareUEFI {
+		return nil
+	}
+	efiPath := filepath.Join(mountRoot, "boot", "efi")
+	if _, freeInodes, err := guest.FileStatFS(efiPath); err == nil && freeInodes >= 0 && freeInodes < 10 {
+		slog.Warn("EFI partition has insufficient free inodes, skipping UEFI fixup", "path", efiPath, "freeInodes", freeInodes)
+		return []types.BlockError{
+			{Block: "uefi/pre-check", Message: fmt.Sprintf("EFI partition has %d free inodes", freeInodes)},
+		}
+	}
+	return uefi.ConvertAllESPs(mountRoot, firmware.ESPDevices)
+}
+
+func selectKernelAndSetDefault(mountRoot string, allKernels []types.KernelInfo, activeHandler bootloader.BootloaderHandler) *types.KernelInfo {
+	var selected *types.KernelInfo
+	if len(allKernels) > 0 {
+		selected = kernel.Best(allKernels)
+	}
+	if selected == nil {
+		slog.Warn("no bootable kernel with virtio support found, defaulting to virtio caps", "scanned", len(allKernels))
+		return nil
+	}
+	slog.Info("selected kernel", "version", selected.Version)
+	if activeHandler != nil {
+		if err := activeHandler.SetDefaultKernel(mountRoot, selected.Version); err != nil {
+			slog.Warn("setting default kernel failed", "error", err)
+		}
+	}
+	return selected
+}
+
+func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP) []types.BlockError {
+	var errs []types.BlockError
+
+	slog.Debug("preserving NIC naming")
+	if err := nicnaming.Apply(mountRoot, staticIPs); err != nil {
+		slog.Warn("NIC naming preservation failed", "error", err)
+		errs = append(errs, types.BlockError{
+			Block: "nic-naming", Message: err.Error(),
+		})
+	}
+
+	slog.Debug("configuring static IPs")
+	if err := guestagent.WriteMacToIP(mountRoot, staticIPs); err != nil {
+		slog.Warn("writing macToIP failed", "error", err)
+		errs = append(errs, types.BlockError{
+			Block: "static-ip", Message: err.Error(),
+		})
+		return errs
+	}
+
+	if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
+		if err := fbHandler.Install(mountRoot, guestagent.FirstbootCommands()); err != nil {
+			slog.Warn("static IP firstboot install failed", "error", err)
+			errs = append(errs, types.BlockError{
+				Block: "static-ip/firstboot", Message: err.Error(),
+			})
+		}
+	}
+
+	return errs
 }
 
 func scanKernels(mountRoot string) []types.KernelInfo {

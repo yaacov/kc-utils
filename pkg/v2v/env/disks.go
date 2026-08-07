@@ -18,7 +18,7 @@ type DiskInfo struct {
 }
 
 // DiscoverDisks finds attached block devices and disk images.
-func DiscoverDisks(cfg *Config) ([]DiskInfo, error) {
+func DiscoverDisks(_ *Config) ([]DiskInfo, error) {
 	paths, err := globDisks()
 	if err != nil {
 		return nil, err

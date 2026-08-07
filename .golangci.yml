@@ -12,13 +12,28 @@ linters:
     - gocritic
     - misspell
     - gofmt
+    - revive
+    - gocyclo
+    - unparam
 
 linters-settings:
   gocritic:
     enabled-tags:
       - diagnostic
       - performance
+  gocyclo:
+    min-complexity: 30
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+      - name: var-naming
+        disabled: true
 
 issues:
   exclude-dirs:
     - vendor
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - unparam

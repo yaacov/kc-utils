@@ -62,7 +62,9 @@ func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 	}
 
 	slog.Info("trying Debian initramfs tools", "kernel", kernel.Version)
-	ensureInitramfsToolsModules(guestRoot, virtioDrivers)
+	if err := ensureInitramfsToolsModules(guestRoot, virtioDrivers); err != nil {
+		return err
+	}
 
 	out, err = guest.RunInGuest(guestRoot, []string{
 		"update-initramfs", "-u", "-k", kernel.Version,
@@ -131,10 +133,10 @@ func inferInitrdPath(guestRoot, version string) string {
 
 // ensureInitramfsToolsModules adds virtio module names to
 // /etc/initramfs-tools/modules so update-initramfs includes them.
-func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) {
+func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) error {
 	modulesFile := filepath.Join(guestRoot, "etc", "initramfs-tools", "modules")
 	if !guest.FileExists(filepath.Dir(modulesFile)) {
-		return
+		return nil
 	}
 	var content string
 	if existing, err := guest.FileRead(modulesFile); err == nil {
@@ -148,6 +150,9 @@ func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) {
 		}
 	}
 	if changed {
-		_ = guest.FileWrite(modulesFile, []byte(content), 0o644)
+		if err := guest.FileWrite(modulesFile, []byte(content), 0o644); err != nil {
+			return fmt.Errorf("write initramfs-tools modules %s: %w", modulesFile, err)
+		}
 	}
+	return nil
 }

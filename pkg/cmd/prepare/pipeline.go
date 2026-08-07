@@ -177,12 +177,11 @@ func Run(cfg *Config) error {
 		output.Inspect.Arch = inspect.DetectArch(cfg.MountRoot)
 	}
 	if output.Inspect.Type == "windows" {
-		if winInspect, winErr := inspect.InspectWindowsMetadata(cfg.MountRoot); winErr != nil {
+		winInspect, winErr := inspect.InspectWindowsMetadata(cfg.MountRoot)
+		if winErr != nil {
 			slog.Warn("windows registry inspection failed", "error", winErr)
-			output.InspectWindows = winInspect
-		} else {
-			output.InspectWindows = winInspect
 		}
+		output.InspectWindows = winInspect
 	}
 
 	output.BootDevice = inspect.Detect(cfg.MountRoot, output.Disks)

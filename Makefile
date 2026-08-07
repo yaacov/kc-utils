@@ -63,7 +63,8 @@ TEST_IMAGE   := kc-utils-test
         test-e2e-container test-e2e-disk test-e2e-disk-guestfs test-image \
         test-image-rebuild test-build check-all help build-kc-v2v \
         build-kc-copy cache-virtio-win build-kc-v2v-image \
-        push-kc-v2v-image test-kc-v2v-image check_container_runtime
+        push-kc-v2v-image test-kc-v2v-image check_container_runtime \
+        test-cluster test-cluster-smoke test-cluster-baseline
 
 all: build
 
@@ -75,7 +76,9 @@ help:
 	@printf "  \033[36m%-28s\033[0m %s\n" "REGISTRY_TAG=devel"          "Image tag for builds and pushes"
 	@printf "  \033[36m%-28s\033[0m %s\n" "PLATFORM=linux/amd64"        "Container build platform (linux/amd64 or linux/arm64)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "CONTAINER_RUNTIME="          "Force docker or podman (auto-detected if empty)"
-	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n\n"
+	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n"
+	@printf "\033[1mCluster smoke:\033[0m  make build-kc-v2v-image push-kc-v2v-image test-cluster-smoke\n"
+	@printf "               (needs oc mtv + GOVC_URL/USERNAME/PASSWORD; not run in CI)\n\n"
 	@awk '/^## /{desc=substr($$0,4)} /^[a-zA-Z0-9_-]+:/ && desc{sub(/:.*/, "", $$1); printf "  \033[36m%-24s\033[0m %s\n", $$1, desc; desc=""}' $(MAKEFILE_LIST)
 
 ## Build all binaries (linux)
@@ -275,6 +278,17 @@ test-kc-v2v-image: check_container_runtime
 	    -v $(CURDIR)/tests/test-kc-v2v-image.sh:/tmp/test-kc-v2v-image.sh:ro,Z \
 	    $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) \
 	    /tmp/test-kc-v2v-image.sh
+
+## [cluster] Alias for test-cluster-smoke (manual; needs MTV + GOVC_*)
+test-cluster: test-cluster-smoke
+
+## [cluster] MTV smoke: set virt_v2v_image_fqin to KC_V2V_IMAGE, migrate RHEL then Windows
+test-cluster-smoke:
+	KC_V2V_IMAGE=$(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) bash tests/scenarios/test-mtv-kc-v2v.sh
+
+## [cluster] MTV ref-baseline benchmark (does not set conversion image; see docs/ref-baseline)
+test-cluster-baseline:
+	bash tests/scenarios/test-mtv-ref-baseline.sh
 
 check_container_runtime:
 	@if [ ! -x "$(CONTAINER_CMD)" ]; then \

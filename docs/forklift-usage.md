@@ -65,9 +65,28 @@ See [build/kc-v2v/README.md](../build/kc-v2v/README.md#forklift-configuration-fo
 for full details on cluster settings, Plan fields, Conversion CR types, and
 features that kc-v2v does not handle.
 
+## Cluster tests
+
+Manual MTV scenario tests live under
+[tests/scenarios/](../tests/scenarios/README.md) (not run in CI).
+
+```bash
+# Build, push, then smoke-migrate one RHEL + one Windows VM
+make build-kc-v2v-image push-kc-v2v-image
+make test-cluster-smoke   # needs oc mtv + GOVC_*
+
+# Benchmark (set virt_v2v_image_fqin yourself first)
+make test-cluster-baseline
+```
+
+See [tests/scenarios/test-mtv-kc-v2v.md](../tests/scenarios/test-mtv-kc-v2v.md)
+and [docs/ref-baseline/README.md](ref-baseline/README.md).
+
 ## Related
 
 - [docs/kc-v2v.md](kc-v2v.md) — kc-v2v orchestrator reference
-- [docs/ref-baseline/README.md](ref-baseline/README.md) — Benchmark comparison (results, scripts, runs)
+- [tests/scenarios/](../tests/scenarios/README.md) — Cluster smoke and baseline runners
+- [tests/scenarios/virt-v2v-vs-kc-v2v.md](../tests/scenarios/virt-v2v-vs-kc-v2v.md) — virt-v2v vs kc-v2v comparison
+- [docs/ref-baseline/README.md](ref-baseline/README.md) — Benchmark comparison (results, dashboard, archived runs)
 - [Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html) ([source](ref-baseline/dashboard.html)) — Interactive charts (memory, CPU, network over time)
 - [build/kc-v2v/README.md](../build/kc-v2v/README.md) — Container image and Forklift Plan config
