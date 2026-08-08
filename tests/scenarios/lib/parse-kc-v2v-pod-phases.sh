@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Parse kc-v2v virt-v2v pod logs into copy / prepare / convert / finalize durations.
-# Usage: parse-kc-v2v-pod-phases.sh <pod-log-file>
+# Usage: lib/parse-kc-v2v-pod-phases.sh <pod-log-file>
 set -euo pipefail
 
 LOG="${1:-}"

@@ -9,37 +9,41 @@ import (
 )
 
 // CustomizerOpts builds options for finalize customizers.
-func CustomizerOpts(prepare *types.PrepareOutput, convert *types.ConverterOutput) map[string]string {
-	opts := map[string]string{"os_type": prepare.Inspect.Type}
-	if prepare.Options.Hostname != "" {
-		opts["hostname"] = prepare.Options.Hostname
+func CustomizerOpts(pipeline *types.PipelineData) map[string]string {
+	opts := map[string]string{"os_type": pipeline.Prepare.Inspect.Type}
+	if pipeline.Prepare.Options.Hostname != "" {
+		opts["hostname"] = pipeline.Prepare.Options.Hostname
 	}
-	if prepare.Options.Timezone != "" {
-		opts["timezone"] = prepare.Options.Timezone
+	if pipeline.Prepare.Options.Timezone != "" {
+		opts["timezone"] = pipeline.Prepare.Options.Timezone
 	}
-	scriptsDir := prepare.Options.DynamicScriptsDir
+	scriptsDir := pipeline.Prepare.Options.DynamicScriptsDir
 	if scriptsDir == "" {
 		scriptsDir = "/mnt/dynamic_scripts"
 	}
 	opts["scripts_dir"] = scriptsDir
-	if convert != nil && convert.SELinuxRelabeled {
+	if pipeline.Convert != nil && pipeline.Convert.SELinuxRelabeled {
 		opts["selinux_relabeled"] = "true"
 	}
 	return opts
 }
 
 // WriteTargetMeta merges converter warnings and block errors into TargetMeta
-// warnings, then writes the JSON file. Block errors are surfaced as warnings
-// so that downstream consumers (e.g. the migration controller) can detect
-// partial failures such as a failed initramfs rebuild.
-func WriteTargetMeta(path string, meta *types.TargetMeta, convert *types.ConverterOutput) error {
-	if len(convert.Warnings) > 0 {
-		meta.Warnings = append(meta.Warnings, convert.Warnings...)
+// warnings, then writes the full PipelineData JSON. Block errors are surfaced
+// as warnings so that downstream consumers (e.g. the migration controller) can
+// detect partial failures such as a failed initramfs rebuild.
+func WriteTargetMeta(path string, pipeline *types.PipelineData) error {
+	meta := pipeline.Target
+	convert := pipeline.Convert
+	if convert != nil {
+		if len(convert.Warnings) > 0 {
+			meta.Warnings = append(meta.Warnings, convert.Warnings...)
+		}
+		for _, e := range convert.Errors {
+			meta.Warnings = append(meta.Warnings, fmt.Sprintf("[%s] %s", e.Block, e.Message))
+		}
 	}
-	for _, e := range convert.Errors {
-		meta.Warnings = append(meta.Warnings, fmt.Sprintf("[%s] %s", e.Block, e.Message))
-	}
-	data, err := json.MarshalIndent(meta, "", "  ")
+	data, err := json.MarshalIndent(pipeline, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling metadata: %w", err)
 	}

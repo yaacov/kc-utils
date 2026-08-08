@@ -48,7 +48,7 @@ EOF
 
 # Verify prepare completed.
 test -f "$d/prepare.json"
-check_json_field "$d/prepare.json" '.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
 
 # Verify guest is mounted and Windows files are accessible at the root mount.
 test -d "$MOUNT_ROOT/Windows/System32/Config" || {
@@ -74,9 +74,10 @@ cat > "$d/convert.json" <<EOF
 }
 EOF
 
+jq --slurpfile c "$d/convert.json" '. + {convert: $c[0]}' "$d/prepare.json" > "$d/pipeline.json"
+
 "$BIN_DIR/kc-finalize" \
-    --prepare-data "$d/prepare.json" \
-    --convert-data "$d/convert.json" \
+    --input "$d/pipeline.json" \
     --output "$d/finalize.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level debug

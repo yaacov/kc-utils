@@ -39,7 +39,7 @@ test -f "$d/convert-out.json"
 test -f "$d/target-meta.json"
 
 # Verify prepare completed.
-check_json_field "$d/prepare-out.json" '.status' 'complete'
+check_json_field "$d/prepare-out.json" '.prepare.status' 'complete'
 
 # Verify guest is unmounted after finalize.
 if mountpoint -q /tmp/kc-guest 2>/dev/null; then

@@ -1,75 +1,92 @@
 {
-  "status": "error",
-  "error": "multiple operating systems found; set options.root to \"first\" or a device path (/dev/loop0p1: Red Hat Enterprise Linux 9, /dev/loop0p2: Debian GNU/Linux 12)",
-  "converter": "",
-  "inspect": {
-    "type": "",
-    "distro": "",
-    "major_version": 0,
-    "minor_version": 0,
-    "arch": "",
-    "product_name": ""
-  },
-  "firmware": {
-    "type": "bios"
-  },
-  "boot_device": {
-    "disk_index": 0
-  },
-  "free_space": [],
-  "source": {
-    "name": "dual-boot-workstation",
-    "type": "disk"
-  },
-  "disks": [
-    {
-      "path": "/var/lib/kc/multiboot.img",
-      "format": "raw",
-      "partitions": [
-        {
-          "index": 1,
-          "fs_type": "ext4",
-          "device_path": "/dev/loop0p1"
-        },
-        {
-          "index": 2,
-          "fs_type": "ext4",
-          "device_path": "/dev/loop0p2"
-        }
-      ]
+  "input": {
+    "disks": [
+      {
+        "path": "/var/lib/kc/multiboot.img",
+        "format": "raw"
+      }
+    ],
+    "source": {
+      "name": "dual-boot-workstation",
+      "type": "disk"
+    },
+    "options": {
+      "root": "first"
     }
-  ],
-  "mount_root": "/mnt/kc-guest",
-  "root_candidates": [
-    {
-      "device_path": "/dev/loop0p1",
-      "disk_index": 0,
-      "part_index": 1,
-      "fs_type": "ext4",
-      "inspect": {
-        "type": "linux",
-        "distro": "rhel",
-        "major_version": 9,
-        "minor_version": 0,
-        "arch": "x86_64",
+  },
+  "prepare": {
+    "status": "error",
+    "error": "multiple operating systems found; set options.root to \"first\" or a device path (/dev/loop0p1: Red Hat Enterprise Linux 9, /dev/loop0p2: Debian GNU/Linux 12)",
+    "converter": "",
+    "inspect": {
+      "type": "",
+      "distro": "",
+      "major_version": 0,
+      "minor_version": 0,
+      "arch": "",
+      "product_name": ""
+    },
+    "firmware": {
+      "type": "bios"
+    },
+    "boot_device": {
+      "disk_index": 0
+    },
+    "free_space": [],
+    "source": {
+      "name": "dual-boot-workstation",
+      "type": "disk"
+    },
+    "disks": [
+      {
+        "path": "/var/lib/kc/multiboot.img",
+        "format": "raw",
+        "partitions": [
+          {
+            "index": 1,
+            "fs_type": "ext4",
+            "device_path": "/dev/loop0p1"
+          },
+          {
+            "index": 2,
+            "fs_type": "ext4",
+            "device_path": "/dev/loop0p2"
+          }
+        ]
+      }
+    ],
+    "mount_root": "/mnt/kc-guest",
+    "root_candidates": [
+      {
+        "device_path": "/dev/loop0p1",
+        "disk_index": 0,
+        "part_index": 1,
+        "fs_type": "ext4",
+        "inspect": {
+          "type": "linux",
+          "distro": "rhel",
+          "major_version": 9,
+          "minor_version": 0,
+          "arch": "x86_64",
+          "product_name": "Red Hat Enterprise Linux 9"
+        },
         "product_name": "Red Hat Enterprise Linux 9"
       },
-      "product_name": "Red Hat Enterprise Linux 9"
-    },
-    {
-      "device_path": "/dev/loop0p2",
-      "disk_index": 0,
-      "part_index": 2,
-      "fs_type": "ext4",
-      "inspect": {
-        "type": "linux",
-        "distro": "debian",
-        "major_version": 12,
-        "minor_version": 0,
-        "arch": "x86_64",
+      {
+        "device_path": "/dev/loop0p2",
+        "disk_index": 0,
+        "part_index": 2,
+        "fs_type": "ext4",
+        "inspect": {
+          "type": "linux",
+          "distro": "debian",
+          "major_version": 12,
+          "minor_version": 0,
+          "arch": "x86_64",
+          "product_name": "Debian GNU/Linux 12"
+        },
         "product_name": "Debian GNU/Linux 12"
-      },
-      "product_name": "Debian GNU/Linux 12"
-    }
-  ]
+      }
+    ]
+  }
 }

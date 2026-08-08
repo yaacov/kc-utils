@@ -39,8 +39,8 @@ EOF
     --mount-root "$MOUNT_ROOT" \
     --log-level error
 
-check_json_field "$d/prepare.json" '.status' 'complete'
-check_json_field "$d/prepare.json" '.root_device' "$root_dev"
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.root_device' "$root_dev"
 grep -q 'Debian' "$MOUNT_ROOT/etc/os-release"
 
 echo "PASS: test-root-device"

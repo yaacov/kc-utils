@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Shared helpers for MTV / kc-v2v cluster scenario tests.
-# Source from scripts in this directory: source "$(dirname "$0")/common.sh"
+# Source from sibling scripts: source "$(dirname "$0")/lib/common.sh"
 
-SCENARIO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCENARIO_DIR="$(cd "${LIB_DIR}/.." && pwd)"
 
 fmt_dur() {
   local s="$1"
@@ -15,66 +16,6 @@ get_plan_status() {
   oc mtv get plan --name "${plan}" -n "${ns}" --output json 2>/dev/null \
     | jq -r 'if type == "array" then .[0].status // "Unknown" else .status // "Unknown" end' 2>/dev/null \
     || echo "Unknown"
-}
-
-get_plan_vms() {
-  local plan="$1"
-  local ns="${2:-${NS}}"
-  oc mtv get plan --name "${plan}" -n "${ns}" --vms 2>&1
-}
-
-# Poll until plan reaches a terminal status or times out.
-# Uses INTERVAL / MAX_ATTEMPTS from the caller environment.
-# Sets LAST_PLAN_STATUS. Returns 0 on terminal status, 1 on timeout.
-wait_for_plan() {
-  local plan="$1"
-  local start_time="$2"
-  local ns="${3:-${NS}}"
-  local attempt=0
-  local status
-  local interval="${INTERVAL:-15}"
-  local max_attempts="${MAX_ATTEMPTS:-120}"
-
-  echo "--- Monitoring plan: ${plan} ---"
-
-  while [ "${attempt}" -lt "${max_attempts}" ]; do
-    attempt=$((attempt + 1))
-    status="$(get_plan_status "${plan}" "${ns}")"
-    local elapsed=$(( $(date +%s) - start_time ))
-
-    printf "  [%02d/%02d] %s  Status: %s\n" \
-      "${attempt}" "${max_attempts}" \
-      "$(fmt_dur "${elapsed}")" \
-      "${status}"
-
-    case "${status}" in
-      Completed|Succeeded|Failed|Error|Cancelled)
-        LAST_PLAN_STATUS="${status}"
-        echo ""
-        echo "  Plan ${plan} finished:"
-        echo "    Status:   ${status}"
-        echo "    Duration: $(fmt_dur "$(( $(date +%s) - start_time ))")"
-        echo ""
-        echo "  VM-level details:"
-        get_plan_vms "${plan}" "${ns}"
-        echo ""
-        return 0
-        ;;
-    esac
-
-    sleep "${interval}"
-  done
-
-  LAST_PLAN_STATUS="$(get_plan_status "${plan}" "${ns}")"
-  echo ""
-  echo "  Plan ${plan} timed out after $((max_attempts * interval))s"
-  echo "    Status:   ${LAST_PLAN_STATUS}"
-  echo "    Duration: $(fmt_dur "$(( $(date +%s) - start_time ))")"
-  echo ""
-  echo "  VM-level details:"
-  get_plan_vms "${plan}" "${ns}"
-  echo ""
-  return 1
 }
 
 # Read a single MTV setting value (last field of the get output table).
@@ -123,7 +64,7 @@ preflight_mtv_cluster() {
   echo "MTV controller found. VDDK image: ${vddk}"
 }
 
-# Save / restore helpers for cluster settings touched by smoke tests.
+# Save / restore helpers for cluster settings touched by benchmark runs.
 # Call save_mtv_settings once, then restore_mtv_settings from EXIT trap.
 SAVED_VIRT_V2V_IMAGE=""
 SAVED_WAIT_FOR_REBOOT=""
@@ -141,7 +82,7 @@ restore_mtv_settings() {
   if [[ "${_SETTINGS_SAVED}" != "true" ]]; then
     return 0
   fi
-  if [[ "${KEEP_IMAGE_SETTING:-false}" == "true" ]]; then
+  if [[ "${KEEP_IMAGE_SETTING:-true}" == "true" ]]; then
     echo "KEEP_IMAGE_SETTING=true — leaving cluster settings as configured by this run."
     return 0
   fi
@@ -174,21 +115,17 @@ set_virt_v2v_image() {
   oc mtv settings set --setting virt_v2v_image_fqin --value "${image}"
 }
 
+# Clear the override so Forklift uses the operator default virt-v2v image.
+clear_virt_v2v_image() {
+  echo "Clearing virt_v2v_image_fqin (operator default)"
+  oc mtv settings set --setting virt_v2v_image_fqin --value "" 2>/dev/null \
+    || oc mtv settings unset --setting virt_v2v_image_fqin 2>/dev/null \
+    || true
+}
+
 disable_windows_wait_for_reboot() {
   echo "Setting feature_windows_wait_for_reboot=false"
   oc mtv settings set --setting feature_windows_wait_for_reboot --value false
-}
-
-# Delete NS if present, wait until gone, recreate.
-fresh_namespace() {
-  local ns="$1"
-  oc delete namespace "${ns}" --ignore-not-found 2>/dev/null || true
-  local i
-  for i in $(seq 1 60); do
-    oc get ns "${ns}" >/dev/null 2>&1 || break
-    sleep 2
-  done
-  oc create namespace "${ns}"
 }
 
 create_vsphere_and_host_providers() {
@@ -218,7 +155,7 @@ pick_rhel_vm() {
   local ns="$1"
   local provider="$2"
   oc mtv get inventory vm --provider "${provider}" -n "${ns}" \
-    --query "select name where name ~= 'mtv-func.*' and (name ~= 'rhel' or guestId ~= 'rhel')" \
+    --query "select name where name ~= 'mtv-func.*' and name ~= 'rhel'" \
     --output json 2>/dev/null | jq -r '.[].name' | sort | head -1
 }
 
@@ -226,72 +163,27 @@ pick_win_vm() {
   local ns="$1"
   local provider="$2"
   oc mtv get inventory vm --provider "${provider}" -n "${ns}" \
-    --query "select name where name ~= 'mtv-func.*' and (name ~= 'win' or guestId ~= 'win')" \
+    --query "select name where name ~= 'mtv-func.*' and name ~= 'win'" \
     --output json 2>/dev/null | jq -r '.[].name' | sort | head -1
 }
 
-# Create + start a cold plan; wait for terminal status (no metrics sampling).
-# Sets LAST_PLAN_STATUS. Returns 0 on Completed/Succeeded, 1 otherwise.
-run_cold_smoke_plan() {
-  local label="$1"
-  local vm="$2"
-  local plan="$3"
-  local ns="${4:-${NS}}"
-  local provider="${5:-${PROVIDER}}"
-
-  echo "=========================================="
-  echo "RUN ${label}: VM=${vm} plan=${plan}"
-  echo "=========================================="
-
-  oc mtv delete plan --name "${plan}" -n "${ns}" 2>/dev/null || true
-  sleep 2
-
-  if ! oc mtv create plan --name "${plan}" --source "${provider}" --target host \
-    --vms "${vm}" \
-    --run-preflight-inspection false \
-    -n "${ns}"; then
-    echo "ERROR: failed to create plan ${plan}" >&2
-    return 1
-  fi
-
-  echo "Waiting for plan Ready..."
-  if ! oc wait "plan.forklift.konveyor.io/${plan}" -n "${ns}" \
-    --for=condition=Ready --timeout=300s; then
-    echo "ERROR: plan ${plan} did not become Ready" >&2
-    return 1
-  fi
-  echo "Plan ready."
-
-  local start_time
-  start_time=$(date +%s)
-  if ! oc mtv start plan --name "${plan}" -n "${ns}"; then
-    echo "ERROR: failed to start plan ${plan}" >&2
-    return 1
-  fi
-  echo "Migration started."
-  echo ""
-
-  wait_for_plan "${plan}" "${start_time}" "${ns}" || true
-  local status="${LAST_PLAN_STATUS}"
-  local duration=$(( $(date +%s) - start_time ))
-
-  echo "RESULT ${label}: status=${status} total=$(fmt_dur "${duration}") vm=${vm}"
-  echo ""
-
-  if [[ "${status}" == "Completed" || "${status}" == "Succeeded" ]]; then
-    return 0
-  fi
-  return 1
-}
-
-release_plan_pods() {
-  local plan="$1"
-  local ns="${2:-${NS}}"
-  oc mtv delete plan --name "${plan}" -n "${ns}" 2>/dev/null || true
-  local i left
-  for i in $(seq 1 60); do
-    left="$(oc get pods -n "${ns}" --no-headers 2>/dev/null | wc -l | tr -d ' ')"
-    [[ "${left}" == "0" ]] && break
-    sleep 5
+# Providers can be Ready before inventory is fully populated. Retry picks.
+wait_for_mtv_func_vms() {
+  local ns="$1"
+  local provider="$2"
+  local attempts="${3:-60}"
+  local sleep_s="${4:-5}"
+  local i rhel win
+  echo "Waiting for mtv-func RHEL + Windows inventory VMs..."
+  for i in $(seq 1 "${attempts}"); do
+    rhel="$(pick_rhel_vm "${ns}" "${provider}")"
+    win="$(pick_win_vm "${ns}" "${provider}")"
+    if [[ -n "${rhel}" && "${rhel}" != "null" && -n "${win}" && "${win}" != "null" ]]; then
+      echo "Inventory ready (attempt ${i}/${attempts}): rhel=${rhel} win=${win}"
+      return 0
+    fi
+    sleep "${sleep_s}"
   done
+  echo "ERROR: timed out waiting for mtv-func RHEL/Windows inventory VMs." >&2
+  return 1
 }

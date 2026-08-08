@@ -30,13 +30,17 @@ import (
 
 	// hypervisor offline remove (block 4)
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/awspv"
+	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/citrix"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/ec2"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/ec2launch"
+	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/hyperv"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/nutanix"
+	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/parallels"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/virtualbox"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/remove/vmware"
 
 	// hypervisor service disable (block 8)
+	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/services/hyperv"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/services/nutanix"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/services/virtualbox"
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor/plugins/services/vmware"
@@ -56,7 +60,7 @@ import (
 )
 
 func main() {
-	prepareFile := flag.String("prepare-data", "", "prepare output JSON")
+	inputFile := flag.String("input", "", "pipeline JSON file")
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations")
@@ -66,26 +70,31 @@ func main() {
 
 	logger.Init(*logLevel)
 
-	if *prepareFile == "" {
-		fmt.Fprintln(os.Stderr, "error: --prepare-data is required")
+	if *inputFile == "" {
+		fmt.Fprintln(os.Stderr, "error: --input is required")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	data, err := os.ReadFile(*prepareFile)
+	data, err := os.ReadFile(*inputFile)
 	if err != nil {
-		slog.Error("reading prepare data", "error", err)
+		slog.Error("reading input", "error", err)
 		os.Exit(1)
 	}
 
-	var prepareData types.PrepareOutput
-	if err := json.Unmarshal(data, &prepareData); err != nil {
-		slog.Error("parsing prepare JSON", "error", err)
+	var pipeline types.PipelineData
+	if err := json.Unmarshal(data, &pipeline); err != nil {
+		slog.Error("parsing pipeline JSON", "error", err)
+		os.Exit(1)
+	}
+	if pipeline.Prepare == nil {
+		slog.Error("pipeline JSON missing 'prepare' section")
 		os.Exit(1)
 	}
 
 	cfg := &convertwindows.Config{
-		PrepareData: prepareData,
+		PrepareData: *pipeline.Prepare,
+		Pipeline:    &pipeline,
 		MountRoot:   *mountRoot,
 		OutputPath:  *outputFile,
 		Offline:     *offline,

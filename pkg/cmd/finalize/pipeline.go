@@ -18,11 +18,10 @@ import (
 
 // Config holds finalizer pipeline configuration.
 type Config struct {
-	PrepareData types.PrepareOutput
-	ConvertData types.ConverterOutput
-	MountRoot   string
-	OutputPath  string
-	UseGuestfs  bool
+	Pipeline   *types.PipelineData
+	MountRoot  string
+	OutputPath string
+	UseGuestfs bool
 }
 
 // Run executes the finalizer pipeline.
@@ -30,14 +29,14 @@ func Run(cfg *Config) error {
 	slog.Debug("starting pipeline")
 
 	meta := &types.TargetMeta{
-		GuestCaps:      cfg.ConvertData.GuestCaps,
-		BootDevice:     cfg.PrepareData.BootDevice,
-		Disks:          cfg.PrepareData.Disks,
-		Inspect:        cfg.PrepareData.Inspect,
-		TargetFirmware: cfg.PrepareData.Firmware.Type,
+		GuestCaps:      cfg.Pipeline.Convert.GuestCaps,
+		BootDevice:     cfg.Pipeline.Prepare.BootDevice,
+		Disks:          cfg.Pipeline.Prepare.Disks,
+		Inspect:        cfg.Pipeline.Prepare.Inspect,
+		TargetFirmware: cfg.Pipeline.Prepare.Firmware.Type,
 	}
 
-	g, err := guest.AttachFromPrepare(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
+	g, err := guest.AttachFromPrepare(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
 	if err != nil {
 		return err
 	}
@@ -58,7 +57,7 @@ func Run(cfg *Config) error {
 
 	customizers := customize.Customizers.List()
 	slog.Info("running customizations", "plugins", customizers)
-	customizerOpts := metadata.CustomizerOpts(&cfg.PrepareData, &cfg.ConvertData)
+	customizerOpts := metadata.CustomizerOpts(cfg.Pipeline)
 	for _, name := range customizers {
 		c, ok := customize.Customizers.Get(name)
 		if !ok {
@@ -81,7 +80,7 @@ func Run(cfg *Config) error {
 		meta.Warnings = append(meta.Warnings, fmt.Sprintf("guest sync failed: %v", err))
 	}
 
-	trimPaths := mountedGuestPaths(cfg.MountRoot, cfg.PrepareData.Disks)
+	trimPaths := mountedGuestPaths(cfg.MountRoot, cfg.Pipeline.Prepare.Disks)
 	slog.Info("trimming filesystems", "backend", g.Mode().String(), "mounts", len(trimPaths))
 	for _, mountpoint := range trimPaths {
 		if err := g.FSTrim(mountpoint); err != nil {
@@ -96,7 +95,7 @@ func Run(cfg *Config) error {
 	tornDown = true
 
 	slog.Info("checking filesystems", "backend", g.Mode().String())
-	for _, d := range cfg.PrepareData.Disks {
+	for _, d := range cfg.Pipeline.Prepare.Disks {
 		for _, p := range d.Partitions {
 			if err := g.FSCheck(p.DevicePath, p.FSType); err != nil {
 				slog.Warn("fscheck failed", "device", p.DevicePath, "error", err)
@@ -110,11 +109,12 @@ func Run(cfg *Config) error {
 	meta.TargetFirmware = target.Target(meta.TargetFirmware)
 
 	slog.Debug("assigning bus slots")
-	meta.TargetBuses = target.Buses(cfg.PrepareData.Disks, cfg.ConvertData.GuestCaps.BlockBus)
-	meta.TargetNICs = target.NICs(cfg.PrepareData.Source.NICs, cfg.ConvertData.GuestCaps.NetBus)
+	meta.TargetBuses = target.Buses(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Convert.GuestCaps.BlockBus)
+	meta.TargetNICs = target.NICs(cfg.Pipeline.Prepare.Source.NICs, cfg.Pipeline.Convert.GuestCaps.NetBus)
 
 	slog.Debug("writing metadata")
-	if err := metadata.WriteTargetMeta(cfg.OutputPath, meta, &cfg.ConvertData); err != nil {
+	cfg.Pipeline.Target = meta
+	if err := metadata.WriteTargetMeta(cfg.OutputPath, cfg.Pipeline); err != nil {
 		return err
 	}
 
@@ -128,8 +128,8 @@ func TeardownOnly(cfg *Config) error {
 	mode := guest.ModeFromBool(cfg.UseGuestfs)
 	slog.Info("teardown-only starting", "backend", mode.String(), "mountRoot", cfg.MountRoot)
 
-	if len(cfg.PrepareData.Disks) > 0 {
-		disks := guest.WithRootMount(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice)
+	if cfg.Pipeline != nil && cfg.Pipeline.Prepare != nil && len(cfg.Pipeline.Prepare.Disks) > 0 {
+		disks := guest.WithRootMount(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice)
 		diskSpecs := types.DiskSpecsFrom(disks)
 		g, err := guest.AttachMounted(diskSpecs, cfg.MountRoot, mode, disks)
 		if err != nil {

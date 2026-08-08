@@ -41,12 +41,16 @@ prepare_json=$(mktemp)
 cleanup_fn rm -f "$prepare_json"
 make_linux_prepare_json "$d" "rhel" 9 0 "x86_64" "Test VM" "bios" > "$prepare_json"
 
+pipeline_json=$(mktemp)
+cleanup_fn rm -f "$pipeline_json"
+jq -n --slurpfile p "$prepare_json" '{prepare: $p[0]}' > "$pipeline_json"
+
 # Run converter
 output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
-    --prepare-data "$prepare_json" \
+    --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \
     --offline \

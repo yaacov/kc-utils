@@ -1,17 +1,110 @@
 {
-  "guestcaps": {
-    "block_bus": "virtio",
-    "net_bus": "virtio",
-    "virtio_rng": true,
-    "virtio_balloon": true,
-    "virtio_socket": true,
-    "isa_pvpanic": true,
-    "machine_type": "q35",
-    "arch": "x86_64",
-    "virtio_1_0": true,
-    "rtc_utc": false
+  "input": {
+    "disks": [
+      {
+        "path": "/var/lib/kc/windows.qcow2",
+        "format": "qcow2"
+      }
+    ],
+    "source": {
+      "name": "win2022-vm",
+      "type": "hyperv",
+      "firmware_hint": "uefi"
+    },
+    "options": {
+      "static_ips": [
+        {
+          "mac": "00:15:5d:01:02:03",
+          "ip": "192.168.122.50",
+          "gateway": "192.168.122.1",
+          "netmask": "255.255.255.0",
+          "dns": [
+            "192.168.122.1",
+            "8.8.8.8"
+          ]
+        }
+      ]
+    }
   },
-  "warnings": [
-    "antivirus detected: Windows Defender; this may interfere with virtio driver installation (INACCESSIBLE_BOOT_DEVICE)"
-  ]
+  "prepare": {
+    "status": "complete",
+    "converter": "kc-convert-windows",
+    "inspect": {
+      "type": "windows",
+      "distro": "windows",
+      "major_version": 10,
+      "minor_version": 0,
+      "arch": "x86_64",
+      "product_name": "Windows Server 2022 Datacenter"
+    },
+    "firmware": {
+      "type": "uefi"
+    },
+    "boot_device": {
+      "disk_index": 0,
+      "part_index": 2
+    },
+    "free_space": [],
+    "source": {
+      "name": "win2022-vm",
+      "type": "hyperv",
+      "firmware_hint": "uefi"
+    },
+    "disks": [
+      {
+        "path": "/var/lib/kc/windows.qcow2",
+        "size_bytes": 53687091200,
+        "format": "qcow2",
+        "partitions": [
+          {
+            "index": 1,
+            "size_bytes": 104857600,
+            "fs_type": "vfat",
+            "mount_point": "/boot/efi",
+            "device_path": "/dev/nbd0p1"
+          },
+          {
+            "index": 2,
+            "size_bytes": 53582233600,
+            "fs_type": "ntfs",
+            "mount_point": "/",
+            "device_path": "/dev/nbd0p2"
+          }
+        ]
+      }
+    ],
+    "mount_root": "/mnt/kc-guest",
+    "root_device": "/dev/nbd0p2",
+    "options": {
+      "static_ips": [
+        {
+          "mac": "00:15:5d:01:02:03",
+          "ip": "192.168.122.50",
+          "gateway": "192.168.122.1",
+          "netmask": "255.255.255.0",
+          "dns": [
+            "192.168.122.1",
+            "8.8.8.8"
+          ]
+        }
+      ]
+    }
+  },
+  "convert": {
+    "guestcaps": {
+      "block_bus": "virtio",
+      "net_bus": "virtio",
+      "virtio_rng": true,
+      "virtio_balloon": true,
+      "virtio_socket": true,
+      "isa_pvpanic": true,
+      "machine_type": "q35",
+      "arch": "x86_64",
+      "virtio_1_0": true,
+      "rtc_utc": false
+    },
+    "warnings": [
+      "antivirus detected: Windows Defender; this may interfere with virtio driver installation (INACCESSIBLE_BOOT_DEVICE)"
+    ]
+  }
 }

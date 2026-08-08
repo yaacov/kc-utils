@@ -71,21 +71,22 @@ Manual MTV scenario tests live under
 [tests/scenarios/](../tests/scenarios/README.md) (not run in CI).
 
 ```bash
-# Build, push, then smoke-migrate one RHEL + one Windows VM
+# Build, push, then benchmark (logs + mem/CPU/net + pod logs + HTML)
 make build-kc-v2v-image push-kc-v2v-image
-make test-cluster-smoke   # needs oc mtv + GOVC_*
-
-# Benchmark (set virt_v2v_image_fqin yourself first)
-make test-cluster-baseline
+export KC_V2V_IMAGE=quay.io/you/kc-v2v:devel-amd64
+export GOVC_URL=... GOVC_USERNAME=... GOVC_PASSWORD=...
+MODE=kc ./tests/scenarios/test-mtv-benchmark.sh          # independent kc-v2v
+MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # kc then operator default
+./tests/scenarios/test-mtv-benchmark-cleanup.sh          # delete NS + reset MTV settings
 ```
 
-See [tests/scenarios/test-mtv-kc-v2v.md](../tests/scenarios/test-mtv-kc-v2v.md)
+See [tests/scenarios/test-mtv-benchmark.md](../tests/scenarios/test-mtv-benchmark.md)
 and [docs/ref-baseline/README.md](ref-baseline/README.md).
 
 ## Related
 
 - [docs/kc-v2v.md](kc-v2v.md) — kc-v2v orchestrator reference
-- [tests/scenarios/](../tests/scenarios/README.md) — Cluster smoke and baseline runners
+- [tests/scenarios/](../tests/scenarios/README.md) — Cluster benchmark runner
 - [tests/scenarios/virt-v2v-vs-kc-v2v.md](../tests/scenarios/virt-v2v-vs-kc-v2v.md) — virt-v2v vs kc-v2v comparison
 - [docs/ref-baseline/README.md](ref-baseline/README.md) — Benchmark comparison (results, dashboard, archived runs)
 - [Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html) ([source](ref-baseline/dashboard.html)) — Interactive charts (memory, CPU, network over time)

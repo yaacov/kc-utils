@@ -25,11 +25,7 @@ import (
 var startSharedListener = guest.StartSharedListener
 
 // pipelineResult holds outputs from the kc-utils pipeline subprocesses.
-type pipelineResult struct {
-	Prepare types.PrepareOutput
-	Convert types.ConverterOutput
-	Target  types.TargetMeta
-}
+type pipelineResult = types.PipelineData
 
 // Run executes the full kc-v2v orchestration for a loaded config.
 func Run(cfg *env.Config) error {
@@ -53,7 +49,8 @@ func Run(cfg *env.Config) error {
 			return fmt.Errorf("write copy input: %w", err)
 		}
 		copyBin := filepath.Join(cfg.BinDir, "kc-copy")
-		if err := runSubprocess(copyBin, []string{"--input", inputPath, "--log-level", cfg.LogLevel}, nil); err != nil {
+		copyOutputPath := filepath.Join(cfg.Workdir, "copy-progress.json")
+		if err := runSubprocess(copyBin, []string{"--input", inputPath, "--output", copyOutputPath, "--log-level", cfg.LogLevel}, nil); err != nil {
 			return fmt.Errorf("kc-copy: %w", err)
 		}
 		cfg.IsInPlace = true
@@ -72,7 +69,7 @@ func Run(cfg *env.Config) error {
 		return fmt.Errorf("conversion: %w", err)
 	}
 
-	if err := xml.WriteInspectionXML(&result.Target, cfg.InspectionOutputFile); err != nil {
+	if err := xml.WriteInspectionXML(result.Target, cfg.InspectionOutputFile); err != nil {
 		return fmt.Errorf("write inspection XML: %w", err)
 	}
 	slog.Info("wrote inspection XML", "path", cfg.InspectionOutputFile)
@@ -120,18 +117,16 @@ func runPipelineOnce(cfg *env.Config, disks []env.DiskInfo) (*pipelineResult, er
 	}
 
 	inputPath := filepath.Join(cfg.Workdir, "prepare-input.json")
-	prepareOut := filepath.Join(cfg.Workdir, "prepare-out.json")
-	convertOut := filepath.Join(cfg.Workdir, "convert-out.json")
-	targetMeta := filepath.Join(cfg.Workdir, "target-meta.json")
+	pipelinePath := filepath.Join(cfg.Workdir, "pipeline.json")
 
 	if err := types.WriteJSON(inputPath, input); err != nil {
 		return nil, err
 	}
 
-	return runPipelineOnceBody(cfg, &input, inputPath, prepareOut, convertOut, targetMeta)
+	return runPipelineOnceBody(cfg, &input, inputPath, pipelinePath)
 }
 
-func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, prepareOut, convertOut, targetMeta string) (*pipelineResult, error) {
+func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string) (*pipelineResult, error) {
 	var pipelineErr error
 	guestSetupStarted := false
 
@@ -159,7 +154,7 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 
 	defer func() {
 		if pipelineErr != nil && guestSetupStarted {
-			bestEffortGuestCleanup(cfg, prepareOut, stageEnv)
+			bestEffortGuestCleanup(cfg, pipelinePath, stageEnv)
 		}
 	}()
 
@@ -171,7 +166,7 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
 	prepareArgs := []string{
 		"--input", inputPath,
-		"--output", prepareOut,
+		"--output", pipelinePath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
 	}
@@ -188,11 +183,14 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		return fail(err)
 	}
 
-	var prepare types.PrepareOutput
-	if err := readJSON(prepareOut, &prepare); err != nil {
+	var pipeline pipelineResult
+	if err := readJSON(pipelinePath, &pipeline); err != nil {
 		return fail(err)
 	}
-	if prepare.Status == "error" && len(prepare.RootCandidates) > 0 && cfg.RootDisk != "" {
+	if pipeline.Prepare == nil {
+		return fail(fmt.Errorf("kc-prepare produced no prepare output"))
+	}
+	if pipeline.Prepare.Status == "error" && len(pipeline.Prepare.RootCandidates) > 0 && cfg.RootDisk != "" {
 		input.Options.Root = cfg.RootDisk
 		if err := types.WriteJSON(inputPath, input); err != nil {
 			return fail(err)
@@ -201,17 +199,17 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		if err := runSubprocess(prepareBin, prepareArgs, stageEnv); err != nil {
 			return fail(fmt.Errorf("kc-prepare retry: %w", err))
 		}
-		if err := readJSON(prepareOut, &prepare); err != nil {
+		if err := readJSON(pipelinePath, &pipeline); err != nil {
 			return fail(err)
 		}
 	}
-	if prepare.Status == "error" {
-		return fail(fmt.Errorf("kc-prepare failed: %s", prepare.Error))
+	if pipeline.Prepare.Status == "error" {
+		return fail(fmt.Errorf("kc-prepare failed: %s", pipeline.Prepare.Error))
 	}
 
-	converter := prepare.Converter
+	converter := pipeline.Prepare.Converter
 	if converter == "" {
-		if prepare.Inspect.Type == "windows" {
+		if pipeline.Prepare.Inspect.Type == "windows" {
 			converter = "kc-convert-windows"
 		} else {
 			converter = "kc-convert-linux"
@@ -219,8 +217,8 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	}
 	convertBin := filepath.Join(cfg.BinDir, converter)
 	convertArgs := []string{
-		"--prepare-data", prepareOut,
-		"--output", convertOut,
+		"--input", pipelinePath,
+		"--output", pipelinePath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
 	}
@@ -240,9 +238,8 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 
 	finalizeBin := filepath.Join(cfg.BinDir, "kc-finalize")
 	finalizeArgs := []string{
-		"--prepare-data", prepareOut,
-		"--convert-data", convertOut,
-		"--output", targetMeta,
+		"--input", pipelinePath,
+		"--output", pipelinePath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
 	}
@@ -253,26 +250,21 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		return fail(fmt.Errorf("kc-finalize: %w", err))
 	}
 
-	var convert types.ConverterOutput
-	var target types.TargetMeta
-	if err := readJSON(convertOut, &convert); err != nil {
+	if err := readJSON(pipelinePath, &pipeline); err != nil {
 		return fail(err)
 	}
-	if err := readJSON(targetMeta, &target); err != nil {
-		return fail(err)
-	}
-	return &pipelineResult{Prepare: prepare, Convert: convert, Target: target}, nil
+	return &pipeline, nil
 }
 
 // teardownOnlyArgs builds kc-finalize --teardown-only arguments.
-func teardownOnlyArgs(cfg *env.Config, prepareOut string) []string {
+func teardownOnlyArgs(cfg *env.Config, pipelinePath string) []string {
 	args := []string{
 		"--teardown-only",
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
 	}
-	if _, err := os.Stat(prepareOut); err == nil {
-		args = append(args, "--prepare-data", prepareOut)
+	if _, err := os.Stat(pipelinePath); err == nil {
+		args = append(args, "--input", pipelinePath)
 	}
 	if cfg.UseGuestfs {
 		args = append(args, "--guestfs")
@@ -350,12 +342,10 @@ func readJSON(path string, v any) error {
 }
 
 func dumpPartialResults(workdir string) {
-	for _, name := range []string{"convert-out.json", "prepare-out.json", "target-meta.json"} {
-		path := filepath.Join(workdir, name)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		slog.Info("partial pipeline output", "file", name, "content", string(data))
+	path := filepath.Join(workdir, "pipeline.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
 	}
+	slog.Info("partial pipeline output", "file", "pipeline.json", "content", string(data))
 }

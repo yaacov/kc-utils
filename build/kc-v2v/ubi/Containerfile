@@ -5,13 +5,25 @@
 #   1. builder     — compile Go binaries
 #   2. downloader  — fetch guest conversion assets (no runtime bloat in final image)
 #   3. runtime     — UBI 10 with only the tools and files we need
-#                    (CentOS Stream 10 + EPEL 10 for packages outside UBI repos)
+#
+# Filesystem tools (e2fsprogs, xfsprogs, btrfs-progs, ntfs-3g) are omitted
+# because the guestfs backend runs fsck inside the appliance VM, not on the host.
+# CentOS Stream 10 repos are added for libguestfs-winsupport, which is the
+# only runtime package outside standard UBI repos.
 #
 # Disk copy uses govmomi NFC export (pure Go, no VDDK required).
 #
-# Guest conversion assets (Forklift virt-v2v parity + kc offline Linux QGA):
-#   - virtio-win ISOs → /usr/share/virtio-win/ (Windows drivers + qemu-ga MSI)
-#   - qemu-guest-agent RPMs → /usr/share/kc-packages/rpm/el{8,9,10}/x86_64/
+# Guest conversion assets (stage 2 → copied into runtime image):
+#
+#   /usr/share/virtio-win/
+#   ├── drivers/by-os/<arch>/<os-version>/*.inf …   Windows virtio drivers
+#   └── guest-agent/                                 qemu-ga MSI installers
+#
+#   /usr/share/kc-packages/
+#   └── rpm/
+#       ├── el8/x86_64/qemu-guest-agent-*.rpm        offline Linux QGA
+#       ├── el9/x86_64/qemu-guest-agent-*.rpm
+#       └── el10/x86_64/qemu-guest-agent-*.rpm
 
 # ── Stage 1: Go build ────────────────────────────────────────────────
 FROM registry.access.redhat.com/ubi10/go-toolset AS builder
@@ -30,9 +42,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-prep
 # ── Stage 2: download guest conversion assets ────────────────────────
 FROM registry.access.redhat.com/ubi10/ubi AS downloader
 
-COPY build/kc-v2v/ubi/el10-repos.sh /tmp/el10-repos.sh
-RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
-
 RUN dnf install -y --setopt=install_weak_deps=False curl bsdtar && dnf clean all
 
 # virtio-win drivers from public Fedora People ISOs (modern + legacy).
@@ -40,14 +49,14 @@ RUN dnf install -y --setopt=install_weak_deps=False curl bsdtar && dnf clean all
 # Place ISOs in build/kc-v2v/cache/ to avoid re-downloading on each build.
 ARG VIRTIO_WIN_MODERN_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso
 ARG VIRTIO_WIN_LEGACY_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.160-1/virtio-win-0.1.160.iso
-COPY build/kc-v2v/download-virtio-win.sh /tmp/download-virtio-win.sh
+COPY build/kc-v2v/stage-virtio-win.sh /tmp/stage-virtio-win.sh
 COPY build/kc-v2v/cache/ /tmp/virtio-win-cache/
-RUN chmod +x /tmp/download-virtio-win.sh && \
+RUN chmod +x /tmp/stage-virtio-win.sh && \
     VIRTIO_WIN_MODERN_URL="$VIRTIO_WIN_MODERN_URL" \
     VIRTIO_WIN_LEGACY_URL="$VIRTIO_WIN_LEGACY_URL" \
     VIRTIO_WIN_CACHE_DIR=/tmp/virtio-win-cache \
-    /tmp/download-virtio-win.sh && \
-    rm -rf /tmp/download-virtio-win.sh /tmp/virtio-win-cache
+    /tmp/stage-virtio-win.sh && \
+    rm -rf /tmp/stage-virtio-win.sh /tmp/virtio-win-cache
 
 # Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)
 COPY build/kc-v2v/stage-linux-packages.sh /tmp/stage-linux-packages.sh
@@ -58,18 +67,19 @@ RUN chmod +x /tmp/stage-linux-packages.sh && \
 # ── Stage 3: runtime ─────────────────────────────────────────────────
 FROM registry.access.redhat.com/ubi10/ubi
 
-COPY build/kc-v2v/ubi/el10-repos.sh /tmp/el10-repos.sh
-RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh
-
 RUN dnf install -y --setopt=install_weak_deps=False \
         qemu-img cryptsetup lvm2 clevis clevis-luks \
-        hivex perl-hivex ntfs-3g e2fsprogs xfsprogs btrfs-progs \
-        libguestfs guestfs-tools libguestfs-xfs libguestfs-winsupport && \
+        hivex perl-hivex \
+        libguestfs guestfs-tools libguestfs-xfs && \
     dnf clean all
 
-# RHEL/CentOS libguestfs rejects NTFS mounts unless the libguestfs program
-# name starts with "virt-" (winsupport allowlist). Symlink so argv[0] qualifies.
-# See docs/privilege-model.md.
+# NTFS support for Windows guest conversion: libguestfs-winsupport provides
+# NTFS inside the guestfs appliance. On RHEL/UBI it requires CentOS Stream
+# repos and a virt-guestfish symlink so argv[0] passes the NTFS allowlist.
+COPY build/kc-v2v/ubi/el10-repos.sh /tmp/el10-repos.sh
+RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh && \
+    dnf install -y --setopt=install_weak_deps=False libguestfs-winsupport && \
+    dnf clean all
 RUN ln -sf guestfish /usr/bin/virt-guestfish
 
 COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/

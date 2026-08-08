@@ -29,6 +29,7 @@ import (
 // Config holds linux converter pipeline configuration.
 type Config struct {
 	PrepareData types.PrepareOutput
+	Pipeline    *types.PipelineData
 	MountRoot   string
 	OutputPath  string
 	Offline     bool
@@ -64,7 +65,14 @@ func Run(cfg *Config) error {
 		}
 	}
 	if distroHandler == nil {
-		slog.Warn("no distro handler matched, using defaults")
+		switch cfg.PrepareData.Inspect.Distro {
+		case "alt":
+			slog.Warn("ALT Linux detected but distro handler not implemented, using defaults",
+				"distro", cfg.PrepareData.Inspect.Distro)
+		default:
+			slog.Warn("no distro handler matched, using defaults",
+				"distro", cfg.PrepareData.Inspect.Distro)
+		}
 	}
 
 	// Block 2: Package format
@@ -186,7 +194,8 @@ func Run(cfg *Config) error {
 
 	// Write output
 	slog.Debug("writing output")
-	if err := types.WriteJSON(cfg.OutputPath, output); err != nil {
+	cfg.Pipeline.Convert = output
+	if err := types.WriteJSON(cfg.OutputPath, cfg.Pipeline); err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
 

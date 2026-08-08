@@ -1,51 +1,87 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Sequential cold-migration runs (RHEL then Windows) with step timing +
-# conversion-pod memory sampling.
+# MTV cold-migration benchmark: RHEL then Windows, with full artifact capture
+# (summary log, mem/CPU/net CSV, conversion-pod logs, pipeline timings).
 #
-# Does NOT set virt_v2v_image_fqin — configure the conversion image yourself
-# before running (kc-v2v or default virt-v2v). For a smoke that sets the image,
-# use test-mtv-kc-v2v.sh / make test-cluster-smoke.
+# Modes (MODE):
+#   kc       Run once with KC_V2V_IMAGE (independent kc-v2v benchmark). Default.
+#   compare  Run twice: kc-v2v then operator-default virt-v2v (full compare).
 #
-# Prerequisites: oc, oc mtv, jq, GOVC_URL/USERNAME/PASSWORD, VDDK configured.
+# Prerequisites: oc, oc mtv, jq, GOVC_URL/USERNAME/PASSWORD, VDDK configured,
+#   and KC_V2V_IMAGE set to a cluster-pullable kc-v2v FQIN.
 #
 # Env overrides:
+#   MODE                    kc | compare (default kc)
+#   KC_V2V_IMAGE            conversion image FQIN (required)
 #   RHEL_VM / WIN_VM        source VM names (auto-picked from mtv-func* if unset)
-#   NS                      namespace (default mtv-ref-baseline)
-#   SKIP_CLEANUP            keep NS on exit (default true — for debugging)
-#   KEEP_BETWEEN_TESTS      leave RHEL plan/conversion pods after RHEL (default false)
+#   NS                      namespace (default mtv-kc-v2v-bench)
+#   PROVIDER                vSphere provider name (default vsphere-test)
+#   SKIP_CLEANUP            keep NS on exit (default true); use cleanup script to remove later
+#   KEEP_BETWEEN_TESTS      leave RHEL plan/pods after RHEL (default true)
+#   KEEP_IMAGE_SETTING      leave virt_v2v_image_fqin / reboot flag (default true)
 #   DISABLE_WAIT_FOR_REBOOT set feature_windows_wait_for_reboot=false (default true)
 #   MEM_INTERVAL            memory sample seconds (default 10)
 #   INTERVAL                plan poll seconds (default 10)
 #   MAX_ATTEMPTS            plan poll attempts (default 180 => 30m)
 #
-# Artifacts land next to this script. To archive a published comparison, copy
-# test-mtv-ref-baseline-<ts>* into docs/ref-baseline/runs/.
+# Artifacts under runs/:
+#   runs/test-mtv-benchmark-<ts>-<converter>.log
+#   runs/test-mtv-benchmark-<ts>-<converter>-mem/
+#   runs/test-mtv-benchmark-<ts>.html  (dashboard)
+# Archive under docs/ref-baseline/runs/ when publishing a comparison.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=common.sh
-source "${SCRIPT_DIR}/common.sh"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh"
+# shellcheck source=lib/cleanup.sh
+source "${SCRIPT_DIR}/lib/cleanup.sh"
 
-NS="${NS:-mtv-ref-baseline}"
+MODE="${MODE:-kc}"
+NS="${NS:-mtv-kc-v2v-bench}"
 PROVIDER="${PROVIDER:-vsphere-test}"
 RHEL_VM="${RHEL_VM:-}"
 WIN_VM="${WIN_VM:-}"
 SKIP_CLEANUP="${SKIP_CLEANUP:-true}"
-KEEP_BETWEEN_TESTS="${KEEP_BETWEEN_TESTS:-false}"
+KEEP_BETWEEN_TESTS="${KEEP_BETWEEN_TESTS:-true}"
+KEEP_IMAGE_SETTING="${KEEP_IMAGE_SETTING:-true}"
 DISABLE_WAIT_FOR_REBOOT="${DISABLE_WAIT_FOR_REBOOT:-true}"
 INTERVAL="${INTERVAL:-10}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-180}"
 MEM_INTERVAL="${MEM_INTERVAL:-10}"
+KC_V2V_IMAGE="${KC_V2V_IMAGE:-}"
 V2V_LABEL="forklift.app=virt-v2v"
 RUN_TS="$(date -u +%Y%m%dT%H%M%SZ)"
-SUMMARY_LOG="${SCENARIO_DIR}/test-mtv-ref-baseline-${RUN_TS}.log"
-MEM_DIR="${SCENARIO_DIR}/test-mtv-ref-baseline-${RUN_TS}-mem"
+RUNS_DIR="${SCENARIO_DIR}/runs"
+ARTIFACT_PREFIX="${RUNS_DIR}/test-mtv-benchmark-${RUN_TS}"
+mkdir -p "${RUNS_DIR}"
+
+# Per-leg state (set by begin_leg)
+CONVERTER=""
+SUMMARY_LOG=""
+MEM_DIR=""
+
+usage() {
+  cat <<EOF
+Usage: MODE=kc|compare KC_V2V_IMAGE=<fqin> $0
+
+  MODE=kc       Independent kc-v2v benchmark (default)
+  MODE=compare  kc-v2v then operator-default virt-v2v
+
+Artifacts: ${ARTIFACT_PREFIX}-<converter>.log and -mem/
+EOF
+}
 
 log() { echo "$*" | tee -a "${SUMMARY_LOG}"; }
 
-# Baseline uses single-arg get_plan_status via common.sh (NS from env).
+begin_leg() {
+  CONVERTER="$1"
+  SUMMARY_LOG="${ARTIFACT_PREFIX}-${CONVERTER}.log"
+  MEM_DIR="${ARTIFACT_PREFIX}-${CONVERTER}-mem"
+  : > "${SUMMARY_LOG}"
+  mkdir -p "${MEM_DIR}"
+}
 
 pipeline_json() {
   local plan="$1"
@@ -79,7 +115,6 @@ summarize_pipeline() {
       ' 2>/dev/null | tee -a "${SUMMARY_LOG}" || log "    (unable to parse pipeline)"
 }
 
-# Prefer a Running virt-v2v pod for the given plan; fall back to newest matching name.
 find_v2v_pod() {
   local plan="${1:-}"
   oc get pods -n "${NS}" -l "${V2V_LABEL}" -o json 2>/dev/null \
@@ -112,7 +147,6 @@ cgroup_mem_mi() {
   echo ""
 }
 
-# Read cumulative rx/tx bytes from /proc/net/dev (sum of all non-lo interfaces).
 pod_net_bytes() {
   local pod="$1" c name
   for c in virt-v2v $(oc get pod -n "${NS}" "${pod}" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null); do
@@ -132,7 +166,6 @@ pod_net_bytes() {
   echo ""
 }
 
-# Sample conversion pod memory into CSV until plan finishes.
 monitor_conversion_memory() {
   local plan="$1" label="$2"
   local csv="${MEM_DIR}/${label}-virt-v2v-memory.csv"
@@ -185,7 +218,6 @@ monitor_conversion_memory() {
 }
 
 monitor_plan() {
-  # sets global LAST_PLAN_STATUS
   local plan="$1" label="$2"
   local start_time attempt=0 status
   start_time=$(date +%s)
@@ -236,7 +268,7 @@ monitor_plan() {
 run_one() {
   local label="$1" vm="$2" plan="$3"
   log "=========================================="
-  log "RUN ${label}: VM=${vm} plan=${plan}"
+  log "RUN ${label}: VM=${vm} plan=${plan} converter=${CONVERTER}"
   log "=========================================="
 
   oc mtv delete plan --name "${plan}" -n "${NS}" 2>/dev/null || true
@@ -260,7 +292,6 @@ run_one() {
   local duration=$(( $(date +%s) - start_time ))
   local status="${LAST_PLAN_STATUS}"
 
-  # Archive this plan's conversion-pod logs while the pods still exist.
   local pod logfile
   while read -r pod; do
     [[ -z "${pod}" ]] && continue
@@ -274,7 +305,7 @@ run_one() {
         | .metadata.name
       ' 2>/dev/null || true)
 
-  log "RESULT ${label}: status=${status} total=$(fmt_dur "${duration}") vm=${vm}"
+  log "RESULT ${label}: status=${status} total=$(fmt_dur "${duration}") vm=${vm} converter=${CONVERTER}"
   log ""
 
   if [[ "${status}" != "Completed" && "${status}" != "Succeeded" ]]; then
@@ -283,118 +314,189 @@ run_one() {
   return 0
 }
 
+release_after_rhel() {
+  if [[ "${KEEP_BETWEEN_TESTS}" == "true" ]]; then
+    log "KEEP_BETWEEN_TESTS=true — leaving plan-bench-rhel + conversion pods for postmortem."
+    if [[ -n "${RHEL_VM}" ]]; then
+      log "Stopping migrated RHEL VM ${RHEL_VM} (plan/pods kept)..."
+      stop_migrated_vm "${RHEL_VM}" "${NS}"
+    fi
+    return 0
+  fi
+
+  log "RHEL finished OK. Releasing RHEL plan (free memory) before Windows..."
+  release_rhel_resources "${NS}" "${RHEL_VM}"
+}
+
+# Run one converter leg: RHEL then Windows. Sets image, fresh NS, providers.
+# Args: converter (kc|ref)
+# Returns non-zero if either plan fails.
+run_converter_leg() {
+  local converter="$1"
+  local rc_rhel=0 rc_win=0
+
+  begin_leg "${converter}"
+
+  log "=========================================="
+  log "MTV cold migration benchmark — ${converter}"
+  log "=========================================="
+  log "Mode: ${MODE}"
+  log "Log: ${SUMMARY_LOG}"
+  log "Mem: ${MEM_DIR}"
+  log "NS=${NS} SKIP_CLEANUP=${SKIP_CLEANUP} KEEP_BETWEEN_TESTS=${KEEP_BETWEEN_TESTS}"
+  log ""
+
+  case "${converter}" in
+    kc)
+      set_virt_v2v_image "${KC_V2V_IMAGE}"
+      ;;
+    ref)
+      clear_virt_v2v_image
+      ;;
+    *)
+      log "ERROR: unknown converter '${converter}'"
+      return 1
+      ;;
+  esac
+
+  if [[ "${DISABLE_WAIT_FOR_REBOOT}" == "true" ]]; then
+    disable_windows_wait_for_reboot
+  fi
+
+  log "VDDK: $(mtv_setting_get vddk_image)"
+  log "virt_v2v_image_fqin: $(mtv_setting_get virt_v2v_image_fqin)"
+  log "feature_windows_wait_for_reboot: $(mtv_setting_get feature_windows_wait_for_reboot)"
+  log "Default SC: $(oc get sc -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}')"
+  log "Ceph: $(oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}' 2>/dev/null || echo n/a)"
+  log ""
+
+  fresh_namespace "${NS}"
+  log "Creating providers..."
+  create_vsphere_and_host_providers "${NS}" "${PROVIDER}"
+  log ""
+
+  if [[ -z "${RHEL_VM}" || -z "${WIN_VM}" ]]; then
+    wait_for_mtv_func_vms "${NS}" "${PROVIDER}" || return 1
+  fi
+
+  if [[ -z "${RHEL_VM}" ]]; then
+    RHEL_VM="$(pick_rhel_vm "${NS}" "${PROVIDER}")"
+  fi
+  if [[ -z "${WIN_VM}" ]]; then
+    WIN_VM="$(pick_win_vm "${NS}" "${PROVIDER}")"
+  fi
+
+  if [[ -z "${RHEL_VM}" || "${RHEL_VM}" == "null" ]]; then
+    log "ERROR: no mtv-func RHEL VM found"
+    return 1
+  fi
+  if [[ -z "${WIN_VM}" || "${WIN_VM}" == "null" ]]; then
+    log "ERROR: no mtv-func Windows VM found"
+    return 1
+  fi
+
+  log "RHEL_VM=${RHEL_VM}"
+  log "WIN_VM=${WIN_VM}"
+  log ""
+  log "Running RHEL then Windows sequentially (one plan at a time)."
+
+  run_one "rhel" "${RHEL_VM}" "plan-bench-rhel" || rc_rhel=$?
+
+  if [[ "${rc_rhel}" -ne 0 ]]; then
+    log "RHEL failed (exit=${rc_rhel}) — skipping Windows; leaving ${NS} for debugging."
+    SKIP_CLEANUP=true
+  else
+    release_after_rhel
+    log ""
+    run_one "win" "${WIN_VM}" "plan-bench-win" || rc_win=$?
+  fi
+
+  log "=========================================="
+  log "LEG SUMMARY (${converter})"
+  log "=========================================="
+  log "Image: $(mtv_setting_get virt_v2v_image_fqin)"
+  log "RHEL (${RHEL_VM}): exit=${rc_rhel}"
+  log "WIN  (${WIN_VM}): exit=${rc_win}"
+  log "Full log: ${SUMMARY_LOG}"
+  log "Memory CSVs + pod logs: ${MEM_DIR}"
+  log ""
+
+  if [[ "${rc_rhel}" -ne 0 || "${rc_win}" -ne 0 ]]; then
+    return 1
+  fi
+  return 0
+}
+
 # ===================================================================
-#  Preflight
+#  Main
 # ===================================================================
-: > "${SUMMARY_LOG}"
-mkdir -p "${MEM_DIR}"
+case "${MODE}" in
+  kc|compare) ;;
+  -h|--help|help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "ERROR: MODE must be 'kc' or 'compare' (got '${MODE}')." >&2
+    usage >&2
+    exit 1
+    ;;
+esac
 
-log "=========================================="
-log "MTV cold migration reference run"
-log "=========================================="
-log "Log: ${SUMMARY_LOG}"
-log "Mem: ${MEM_DIR}"
-log "SKIP_CLEANUP=${SKIP_CLEANUP}"
-log "KEEP_BETWEEN_TESTS=${KEEP_BETWEEN_TESTS}"
-log "DISABLE_WAIT_FOR_REBOOT=${DISABLE_WAIT_FOR_REBOOT}"
-log ""
-
-[[ -n "${GOVC_URL:-}" && -n "${GOVC_USERNAME:-}" && -n "${GOVC_PASSWORD:-}" ]] \
-  || { log "ERROR: GOVC_* required"; exit 1; }
-
-# Soft MTV/VDDK check (fail fast if MTV missing)
-if ! oc mtv settings get --setting vddk_image &>/dev/null; then
-  log "ERROR: Cannot read MTV settings. Is MTV installed?"
+if [[ -z "${KC_V2V_IMAGE}" ]]; then
+  echo "ERROR: KC_V2V_IMAGE must be set (e.g. quay.io/you/kc-v2v:devel-amd64)." >&2
   exit 1
 fi
 
-if [[ "${DISABLE_WAIT_FOR_REBOOT}" == "true" ]]; then
-  log "Disabling feature_windows_wait_for_reboot..."
-  oc mtv settings set --setting feature_windows_wait_for_reboot --value false
-fi
+echo "=========================================="
+echo "MTV conversion benchmark"
+echo "=========================================="
+echo "MODE=${MODE}"
+echo "KC_V2V_IMAGE=${KC_V2V_IMAGE}"
+echo "Artifact prefix: ${ARTIFACT_PREFIX}-<converter>"
+echo ""
 
-VDDK_IMAGE="$(mtv_setting_get vddk_image)"
-log "VDDK: ${VDDK_IMAGE}"
-log "virt_v2v_image_fqin: $(mtv_setting_get virt_v2v_image_fqin)"
-log "feature_windows_wait_for_reboot: $(mtv_setting_get feature_windows_wait_for_reboot)"
-log "Default SC: $(oc get sc -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}')"
-log "Ceph: $(oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}' 2>/dev/null || echo n/a)"
-log ""
+preflight_mtv_cluster
+save_mtv_settings
 
 cleanup() {
-  if [[ "${SKIP_CLEANUP}" == "true" ]]; then
-    log "SKIP_CLEANUP=true -- leaving ${NS}"
-    return 0
-  fi
-  log "Cleaning up namespace ${NS}..."
-  oc delete namespace "${NS}" --ignore-not-found 2>/dev/null || true
+  benchmark_exit_cleanup
 }
 trap cleanup EXIT
 
-# Fresh NS
-fresh_namespace "${NS}"
+overall_rc=0
 
-log "Creating providers..."
-create_vsphere_and_host_providers "${NS}" "${PROVIDER}"
-log ""
+run_converter_leg "kc" || overall_rc=$?
 
-if [[ -z "${RHEL_VM}" ]]; then
-  RHEL_VM="$(pick_rhel_vm "${NS}" "${PROVIDER}")"
-fi
-if [[ -z "${WIN_VM}" ]]; then
-  WIN_VM="$(pick_win_vm "${NS}" "${PROVIDER}")"
-fi
-
-[[ -n "${RHEL_VM}" && "${RHEL_VM}" != "null" ]] || { log "ERROR: no RHEL VM"; exit 1; }
-[[ -n "${WIN_VM}" && "${WIN_VM}" != "null" ]] || { log "ERROR: no Windows VM"; exit 1; }
-
-log "RHEL_VM=${RHEL_VM}"
-log "WIN_VM=${WIN_VM}"
-log ""
-
-# Sequential only — never overlap migrations (workers ~15Gi).
-# On RHEL failure: stop and keep plan/pods for debugging (no Windows run).
-rc_rhel=0
-rc_win=0
-log "Running RHEL then Windows sequentially (one plan at a time)."
-run_one "rhel" "${RHEL_VM}" "plan-ref-rhel" || rc_rhel=$?
-
-if [[ "${rc_rhel}" -ne 0 ]]; then
-  log "RHEL failed (exit=${rc_rhel}) — skipping Windows; leaving ${NS} for debugging."
-else
-  if [[ "${KEEP_BETWEEN_TESTS}" == "true" ]]; then
-    log "KEEP_BETWEEN_TESTS=true — leaving plan-ref-rhel + conversion pods for postmortem."
-    # Stop migrated RHEL guest to free worker RAM for Windows conversion.
-    if [[ -n "${RHEL_VM}" ]]; then
-      log "Stopping migrated RHEL VM ${RHEL_VM} (plan/pods kept)..."
-      oc virt stop "${RHEL_VM}" -n "${NS}" 2>/dev/null \
-        || oc delete vmi "${RHEL_VM}" -n "${NS}" --ignore-not-found 2>/dev/null \
-        || true
-    fi
+if [[ "${MODE}" == "compare" ]]; then
+  if [[ "${overall_rc}" -ne 0 ]]; then
+    echo "kc leg failed — skipping ref (default) leg."
   else
-    log "RHEL finished OK. Releasing RHEL plan only (free memory) before Windows..."
-    oc mtv delete plan --name plan-ref-rhel -n "${NS}" 2>/dev/null || true
-    for i in $(seq 1 60); do
-      left="$(oc get pods -n "${NS}" --no-headers 2>/dev/null | wc -l | tr -d ' ')"
-      [[ "${left}" == "0" ]] && break
-      sleep 5
-    done
-    log "Namespace pod count after RHEL plan delete: $(oc get pods -n "${NS}" --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+    echo ""
+    echo "kc leg OK. Starting ref (operator default) leg..."
+    echo ""
+    run_converter_leg "ref" || overall_rc=$?
   fi
-  log ""
-  run_one "win" "${WIN_VM}" "plan-ref-win" || rc_win=$?
 fi
 
-log "=========================================="
-log "SUMMARY"
-log "=========================================="
-log "RHEL (${RHEL_VM}): exit=${rc_rhel}"
-log "WIN  (${WIN_VM}): exit=${rc_win}"
-log "Full log: ${SUMMARY_LOG}"
-log "Memory CSVs: ${MEM_DIR}"
-log "Namespace left in place: ${NS} (SKIP_CLEANUP=${SKIP_CLEANUP})"
+echo "=========================================="
+echo "OVERALL SUMMARY"
+echo "=========================================="
+echo "MODE=${MODE}"
+echo "KC_V2V_IMAGE=${KC_V2V_IMAGE}"
+echo "Artifacts: ${ARTIFACT_PREFIX}-*.log / ${ARTIFACT_PREFIX}-*-mem/"
 
-if [[ "${rc_rhel}" -ne 0 || "${rc_win}" -ne 0 ]]; then
-  exit 1
+DASHBOARD_HTML="${ARTIFACT_PREFIX}.html"
+if python3 "${SCRIPT_DIR}/lib/generate-run-dashboard.py" "${ARTIFACT_PREFIX}"; then
+  echo "Dashboard: ${DASHBOARD_HTML}"
+else
+  echo "WARNING: failed to generate dashboard HTML" >&2
 fi
-exit 0
+
+echo "Namespace: ${NS} (SKIP_CLEANUP=${SKIP_CLEANUP})"
+if [[ "${overall_rc}" -eq 0 ]]; then
+  echo "TEST PASSED: MTV benchmark (${MODE})"
+  exit 0
+fi
+echo "TEST FAILED: MTV benchmark (${MODE}) exit=${overall_rc}"
+exit 1

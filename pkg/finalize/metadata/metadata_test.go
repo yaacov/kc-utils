@@ -9,76 +9,90 @@ import (
 )
 
 func TestCustomizerOptsIncludesTimezone(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
-		Options: types.PrepareOptions{Timezone: "America/New_York"},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+			Options: types.PrepareOptions{Timezone: "America/New_York"},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if opts["timezone"] != "America/New_York" {
 		t.Errorf("timezone = %q, want America/New_York", opts["timezone"])
 	}
 }
 
 func TestCustomizerOptsOmitsEmptyTimezone(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
-		Options: types.PrepareOptions{},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+			Options: types.PrepareOptions{},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if _, ok := opts["timezone"]; ok {
 		t.Error("timezone should not be set when empty")
 	}
 }
 
 func TestCustomizerOptsIncludesHostname(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "windows"},
-		Options: types.PrepareOptions{Hostname: "myhost"},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "windows"},
+			Options: types.PrepareOptions{Hostname: "myhost"},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if opts["hostname"] != "myhost" {
 		t.Errorf("hostname = %q, want myhost", opts["hostname"])
 	}
 }
 
 func TestCustomizerOptsDefaultScriptsDir(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
-		Options: types.PrepareOptions{},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+			Options: types.PrepareOptions{},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if opts["scripts_dir"] != "/mnt/dynamic_scripts" {
 		t.Errorf("scripts_dir = %q, want /mnt/dynamic_scripts", opts["scripts_dir"])
 	}
 }
 
 func TestCustomizerOptsCustomScriptsDir(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
-		Options: types.PrepareOptions{DynamicScriptsDir: "/custom/scripts"},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+			Options: types.PrepareOptions{DynamicScriptsDir: "/custom/scripts"},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if opts["scripts_dir"] != "/custom/scripts" {
 		t.Errorf("scripts_dir = %q, want /custom/scripts", opts["scripts_dir"])
 	}
 }
 
 func TestCustomizerOptsSELinuxRelabeled(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+		},
+		Convert: &types.ConverterOutput{SELinuxRelabeled: true},
 	}
-	convert := &types.ConverterOutput{SELinuxRelabeled: true}
-	opts := CustomizerOpts(prepare, convert)
+	opts := CustomizerOpts(pipeline)
 	if opts["selinux_relabeled"] != "true" {
 		t.Errorf("selinux_relabeled = %q, want true", opts["selinux_relabeled"])
 	}
 }
 
 func TestCustomizerOptsSELinuxNotRelabeled(t *testing.T) {
-	prepare := &types.PrepareOutput{
-		Inspect: types.InspectData{Type: "linux"},
+	pipeline := &types.PipelineData{
+		Prepare: &types.PrepareOutput{
+			Inspect: types.InspectData{Type: "linux"},
+		},
 	}
-	opts := CustomizerOpts(prepare, nil)
+	opts := CustomizerOpts(pipeline)
 	if _, ok := opts["selinux_relabeled"]; ok {
 		t.Error("selinux_relabeled should not be set when convert is nil")
 	}
@@ -87,13 +101,15 @@ func TestCustomizerOptsSELinuxNotRelabeled(t *testing.T) {
 func TestWriteTargetMeta(t *testing.T) {
 	dir := t.TempDir()
 	path := dir + "/meta.json"
-	meta := &types.TargetMeta{
-		GuestCaps: types.GuestCaps{BlockBus: "virtio"},
+	pipeline := &types.PipelineData{
+		Convert: &types.ConverterOutput{
+			Warnings: []string{"test warning"},
+		},
+		Target: &types.TargetMeta{
+			GuestCaps: types.GuestCaps{BlockBus: "virtio"},
+		},
 	}
-	convert := &types.ConverterOutput{
-		Warnings: []string{"test warning"},
-	}
-	if err := WriteTargetMeta(path, meta, convert); err != nil {
+	if err := WriteTargetMeta(path, pipeline); err != nil {
 		t.Fatalf("WriteTargetMeta error: %v", err)
 	}
 	data, err := os.ReadFile(path)
@@ -112,9 +128,11 @@ func TestWriteTargetMeta(t *testing.T) {
 func TestWriteTargetMetaNoWarnings(t *testing.T) {
 	dir := t.TempDir()
 	path := dir + "/meta.json"
-	meta := &types.TargetMeta{}
-	convert := &types.ConverterOutput{}
-	if err := WriteTargetMeta(path, meta, convert); err != nil {
+	pipeline := &types.PipelineData{
+		Convert: &types.ConverterOutput{},
+		Target:  &types.TargetMeta{},
+	}
+	if err := WriteTargetMeta(path, pipeline); err != nil {
 		t.Fatalf("WriteTargetMeta error: %v", err)
 	}
 	data, err := os.ReadFile(path)
@@ -129,14 +147,16 @@ func TestWriteTargetMetaNoWarnings(t *testing.T) {
 func TestWriteTargetMetaBlockErrors(t *testing.T) {
 	dir := t.TempDir()
 	path := dir + "/meta.json"
-	meta := &types.TargetMeta{}
-	convert := &types.ConverterOutput{
-		Errors: []types.BlockError{
-			{Block: "initramfs", Message: "all initramfs rebuild methods failed for kernel 5.14.0"},
-			{Block: "uefi/grub-fallback", Message: "no EFI bootloader found"},
+	pipeline := &types.PipelineData{
+		Convert: &types.ConverterOutput{
+			Errors: []types.BlockError{
+				{Block: "initramfs", Message: "all initramfs rebuild methods failed for kernel 5.14.0"},
+				{Block: "uefi/grub-fallback", Message: "no EFI bootloader found"},
+			},
 		},
+		Target: &types.TargetMeta{},
 	}
-	if err := WriteTargetMeta(path, meta, convert); err != nil {
+	if err := WriteTargetMeta(path, pipeline); err != nil {
 		t.Fatalf("WriteTargetMeta error: %v", err)
 	}
 	data, err := os.ReadFile(path)
@@ -156,9 +176,11 @@ func TestWriteTargetMetaBlockErrors(t *testing.T) {
 }
 
 func TestWriteTargetMetaBadPath(t *testing.T) {
-	meta := &types.TargetMeta{}
-	convert := &types.ConverterOutput{}
-	err := WriteTargetMeta("/nonexistent/dir/meta.json", meta, convert)
+	pipeline := &types.PipelineData{
+		Convert: &types.ConverterOutput{},
+		Target:  &types.TargetMeta{},
+	}
+	err := WriteTargetMeta("/nonexistent/dir/meta.json", pipeline)
 	if err == nil {
 		t.Error("expected error for invalid path")
 	}

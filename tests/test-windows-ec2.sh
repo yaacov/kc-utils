@@ -48,10 +48,11 @@ hivexregedit --merge "$root/Windows/System32/config/SYSTEM" "$d/ec2-services.reg
 
 # Generate prepare JSON.
 make_windows_prepare_json "$root" 10 0 x86_64 "Windows Server 2022" > "$d/prepare.json"
+jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
 
 # Run the Windows converter.
 "$BIN_DIR/kc-convert-windows" \
-    --prepare-data "$d/prepare.json" \
+    --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \
     --offline \
@@ -75,7 +76,7 @@ for svc in AWSPVDrivers AmazonSSMAgent; do
 done
 
 # Verify guestcaps are correct.
-check_json_field "$d/output.json" '.guestcaps.block_bus' 'virtio'
-check_json_field "$d/output.json" '.guestcaps.net_bus' 'virtio'
+check_json_field "$d/output.json" '.convert.guestcaps.block_bus' 'virtio'
+check_json_field "$d/output.json" '.convert.guestcaps.net_bus' 'virtio'
 
 echo "PASS: test-windows-ec2"

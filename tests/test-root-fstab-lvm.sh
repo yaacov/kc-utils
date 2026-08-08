@@ -38,11 +38,11 @@ EOF
     --mount-root "$MOUNT_ROOT" \
     --log-level error
 
-check_json_field "$d/prepare.json" '.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
 grep -q 'RHEL 9 LVM' "$MOUNT_ROOT/etc/os-release"
 test -f "$MOUNT_ROOT/boot/grub2/grub.cfg"
 
-root_dev=$(jq -r '.root_device' "$d/prepare.json")
+root_dev=$(jq -r '.prepare.root_device' "$d/prepare.json")
 case "$root_dev" in
     /dev/mapper/kclvm-root|/dev/kclvm/root) ;;
     *)

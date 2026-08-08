@@ -27,9 +27,10 @@ mkdir -p "$root/Program Files"
 make_windows_hives "$root"
 
 make_windows_prepare_json "$root" 10 0 x86_64 "Windows Server 2022" bios > "$d/prepare.json"
+jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
 
 "$BIN_DIR/kc-convert-windows" \
-    --prepare-data "$d/prepare.json" \
+    --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \
     --offline \

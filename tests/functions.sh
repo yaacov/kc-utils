@@ -98,7 +98,7 @@ ensure_built() {
 }
 
 # check_json_field: verify a JSON field value using jq
-# Usage: check_json_field file.json '.guestcaps.block_bus' 'virtio'
+# Usage: check_json_field file.json '.convert.guestcaps.block_bus' 'virtio'
 check_json_field() {
     local file="$1" path="$2" expected="$3"
     local got
@@ -109,7 +109,7 @@ check_json_field() {
     fi
 }
 
-# make_linux_prepare_json: generate a prepare-data JSON for Linux tests
+# make_linux_prepare_json: generate a prepare section JSON for Linux tests
 # Usage: make_linux_prepare_json <root> <distro> <major> <minor> <arch> <product> <firmware> > file.json
 make_linux_prepare_json() {
     local root="$1" distro="$2" major="$3" minor="$4" arch="$5" product="$6" firmware="${7:-bios}"
@@ -229,7 +229,7 @@ make_windows_hives() {
     rm -f "$root/software-combined.reg"
 }
 
-# make_windows_prepare_json: generate a prepare-data JSON for Windows tests
+# make_windows_prepare_json: generate a prepare section JSON for Windows tests
 # Usage: make_windows_prepare_json <root> <major> <minor> <arch> <product> <firmware> > file.json
 make_windows_prepare_json() {
     local root="$1" major="$2" minor="$3" arch="$4" product="$5" firmware="${6:-bios}"

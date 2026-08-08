@@ -130,7 +130,7 @@ consume these flags.
 **Virtio-win OS dir** — expected `by-os/<arch>/<dir>/` under
 `/usr/share/virtio-win/drivers/`. Dirs marked **†** come from the legacy ISO
 (virtio-win 0.1.160) downloaded at image build time by
-[`build/kc-v2v/download-virtio-win.sh`](../build/kc-v2v/download-virtio-win.sh).
+[`build/kc-v2v/stage-virtio-win.sh`](../build/kc-v2v/stage-virtio-win.sh).
 
 **QEMU-GA** — whether qemu-ga is collected and installed. Handlers
 `win2008`, `winvista`, `win2003`, and `winxp` omit GA MSIs during
@@ -182,7 +182,7 @@ a legacy ISO (virtio-win **0.1.160** from the public
 [Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/))
 and stages the missing pre–Win 8 dirs automatically.
 
-- Script: [`build/kc-v2v/download-virtio-win.sh`](../build/kc-v2v/download-virtio-win.sh)
+- Script: [`build/kc-v2v/stage-virtio-win.sh`](../build/kc-v2v/stage-virtio-win.sh)
 - Dirs staged per arch: `2k8`, `2k3`, `xp`, `vista`
 
 At runtime, each version handler uses `DriverOSPreferences()` for its primary

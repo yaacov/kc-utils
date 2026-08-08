@@ -70,11 +70,11 @@ EOF
 echo "=== kc-prepare ==="
 "$BIN_DIR/kc-prepare" \
     --input "$PREPARE_INPUT" \
-    --output "$WORK_DIR/prepare-output.json" \
+    --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level info
 
-CONVERTER=$(jq -r '.converter' "$WORK_DIR/prepare-output.json")
+CONVERTER=$(jq -r '.converter' "$WORK_DIR/pipeline.json")
 echo "Converter selected: $CONVERTER"
 
 OFFLINE_FLAG=""
@@ -82,28 +82,25 @@ OFFLINE_FLAG=""
 
 echo "=== $CONVERTER ==="
 "$BIN_DIR/$CONVERTER" \
-    --prepare-data "$WORK_DIR/prepare-output.json" \
-    --output "$WORK_DIR/convert-output.json" \
+    --input "$WORK_DIR/pipeline.json" \
+    --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
     $OFFLINE_FLAG \
     --log-level info
 
 echo "=== kc-finalize ==="
 "$BIN_DIR/kc-finalize" \
-    --prepare-data "$WORK_DIR/prepare-output.json" \
-    --convert-data "$WORK_DIR/convert-output.json" \
-    --output "$WORK_DIR/target-meta.json" \
+    --input "$WORK_DIR/pipeline.json" \
+    --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level info
 
 echo ""
 echo "Conversion complete."
-echo "  prepare output:  $WORK_DIR/prepare-output.json"
-echo "  convert output:  $WORK_DIR/convert-output.json"
-echo "  target metadata: $WORK_DIR/target-meta.json"
+echo "  pipeline data: $WORK_DIR/pipeline.json"
 echo ""
-jq '{converter, root_device, inspect: {type, distro, product_name}}' \
-    "$WORK_DIR/prepare-output.json"
+jq '{converter: .prepare.converter, root_device: .prepare.root_device, inspect: {type: .prepare.inspect.type, distro: .prepare.inspect.distro, product_name: .prepare.inspect.product_name}}' \
+    "$WORK_DIR/pipeline.json"
 echo ""
-jq '{block_bus: .guestcaps.block_bus, net_bus: .guestcaps.net_bus, arch: .guestcaps.arch}' \
-    "$WORK_DIR/target-meta.json"
+jq '{block_bus: .target.guestcaps.block_bus, net_bus: .target.guestcaps.net_bus, arch: .target.guestcaps.arch}' \
+    "$WORK_DIR/pipeline.json"

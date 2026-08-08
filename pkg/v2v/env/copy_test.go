@@ -175,7 +175,73 @@ func TestBuildCopyInputKeepsSourceDisks(t *testing.T) {
 	if len(in.SourceDisks) != 1 || in.SourceDisks[0] != sources[0] {
 		t.Fatalf("SourceDisks = %v, want debug metadata retained", in.SourceDisks)
 	}
-	if in.VCenterURL != cfg.LibvirtURL || in.VMName != cfg.VmName {
+	if in.Host != "vcenter" || in.VMName != cfg.VmName {
 		t.Fatalf("unexpected input: %+v", in)
+	}
+	if in.Datacenter != "dc" {
+		t.Fatalf("Datacenter = %q, want %q", in.Datacenter, "dc")
+	}
+	if in.Insecure {
+		t.Fatal("Insecure should be false for URL without no_verify")
+	}
+}
+
+func TestParseLibvirtURL(t *testing.T) {
+	tests := []struct {
+		name       string
+		url        string
+		host       string
+		datacenter string
+		insecure   bool
+	}{
+		{
+			name:       "standard vCenter URL",
+			url:        "vpx://user@vcenter/dc/host/esxi",
+			host:       "vcenter",
+			datacenter: "dc",
+			insecure:   false,
+		},
+		{
+			name:       "with no_verify",
+			url:        "vpx://user@vcenter/dc/host/esxi?no_verify=1",
+			host:       "vcenter",
+			datacenter: "dc",
+			insecure:   true,
+		},
+		{
+			name:       "with port",
+			url:        "vpx://user@vcenter:8443/dc/host/esxi",
+			host:       "vcenter:8443",
+			datacenter: "dc",
+			insecure:   false,
+		},
+		{
+			name:       "ESXi direct no path",
+			url:        "vpx://user@esxi-host",
+			host:       "esxi-host",
+			datacenter: "",
+			insecure:   false,
+		},
+		{
+			name:       "empty URL",
+			url:        "",
+			host:       "",
+			datacenter: "",
+			insecure:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			host, datacenter, insecure := parseLibvirtURL(tt.url)
+			if host != tt.host {
+				t.Errorf("host = %q, want %q", host, tt.host)
+			}
+			if datacenter != tt.datacenter {
+				t.Errorf("datacenter = %q, want %q", datacenter, tt.datacenter)
+			}
+			if insecure != tt.insecure {
+				t.Errorf("insecure = %v, want %v", insecure, tt.insecure)
+			}
+		})
 	}
 }

@@ -35,23 +35,27 @@ prepare_json=$(mktemp)
 cleanup_fn rm -f "$prepare_json"
 make_linux_prepare_json "$d" "rhel" 9 0 "x86_64" "Test VM" "bios" > "$prepare_json"
 
+pipeline_json=$(mktemp)
+cleanup_fn rm -f "$pipeline_json"
+jq -n --slurpfile p "$prepare_json" '{prepare: $p[0]}' > "$pipeline_json"
+
 # Run converter
 output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
-    --prepare-data "$prepare_json" \
+    --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \
     --offline \
     --log-level debug
 
 # When selectedKernel is nil, the pipeline defaults to virtio
-check_json_field "$output_json" '.guestcaps.block_bus' 'virtio'
-check_json_field "$output_json" '.guestcaps.net_bus' 'virtio'
-check_json_field "$output_json" '.guestcaps.virtio_rng' 'true'
-check_json_field "$output_json" '.guestcaps.virtio_balloon' 'true'
-check_json_field "$output_json" '.guestcaps.virtio_socket' 'true'
-check_json_field "$output_json" '.guestcaps.machine_type' 'q35'
+check_json_field "$output_json" '.convert.guestcaps.block_bus' 'virtio'
+check_json_field "$output_json" '.convert.guestcaps.net_bus' 'virtio'
+check_json_field "$output_json" '.convert.guestcaps.virtio_rng' 'true'
+check_json_field "$output_json" '.convert.guestcaps.virtio_balloon' 'true'
+check_json_field "$output_json" '.convert.guestcaps.virtio_socket' 'true'
+check_json_field "$output_json" '.convert.guestcaps.machine_type' 'q35'
 
 echo "PASS: test-linux-no-kernel"
