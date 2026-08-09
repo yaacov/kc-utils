@@ -22,6 +22,7 @@ func main() {
 	host := flag.String("host", "", "vCenter/ESXi hostname (e.g. vcenter.example.com)")
 	datacenter := flag.String("datacenter", "", "vSphere datacenter name")
 	insecure := flag.Bool("insecure", false, "skip TLS certificate verification")
+	caBundle := flag.String("ca-bundle", config.DefaultCaBundle, "PEM CA bundle path for secure TLS")
 	vmName := flag.String("vm-name", os.Getenv(config.EnvVmName), "VM name")
 	fingerprint := flag.String("fingerprint", os.Getenv(config.EnvFingerprint), "vCenter SSL thumbprint")
 	diskPath := flag.String("disk-path", os.Getenv(config.EnvDiskPath), "comma-separated source vmdk paths to copy")
@@ -32,7 +33,7 @@ func main() {
 
 	logger.Init(*logLevel)
 
-	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *vmName, *fingerprint, *diskPath, *workdir, *outputFile, *copyConcurrency)
+	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *caBundle, *vmName, *fingerprint, *diskPath, *workdir, *outputFile, *copyConcurrency)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -53,7 +54,7 @@ func main() {
 	}
 }
 
-func loadInput(inputFile, host, datacenter string, insecure bool, vmName, fingerprint, diskPath, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
+func loadInput(inputFile, host, datacenter string, insecure bool, caBundle, vmName, fingerprint, diskPath, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
 	if inputFile != "" {
 		data, err := os.ReadFile(inputFile)
 		if err != nil {
@@ -72,13 +73,20 @@ func loadInput(inputFile, host, datacenter string, insecure bool, vmName, finger
 		if input.OutputPath == "" {
 			input.OutputPath = outputPath
 		}
+		if input.CaBundle == "" {
+			input.CaBundle = config.DefaultCaBundle
+		}
 		return input, nil
 	}
 
+	if caBundle == "" {
+		caBundle = config.DefaultCaBundle
+	}
 	input := kccopy.CopyInput{
 		Host:            host,
 		Datacenter:      datacenter,
 		Insecure:        insecure,
+		CaBundle:        caBundle,
 		VMName:          vmName,
 		Fingerprint:     fingerprint,
 		SourceDisks:     env.SplitDiskPath(diskPath),

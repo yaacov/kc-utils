@@ -102,11 +102,18 @@ func ValidateCopySourceCount(sources []string) error {
 // BuildCopyInput maps a loaded config and resolved source disks to copy input.
 // SourceDisks selects which NFC lease disks kc-copy will stream.
 func BuildCopyInput(cfg *Config, sources []string) *kccopy.CopyInput {
-	host, datacenter, insecure := parseLibvirtURL(cfg.LibvirtURL)
+	host, datacenter, insecure, caBundle := parseLibvirtURL(cfg.LibvirtURL)
+	if caBundle == "" {
+		caBundle = cfg.CaBundle
+	}
+	if caBundle == "" {
+		caBundle = DefaultCaBundle
+	}
 	return &kccopy.CopyInput{
 		Host:            host,
 		Datacenter:      datacenter,
 		Insecure:        insecure,
+		CaBundle:        caBundle,
 		VMName:          cfg.VmName,
 		Fingerprint:     cfg.Fingerprint,
 		SourceDisks:     sources,
@@ -115,10 +122,10 @@ func BuildCopyInput(cfg *Config, sources []string) *kccopy.CopyInput {
 	}
 }
 
-func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool) {
+func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool, caBundle string) {
 	u, err := url.Parse(libvirtURL)
 	if err != nil {
-		return "", "", false
+		return "", "", false, ""
 	}
 	host = u.Hostname()
 	if p := u.Port(); p != "" {
@@ -126,11 +133,12 @@ func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool)
 	}
 	insecure = strings.Contains(u.RawQuery, "no_verify=1") ||
 		strings.Contains(u.RawQuery, "no_verify")
+	caBundle = u.Query().Get("cacert")
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
 	if len(parts) > 0 && parts[0] != "" {
 		datacenter = parts[0]
 	}
-	return host, datacenter, insecure
+	return host, datacenter, insecure, caBundle
 }
 
 // SplitDiskPath splits a comma-separated disk path string into individual paths.

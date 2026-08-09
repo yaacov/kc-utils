@@ -1,6 +1,7 @@
 package env
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -184,6 +185,59 @@ func TestBuildCopyInputKeepsSourceDisks(t *testing.T) {
 	if in.Insecure {
 		t.Fatal("Insecure should be false for URL without no_verify")
 	}
+	if in.CaBundle != DefaultCaBundle {
+		t.Fatalf("CaBundle = %q, want %q", in.CaBundle, DefaultCaBundle)
+	}
+}
+
+func TestBuildCopyInputJSONIncludesTLSFields(t *testing.T) {
+	cfg := &Config{
+		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi?no_verify=1",
+		VmName:      "my-vm",
+		Fingerprint: "aa:bb",
+		CaBundle:    DefaultCaBundle,
+	}
+	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
+	data, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	if raw["insecure"] != true {
+		t.Fatalf("insecure = %v, want true in JSON", raw["insecure"])
+	}
+	if raw["ca_bundle"] != DefaultCaBundle {
+		t.Fatalf("ca_bundle = %v, want %q in JSON", raw["ca_bundle"], DefaultCaBundle)
+	}
+}
+
+func TestBuildCopyInputCaBundleFromURL(t *testing.T) {
+	cfg := &Config{
+		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi?cacert=/opt/ca-bundle.crt",
+		VmName:      "my-vm",
+		Fingerprint: "aa:bb",
+		CaBundle:    "/should/not/use",
+	}
+	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
+	if in.CaBundle != "/opt/ca-bundle.crt" {
+		t.Fatalf("CaBundle = %q, want from libvirt URL", in.CaBundle)
+	}
+}
+
+func TestBuildCopyInputCaBundleFromConfig(t *testing.T) {
+	cfg := &Config{
+		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi",
+		VmName:      "my-vm",
+		Fingerprint: "aa:bb",
+		CaBundle:    "/custom/bundle.pem",
+	}
+	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
+	if in.CaBundle != "/custom/bundle.pem" {
+		t.Fatalf("CaBundle = %q, want cfg default", in.CaBundle)
+	}
 }
 
 func TestParseLibvirtURL(t *testing.T) {
@@ -193,6 +247,7 @@ func TestParseLibvirtURL(t *testing.T) {
 		host       string
 		datacenter string
 		insecure   bool
+		caBundle   string
 	}{
 		{
 			name:       "standard vCenter URL",
@@ -207,6 +262,15 @@ func TestParseLibvirtURL(t *testing.T) {
 			host:       "vcenter",
 			datacenter: "dc",
 			insecure:   true,
+			caBundle:   "",
+		},
+		{
+			name:       "with cacert",
+			url:        "vpx://user@vcenter/dc/host/esxi?cacert=/opt/ca-bundle.crt",
+			host:       "vcenter",
+			datacenter: "dc",
+			insecure:   false,
+			caBundle:   "/opt/ca-bundle.crt",
 		},
 		{
 			name:       "with port",
@@ -232,7 +296,7 @@ func TestParseLibvirtURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			host, datacenter, insecure := parseLibvirtURL(tt.url)
+			host, datacenter, insecure, caBundle := parseLibvirtURL(tt.url)
 			if host != tt.host {
 				t.Errorf("host = %q, want %q", host, tt.host)
 			}
@@ -241,6 +305,9 @@ func TestParseLibvirtURL(t *testing.T) {
 			}
 			if insecure != tt.insecure {
 				t.Errorf("insecure = %v, want %v", insecure, tt.insecure)
+			}
+			if caBundle != tt.caBundle {
+				t.Errorf("caBundle = %q, want %q", caBundle, tt.caBundle)
 			}
 		})
 	}

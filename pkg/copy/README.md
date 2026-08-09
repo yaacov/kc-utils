@@ -19,8 +19,10 @@ on them.
 
 2. **NFC export** — connects to vSphere using credentials from
    `/etc/secret/accessKeyId` and `/etc/secret/secretKey`, locates the VM by
-   name, and starts an NFC export lease via govmomi. The lease provides
-   HTTPS URLs for each virtual disk.
+   name, and starts an NFC export lease via govmomi. TLS uses the same policy
+   as Forklift virt-v2v: skip verify when `insecure` is set, otherwise trust
+   the CA bundle at `ca_bundle` (default `/opt/ca-bundle.crt` after
+   `LinkCertificates`). The lease provides HTTPS URLs for each virtual disk.
 
 3. **Disk matching** — filters the NFC lease URLs to only the requested
    source VMDK paths (snapshot delta suffixes like `-000001.vmdk` are

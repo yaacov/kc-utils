@@ -3,7 +3,6 @@ package copy
 import (
 	"bufio"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,16 +12,6 @@ import (
 )
 
 const downloadBufSize = 256 << 10 // 256 KiB read buffer per disk
-
-// newInsecureHTTPClient returns an http.Client that skips TLS verification.
-// Callers should share a single instance across concurrent disk downloads.
-func newInsecureHTTPClient() *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-}
 
 // CopyDisk downloads a single disk from an NFC export URL and writes raw
 // data to the target path (block device or filesystem disk.img).
