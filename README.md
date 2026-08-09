@@ -2,7 +2,8 @@
 
 Pure Go utilities that convert virtual machines from external hypervisors into
 KVM-compatible guests. Guest adaptations include VirtIO driver injection,
-initramfs and kernel updates, bootloader fixes, and network driver adjustments
+initramfs and kernel updates, boot configuration fixes (device remapping, kernel
+args, UEFI), and network migration (VirtIO net drivers, NIC naming, static IPs)
 for Linux and Windows.
 
 The core pipeline is four pure-Go binaries that inspect and mount guest disks,
