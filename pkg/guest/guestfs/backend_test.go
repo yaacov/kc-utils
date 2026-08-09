@@ -214,3 +214,28 @@ func indexOfSub(s, sub string) int {
 	}
 	return -1
 }
+
+func TestFscheckCommand(t *testing.T) {
+	tests := []struct {
+		fstype string
+		cmd    string
+		ok     bool
+	}{
+		{"ext4", "e2fsck-f", true},
+		{"ext3", "e2fsck-f", true},
+		{"ext2", "e2fsck-f", true},
+		{"xfs", "xfs-repair", true},
+		{"ntfs", "ntfsfix", true},
+		{"ntfs3", "ntfsfix", true},
+		{"NTFS", "ntfsfix", true},
+		{"vfat", "", false},
+		{"btrfs", "", false},
+		{"unknown", "", false},
+	}
+	for _, tt := range tests {
+		cmd, ok := fscheckCommand(tt.fstype)
+		if ok != tt.ok || cmd != tt.cmd {
+			t.Errorf("fscheckCommand(%q) = (%q, %v), want (%q, %v)", tt.fstype, cmd, ok, tt.cmd, tt.ok)
+		}
+	}
+}

@@ -262,17 +262,26 @@ func (b *Backend) BlkidAttr(device, attr string) (string, error) {
 	return val, nil
 }
 
+// fscheckCommand maps a filesystem type to the guestfish fsck command name.
+func fscheckCommand(fstype string) (string, bool) {
+	switch strings.ToLower(fstype) {
+	case "ext4", "ext3", "ext2":
+		return "e2fsck-f", true
+	case "xfs":
+		return "xfs-repair", true
+	case "ntfs", "ntfs3":
+		return "ntfsfix", true
+	default:
+		return "", false
+	}
+}
+
 func (b *Backend) FSCheck(device, fs string) error {
 	if err := b.ensureSession(); err != nil {
 		return err
 	}
-	var cmd string
-	switch fs {
-	case "ext4", "ext3", "ext2":
-		cmd = "e2fsck-f"
-	case "xfs":
-		cmd = "xfs-repair"
-	default:
+	cmd, ok := fscheckCommand(fs)
+	if !ok {
 		return nil
 	}
 	if _, err := b.session.remote(cmd, device); err != nil {

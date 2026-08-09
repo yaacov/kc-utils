@@ -213,6 +213,21 @@ mount_fs xfs
 mount_fs btrfs
 mount_fs ntfs
 
+# ntfsfix runs on an unmounted block device (same as kc-prepare/kc-finalize FSCheck).
+ntfsfix_fs() {
+	local img=$tmp/fs-ntfsfix.img
+	local err=$tmp/fs-ntfsfix.err
+	if "$GUESTFISH" -N "$img"=fs:ntfs:64M : umount-all : ntfsfix /dev/sda1 >/dev/null 2>"$err"; then
+		pass "$GUESTFISH ntfsfix /dev/sda1 (unmounted)"
+	else
+		echo "--- ntfsfix stderr ---"
+		cat "$err" || true
+		fail_msg "guestfish ntfsfix on unmounted NTFS failed"
+	fi
+}
+
+ntfsfix_fs
+
 echo ""
 if [ "$fail" -ne 0 ]; then
 	echo "Results: FAIL"
