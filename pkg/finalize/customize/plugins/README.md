@@ -12,9 +12,10 @@ do not fail the pipeline, since they are non-critical enhancements.
 | Key | Package | Description |
 |-----|---------|-------------|
 | `native` | native/ | Direct file injection/firstboot without external binary |
-| `dynamicscripts` | dynamicscripts/ | Run external customization scripts |
+| `dynamicscriptslinux` | dynamicscriptslinux/ | Run external Linux customization scripts |
+| `dynamicscriptswindows` | dynamicscriptswindows/ | Run external Windows customization scripts |
 
-Firstboot handlers for `dynamicscripts`: [`firstboot/plugins/README.md`](../firstboot/plugins/README.md).
+Firstboot handlers for `dynamicscriptslinux`: [`firstboot/plugins/README.md`](../../../common/firstboot/plugins/README.md).
 
 ## native
 
@@ -31,19 +32,31 @@ mounted guest filesystem: hostname, timezone, and SELinux auto-relabel.
   Otherwise, when `/etc/selinux/` exists, creates `/.autorelabel` so the guest
   triggers a full relabel on its next boot.
 
-## dynamicscripts
+## dynamicscriptslinux
 
-**What it does:** Discovers and applies user-provided customization scripts
-from a host directory (default `/mnt/dynamic_scripts`), allowing operators to
-inject arbitrary pre-boot or firstboot logic into the converted guest.
+**What it does:** Discovers and applies user-provided Linux customization
+scripts from a host directory (default `/mnt/dynamic_scripts`).
 
-**How it works:** Scans the scripts directory for files matching a naming
-convention that encodes priority, target OS, and action type:
+**How it works:** No-ops unless `os_type` is `linux`. Scans the scripts
+directory for files matching:
 
 - `<priority>_linux_run_<name>.sh` — uploaded into the guest's `/tmp/` and
   executed immediately via `/bin/bash` inside the mounted filesystem.
 - `<priority>_linux_firstboot_<name>.sh` — installed as a firstboot command
   using the systemd firstboot handler, so it runs on the guest's first boot.
+
+Scripts are sorted by the numeric priority prefix (lower runs first). Failures
+on individual scripts are logged as warnings but do not halt processing of
+remaining scripts.
+
+## dynamicscriptswindows
+
+**What it does:** Discovers and applies user-provided Windows customization
+scripts from a host directory (default `/mnt/dynamic_scripts`).
+
+**How it works:** No-ops unless `os_type` is `windows`. Scans the scripts
+directory for files matching:
+
 - `<priority>_win_firstboot_<name>.ps1` — copied into the Windows
   `Program Files/Guestfs/Firstboot/scripts/` directory for execution on
   the guest's first Windows boot.

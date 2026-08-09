@@ -1,5 +1,5 @@
 #!/bin/bash -
-# Test: dynamicscripts plugin — Linux firstboot script installation.
+# Test: dynamicscriptslinux plugin — Linux firstboot script installation.
 
 source "$(cd "$(dirname "$0")" && pwd)/functions.sh"
 set -e

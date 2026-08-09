@@ -1,6 +1,6 @@
 //go:build linux
 
-package dynamicscripts
+package dynamicscriptslinux
 
 import (
 	"fmt"
@@ -17,10 +17,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
-var (
-	linuxRegex   = regexp.MustCompile(`^([0-9]+)_linux_(run|firstboot)(([\w\-]*)\.sh)$`)
-	windowsRegex = regexp.MustCompile(`^([0-9]+)_win_firstboot(([\w\-]*)\.ps1)$`)
-)
+var scriptRegex = regexp.MustCompile(`^([0-9]+)_linux_(run|firstboot)(([\w\-]*)\.sh)$`)
 
 type script struct {
 	Priority int
@@ -29,13 +26,17 @@ type script struct {
 	Name     string
 }
 
-type DynamicScripts struct{}
+type DynamicScriptsLinux struct{}
 
 func init() {
-	customize.Customizers.Register("dynamicscripts", &DynamicScripts{})
+	customize.Customizers.Register("dynamicscriptslinux", &DynamicScriptsLinux{})
 }
 
-func (d *DynamicScripts) Apply(guestRoot string, options map[string]string) error {
+func (d *DynamicScriptsLinux) Apply(guestRoot string, options map[string]string) error {
+	if options["os_type"] != "linux" {
+		return nil
+	}
+
 	dir := options["scripts_dir"]
 	if dir == "" {
 		dir = "/mnt/dynamic_scripts"
@@ -51,12 +52,11 @@ func (d *DynamicScripts) Apply(guestRoot string, options map[string]string) erro
 		return nil
 	}
 
-	osType := options["os_type"]
-	scripts, err := scanScripts(dir, osType)
+	scripts, err := scanScripts(dir)
 	if err != nil {
 		return err
 	}
-	slog.Info("scanned dynamic scripts", "dir", dir, "osType", osType, "count", len(scripts))
+	slog.Info("scanned dynamic scripts", "dir", dir, "osType", "linux", "count", len(scripts))
 	for _, s := range scripts {
 		slog.Info("applying dynamic script",
 			"script", s.Name,
@@ -72,7 +72,7 @@ func (d *DynamicScripts) Apply(guestRoot string, options map[string]string) erro
 	return nil
 }
 
-func scanScripts(dir, osType string) ([]script, error) {
+func scanScripts(dir string) ([]script, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -83,26 +83,15 @@ func scanScripts(dir, osType string) ([]script, error) {
 			continue
 		}
 		name := e.Name()
-		var re *regexp.Regexp
-		switch osType {
-		case "windows":
-			re = windowsRegex
-		default:
-			re = linuxRegex
-		}
-		m := re.FindStringSubmatch(name)
+		m := scriptRegex.FindStringSubmatch(name)
 		if m == nil {
 			slog.Debug("skipping non-matching script", "name", name)
 			continue
 		}
 		priority, _ := strconv.Atoi(m[1])
-		action := m[2]
-		if osType == "windows" {
-			action = "win-firstboot"
-		}
 		scripts = append(scripts, script{
 			Priority: priority,
-			Action:   action,
+			Action:   m[2],
 			Path:     filepath.Join(dir, name),
 			Name:     name,
 		})
@@ -116,17 +105,15 @@ func scanScripts(dir, osType string) ([]script, error) {
 func applyScript(guestRoot string, s script) error {
 	switch s.Action {
 	case "run":
-		return runLinuxScript(guestRoot, s.Path)
+		return runScript(guestRoot, s.Path)
 	case "firstboot":
-		return installLinuxFirstboot(guestRoot, s)
-	case "win-firstboot":
-		return installWindowsFirstboot(guestRoot, s)
+		return installFirstboot(guestRoot, s)
 	default:
 		return fmt.Errorf("unknown action %q", s.Action)
 	}
 }
 
-func runLinuxScript(guestRoot, scriptPath string) error {
+func runScript(guestRoot, scriptPath string) error {
 	guestScript := filepath.Join(guestRoot, "tmp", filepath.Base(scriptPath))
 	if err := guest.FileMkdirAll(filepath.Dir(guestScript), 0o755); err != nil {
 		return err
@@ -141,7 +128,7 @@ func runLinuxScript(guestRoot, scriptPath string) error {
 	return err
 }
 
-func installLinuxFirstboot(guestRoot string, s script) error {
+func installFirstboot(guestRoot string, s script) error {
 	destDir := filepath.Join(guestRoot, "usr", "local", "bin")
 	if err := guest.FileMkdirAll(destDir, 0o755); err != nil {
 		return err
@@ -167,12 +154,4 @@ func installLinuxFirstboot(guestRoot string, s script) error {
 		return fmt.Errorf("systemd firstboot handler not registered")
 	}
 	return handler.Install(guestRoot, []string{cmdLine})
-}
-
-func installWindowsFirstboot(guestRoot string, s script) error {
-	destDir := filepath.Join(guestRoot, "Program Files", "Guestfs", "Firstboot", "scripts")
-	if err := guest.FileMkdirAll(destDir, 0o755); err != nil {
-		return err
-	}
-	return guest.FileUpload(s.Path, filepath.Join(destDir, s.Name))
 }
