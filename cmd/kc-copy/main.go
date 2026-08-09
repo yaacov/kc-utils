@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	kccopy "github.com/yaacov/kc-utils/pkg/copy"
@@ -82,7 +81,7 @@ func loadInput(inputFile, host, datacenter string, insecure bool, vmName, finger
 		Insecure:        insecure,
 		VMName:          vmName,
 		Fingerprint:     fingerprint,
-		SourceDisks:     splitDiskPath(diskPath),
+		SourceDisks:     env.SplitDiskPath(diskPath),
 		Workdir:         workdir,
 		OutputPath:      outputPath,
 		CopyConcurrency: copyConcurrency,
@@ -107,19 +106,6 @@ func validateInput(input *kccopy.CopyInput) error {
 		return fmt.Errorf("--disk-path is required (or use --input with source_disks)")
 	}
 	return nil
-}
-
-func splitDiskPath(raw string) []string {
-	if strings.TrimSpace(raw) == "" {
-		return nil
-	}
-	var paths []string
-	for _, part := range strings.Split(raw, ",") {
-		if path := strings.TrimSpace(part); path != "" {
-			paths = append(paths, path)
-		}
-	}
-	return paths
 }
 
 func envInt(name string, def int) int {

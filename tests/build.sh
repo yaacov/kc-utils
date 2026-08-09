@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOP_DIR="$(cd "$TESTS_DIR/.." && pwd)"
 BIN_DIR="$TESTS_DIR/bin"

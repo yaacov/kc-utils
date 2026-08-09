@@ -24,7 +24,7 @@ fi
 
 # Build binary hive files from .reg text + minimal-hive.
 tmpdir=$(mktemp -d)
-trap "rm -rf $tmpdir" EXIT
+trap 'rm -rf "$tmpdir"' EXIT
 
 cp "$FIXTURES/minimal-hive" "$tmpdir/SYSTEM"
 hivexregedit --merge "$tmpdir/SYSTEM" \

@@ -18,6 +18,7 @@ Requires Linux (`//go:build linux`).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
+| `--guestfs` | no | `false` | Use libguestfs appliance instead of privileged mount syscalls |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 VirtIO drivers are located from the pre-extracted virtio-win tree via the
@@ -35,7 +36,7 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 | 5 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
 | 6 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
 | 7 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
-| 9 | Hypervisor Services | pluggable: `WindowsServices` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
+| 8 | Hypervisor Services | pluggable: `WindowsServices` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
 | 9 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
 | 10-12 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate version-appropriate firstboot scripts |
 | 13 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |

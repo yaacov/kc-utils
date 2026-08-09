@@ -97,7 +97,6 @@ disk e2e also needs `guestfs-tools` (`make test-e2e-disk-guestfs`).
 
 ```bash
 make build              # all six binaries into bin/
-make build-converters   # kc-convert-linux and kc-convert-windows only
 make build-kc-v2v       # kc-v2v only
 make build-kc-copy      # kc-copy only
 make build-kc-v2v-image # container image (build/kc-v2v/Containerfile)
