@@ -32,7 +32,7 @@ util.go         — guestfishBinary, quoteGuestfish, runGuestfsCmd, scripts
 
 On RHEL/UBI, prefer `virt-guestfish` when present (symlink) so NTFS mounts pass
 the winsupport allowlist; Fedora uses plain `guestfish` — see
-[docs/privilege-model.md](../../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
+[docs/architecture/privilege-model.md](../../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 Import path: `github.com/yaacov/kc-utils/pkg/guest/guestfs`
 

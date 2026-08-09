@@ -126,3 +126,8 @@ via `RunInGuest`:
 
 This approach uses the guest's native module compression, dependency
 resolution, and firmware inclusion rather than custom CPIO manipulation.
+
+## See also
+
+- [../architecture/conversion-paths-linux.md](../architecture/conversion-paths-linux.md) — Linux hypervisor cleanup and distro install matrices
+- [../architecture/guest-os-handlers.md](../architecture/guest-os-handlers.md) — distro handler classification

@@ -2,7 +2,7 @@
 # Runnable example: prepare → convert → finalize on a phony Linux disk image.
 #
 # Usage (from repository root, as root):
-#   sudo docs/examples/run-linux-disk.sh
+#   sudo docs/apps/examples/run-linux-disk.sh
 #
 # Options:
 #   KC_BIN_DIR=/path/to/bin   override binary location (default: ./bin)
@@ -11,7 +11,7 @@
 #   KC_DISK=/path/to.img      use existing disk image instead of creating one
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 BIN_DIR="${KC_BIN_DIR:-$ROOT_DIR/bin}"
 TESTS_DIR="$ROOT_DIR/tests"
 MOUNT_ROOT="${KC_MOUNT_ROOT:-/tmp/kc-guest}"

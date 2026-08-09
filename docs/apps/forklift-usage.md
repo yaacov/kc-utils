@@ -79,14 +79,14 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # kc then operator defa
 ./tests/scenarios/test-mtv-benchmark-cleanup.sh          # delete NS + reset MTV settings
 ```
 
-See [tests/scenarios/test-mtv-benchmark.md](../tests/scenarios/test-mtv-benchmark.md)
-and [docs/ref-baseline/README.md](ref-baseline/README.md).
+See [tests/scenarios/test-mtv-benchmark.md](../../tests/scenarios/test-mtv-benchmark.md)
+and [docs/architecture/ref-baseline/README.md](../architecture/ref-baseline/README.md).
 
 ## Related
 
-- [docs/kc-v2v.md](kc-v2v.md) — kc-v2v orchestrator reference
-- [tests/scenarios/](../tests/scenarios/README.md) — Cluster benchmark runner
-- [tests/scenarios/virt-v2v-vs-kc-v2v.md](../tests/scenarios/virt-v2v-vs-kc-v2v.md) — virt-v2v vs kc-v2v comparison
-- [docs/ref-baseline/README.md](ref-baseline/README.md) — Benchmark comparison (results, dashboard, archived runs)
-- [Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html) ([source](ref-baseline/dashboard.html)) — Interactive charts (memory, CPU, network over time)
-- [build/kc-v2v/README.md](../build/kc-v2v/README.md) — Container image and Forklift Plan config
+- [kc-v2v.md](kc-v2v.md) — kc-v2v orchestrator reference
+- [../../tests/scenarios/README.md](../../tests/scenarios/README.md) — Cluster benchmark runner
+- [../../tests/scenarios/virt-v2v-vs-kc-v2v.md](../../tests/scenarios/virt-v2v-vs-kc-v2v.md) — virt-v2v vs kc-v2v comparison
+- [../architecture/ref-baseline/README.md](../architecture/ref-baseline/README.md) — Benchmark comparison (results, dashboard, archived runs)
+- [Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/architecture/ref-baseline/dashboard.html) ([source](../architecture/ref-baseline/dashboard.html)) — Interactive charts (memory, CPU, network over time)
+- [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) — Container image and Forklift Plan config

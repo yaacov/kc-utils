@@ -17,4 +17,4 @@ Each block has its own README with detailed exports and mechanism.
 | 9 | Converter | [`converter/`](converter/) | pluggable | Choose linux/windows converter |
 
 Orchestrator: [`pkg/cmd/prepare/`](../cmd/prepare/).
-Docs: [`docs/kc-prepare.md`](../../docs/kc-prepare.md).
+Docs: [`docs/apps/kc-prepare.md`](../../docs/apps/kc-prepare.md).

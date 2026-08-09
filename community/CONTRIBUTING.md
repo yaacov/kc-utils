@@ -27,7 +27,9 @@ kc-utils/
       finalize/pipeline.go
       v2v/server/         HTTP warning server
   community/            Contributor and architecture guidance
-  docs/                 Pipeline block tables per utility
+  docs/
+    apps/               Pipeline block tables and CLI reference per utility
+    architecture/       Design reference, conversion paths, benchmarks
   tests/                Shell-based e2e tests and fixtures
 ```
 
@@ -75,7 +77,7 @@ Linux conversions take virtio modules from the guest kernel; no host VirtIO
 package is required. For offline qemu-guest-agent install on RHEL-family guests,
 stage RPMs under `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` (baked into the
 kc-v2v image; used with `--offline`). See
-[docs/kc-convert-linux.md](../docs/kc-convert-linux.md).
+[docs/apps/kc-convert-linux.md](../docs/apps/kc-convert-linux.md).
 
 ### Dev dependencies
 

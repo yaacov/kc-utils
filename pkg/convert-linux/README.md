@@ -21,6 +21,6 @@ own README with detailed exports and mechanism.
 | 13 | GuestCaps | [`guestcaps/`](guestcaps/) | strict | Derive block/net bus, virtio flags, machine type |
 
 Orchestrator: [`pkg/cmd/convert-linux/`](../cmd/convert-linux/).
-Docs: [`docs/kc-convert-linux.md`](../../docs/kc-convert-linux.md).
+Docs: [`docs/apps/kc-convert-linux.md`](../../docs/apps/kc-convert-linux.md).
 
 Import path prefix: `github.com/yaacov/kc-utils/pkg/convert-linux/…`

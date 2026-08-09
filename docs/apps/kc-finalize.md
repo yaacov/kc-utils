@@ -26,7 +26,7 @@ Requires Linux (`//go:build linux`).
 
 ## Pipeline Blocks
 
-Order matches [`pkg/cmd/finalize/pipeline.go`](../pkg/cmd/finalize/pipeline.go):
+Order matches [`pkg/cmd/finalize/pipeline.go`](../../pkg/cmd/finalize/pipeline.go):
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|

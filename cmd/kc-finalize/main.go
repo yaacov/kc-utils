@@ -1,7 +1,7 @@
 //go:build linux
 
 // kc-finalize unmounts guest filesystems and writes target metadata.
-// Documentation: docs/kc-finalize.md
+// Documentation: docs/apps/kc-finalize.md
 package main
 
 import (

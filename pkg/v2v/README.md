@@ -13,8 +13,8 @@ Orchestration lives in [`pkg/cmd/v2v/`](../cmd/v2v/).
 
 Import path prefix: `github.com/yaacov/kc-utils/pkg/v2v/…`
 
-Documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md),
-[docs/kc-copy.md](../../docs/kc-copy.md).
+Documentation: [docs/apps/kc-v2v.md](../../docs/apps/kc-v2v.md),
+[docs/apps/kc-copy.md](../../docs/apps/kc-copy.md).
 
 ## Pipeline
 

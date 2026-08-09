@@ -1,7 +1,7 @@
 //go:build linux
 
 // kc-prepare opens guest disks, inspects the OS, and mounts filesystems.
-// Documentation: docs/kc-prepare.md
+// Documentation: docs/apps/kc-prepare.md
 package main
 
 import (

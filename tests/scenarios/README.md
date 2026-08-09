@@ -25,7 +25,7 @@ tests/scenarios/
 ```
 
 Published archives and the static comparison dashboard live under
-[`docs/ref-baseline/`](../../docs/ref-baseline/).
+[`docs/architecture/ref-baseline/`](../../docs/architecture/ref-baseline/).
 
 ## Prerequisites
 
@@ -36,7 +36,7 @@ Published archives and the static comparison dashboard live under
 - MTV installed; `vddk_image` configured
 - vSphere inventory with RHEL and Windows VMs (or pin `RHEL_VM` / `WIN_VM` in `.env`)
 
-Integration reference: [docs/forklift-usage.md](../../docs/forklift-usage.md).
+Integration reference: [docs/apps/forklift-usage.md](../../docs/apps/forklift-usage.md).
 
 ## Quick start
 
@@ -82,8 +82,8 @@ python3 tests/scenarios/lib/generate-run-dashboard.py \
 ```
 
 To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
-[`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) and update
-[`docs/ref-baseline/README.md`](../../docs/ref-baseline/README.md).
+[`docs/architecture/ref-baseline/runs/`](../../docs/architecture/ref-baseline/runs/) and update
+[`docs/architecture/ref-baseline/README.md`](../../docs/architecture/ref-baseline/README.md).
 
 ## Scripts
 

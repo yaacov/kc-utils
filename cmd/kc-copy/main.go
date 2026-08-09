@@ -1,5 +1,5 @@
 // kc-copy runs the disk copy stage (invoked by kc-v2v, or standalone).
-// Documentation: docs/kc-copy.md
+// Documentation: docs/apps/kc-copy.md
 package main
 
 import (

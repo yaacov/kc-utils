@@ -8,8 +8,8 @@ Forklift-compatible inspection XML and HTTP API.
 ## Entry Point
 
 `cmd/kc-v2v/main.go` — bootstrap via `pkg/v2v/env/`; orchestration in
-[`pkg/cmd/v2v/pipeline.go`](../pkg/cmd/v2v/pipeline.go); HTTP server in
-[`pkg/cmd/v2v/server/`](../pkg/cmd/v2v/server/).
+[`pkg/cmd/v2v/pipeline.go`](../../pkg/cmd/v2v/pipeline.go); HTTP server in
+[`pkg/cmd/v2v/server/`](../../pkg/cmd/v2v/server/).
 
 ## Flow
 
@@ -62,13 +62,13 @@ See [kc-finalize.md](kc-finalize.md) (`--teardown-only`).
 Stage 4 is skipped when disks are already populated (CDI, copy-offload, EC2,
 Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under
 `KC_BIN_DIR` (default `/usr/lib/kc-utils`). See [kc-copy.md](kc-copy.md) and
-[pkg/v2v/README.md](../pkg/v2v/README.md).
+[pkg/v2v/README.md](../../pkg/v2v/README.md).
 
 ## Configuration
 
 Configuration is loaded from `V2V_*` environment variables with CLI flag
 overrides via `env.Load()`. Full schema:
-[`pkg/v2v/config/config.go`](../pkg/v2v/config/config.go).
+[`pkg/v2v/config/config.go`](../../pkg/v2v/config/config.go).
 
 ### Required
 
@@ -180,5 +180,5 @@ Full configuration table and YAML examples:
 ## Related
 
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
-- [docs/README.md](README.md) — four-binary pipeline overview
-- [pkg/v2v/README.md](../pkg/v2v/README.md) — kc-v2v package internals
+- [README.md](README.md) — four-binary pipeline overview
+- [pkg/v2v/README.md](../../pkg/v2v/README.md) — kc-v2v package internals

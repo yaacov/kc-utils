@@ -62,7 +62,7 @@ path or install the `virtio-win` package on Fedora/RHEL.
 
 | Plugin | Path | Notes |
 |--------|------|-------|
-| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista) |
+| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista) |
 
 ## Version classification
 
@@ -77,7 +77,7 @@ below under **Driver source** and **Firstboot scripts**.
 There is no JSON field for driver location — use the kc-v2v image (which
 includes drivers) or populate the host tree before conversion.
 
-See [pkg/convert-windows/driversource/plugins/README.md](../pkg/convert-windows/driversource/plugins/README.md) for
+See [pkg/convert-windows/driversource/plugins/README.md](../../pkg/convert-windows/driversource/plugins/README.md) for
 plugin details. Linux guest offline packages (`qemu-guest-agent` RPM/DEB) are a
 separate mechanism in `kc-convert-linux`, not VirtIO-Win.
 
@@ -153,3 +153,8 @@ running `.ps1` scripts. Batch-only guests (XP/2003) run `.bat` contributors only
 
 After all scripts complete, `firstboot.bat` removes the
 `C:\Program Files\Guestfs\Firstboot` directory and its contents.
+
+## See also
+
+- [../architecture/conversion-paths-windows.md](../architecture/conversion-paths-windows.md) — Windows hypervisor cleanup and version install matrices
+- [../architecture/guest-os-handlers.md](../architecture/guest-os-handlers.md) — version handler classification

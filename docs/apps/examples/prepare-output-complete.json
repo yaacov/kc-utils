@@ -14,7 +14,7 @@
         {
           "mac": "52:54:00:12:34:56",
           "model": "e1000",
-          "network": "default"
+          "network": "VM Network"
         }
       ]
     },
@@ -64,7 +64,7 @@
         {
           "mac": "52:54:00:12:34:56",
           "model": "e1000",
-          "network": "default"
+          "network": "VM Network"
         }
       ]
     },
@@ -86,78 +86,5 @@
     ],
     "mount_root": "/mnt/kc-guest",
     "root_device": "/dev/loop0p1"
-  },
-  "convert": {
-    "guestcaps": {
-      "block_bus": "virtio",
-      "net_bus": "virtio",
-      "virtio_rng": false,
-      "virtio_balloon": false,
-      "virtio_socket": false,
-      "isa_pvpanic": false,
-      "machine_type": "q35",
-      "arch": "x86_64",
-      "virtio_1_0": true,
-      "rtc_utc": true
-    }
-  },
-  "target": {
-    "guestcaps": {
-      "block_bus": "virtio",
-      "net_bus": "virtio",
-      "virtio_rng": false,
-      "virtio_balloon": false,
-      "virtio_socket": false,
-      "isa_pvpanic": false,
-      "machine_type": "q35",
-      "arch": "x86_64",
-      "virtio_1_0": true,
-      "rtc_utc": true
-    },
-    "target_buses": {
-      "virtio_blk": [
-        {
-          "index": 0,
-          "source_disk": 0
-        }
-      ]
-    },
-    "target_nics": [
-      {
-        "mac": "52:54:00:12:34:56",
-        "model": "virtio",
-        "network": "default"
-      }
-    ],
-    "target_firmware": "bios",
-    "boot_device": {
-      "disk_index": 0,
-      "part_index": 1,
-      "bootloader_type": "grub2"
-    },
-    "disks": [
-      {
-        "path": "/var/lib/kc/disk0.img",
-        "size_bytes": 536870912,
-        "format": "raw",
-        "partitions": [
-          {
-            "index": 1,
-            "size_bytes": 536866816,
-            "fs_type": "ext4",
-            "mount_point": "/",
-            "device_path": "/dev/loop0p1"
-          }
-        ]
-      }
-    ],
-    "inspect": {
-      "type": "linux",
-      "distro": "rhel",
-      "major_version": 9,
-      "minor_version": 2,
-      "arch": "x86_64",
-      "product_name": "Red Hat Enterprise Linux 9.2 (Plow)"
-    }
   }
 }

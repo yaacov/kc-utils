@@ -19,5 +19,5 @@ kc-finalize → inspection XML → HTTP server (when `LOCAL_MIGRATION=true`).
 When `V2V_overlayEnabled=true` (default), the pipeline wraps conversion in a
 qcow2 overlay so block devices are not modified until commit.
 
-Full flow and configuration: [`docs/kc-v2v.md`](../../../docs/kc-v2v.md).
+Full flow and configuration: [`docs/apps/kc-v2v.md`](../../../docs/apps/kc-v2v.md).
 Library details: [`pkg/v2v/README.md`](../../v2v/README.md).

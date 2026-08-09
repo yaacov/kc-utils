@@ -5,7 +5,7 @@
 The image is built with the official **golang** image for compilation and
 **Fedora** (`registry.fedoraproject.org/fedora:44`) for the runtime.
 
-Binary documentation: [docs/kc-v2v.md](../../docs/kc-v2v.md).
+Binary documentation: [docs/apps/kc-v2v.md](../../docs/apps/kc-v2v.md).
 
 When Forklift attaches **blank PVCs** (cold vSphere, `useV2vForTransfer` path), kc-v2v optionally spawns **`kc-copy`** for NFC disk copy before conversion. Disk copy uses pure Go govmomi NFC export (no VDDK required).
 
@@ -253,7 +253,7 @@ host mounts.
 Fedora libguestfs mounts NTFS with plain `guestfish`. On RHEL/CentOS/UBI,
 libguestfs only allows NTFS when the program name starts with `virt-`;
 kc-utils prefers `virt-guestfish` when that binary is present. Details:
-[docs/privilege-model.md](../../docs/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
+[docs/architecture/privilege-model.md](../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
 See also existing `V2V_*` flags in [`pkg/v2v/config/config.go`](../../pkg/v2v/config/config.go).
 
