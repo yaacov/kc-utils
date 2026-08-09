@@ -159,7 +159,10 @@ disable_windows_wait_for_reboot() {
 fetch_vsphere_cacert() {
   local host="$1"
   local cert_file
-  cert_file="$(mktemp /tmp/vsphere-cacert.XXXXXX.pem)"
+  cert_file="$(mktemp "${TMPDIR:-/tmp}/vsphere-cacert.XXXXXX")" || {
+    echo "ERROR: failed to create temp file for vSphere CA cert" >&2
+    exit 1
+  }
   if ! echo | openssl s_client -showcerts -connect "${host}:443" 2>/dev/null \
       | openssl x509 >"${cert_file}"; then
     rm -f "${cert_file}"
