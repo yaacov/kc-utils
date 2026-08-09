@@ -1,7 +1,7 @@
 //go:build linux
 
 // kc-v2v orchestrates prepare → convert → finalize for Forklift migrations.
-// Documentation: docs/kc-v2v.md
+// Documentation: docs/apps/kc-v2v.md
 package main
 
 import (

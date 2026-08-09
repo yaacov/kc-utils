@@ -23,18 +23,18 @@ see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
   CLI: a minimal QEMU appliance VM mounts the guest disks internally, so no
   host root or `CAP_SYS_ADMIN` is required.
 
-**[Benchmark](docs/ref-baseline/README.md)** :
+**[Benchmark](docs/architecture/ref-baseline/README.md)** :
 On OpenShift MTV cold migrations, kc-v2v matches or beats virt-v2v wall time
 (about 3 minutes faster on RHEL, similar on Windows) while using less peak
 memory and far less peak CPU, and transferring roughly 56–64 % less network
 data by converting disks in-pod instead of a separate DiskTransferV2v stream.
 
-**[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/ref-baseline/dashboard.html)**
-([source](docs/ref-baseline/dashboard.html)):
+**[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/architecture/ref-baseline/dashboard.html)**
+([source](docs/architecture/ref-baseline/dashboard.html)):
 Interactive charts of memory, CPU, and network I/O over time for the ref vs
 kc-v2v runs.
 
-Two guest access modes are supported (see [docs/privilege-model.md](docs/privilege-model.md)):
+Two guest access modes are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)):
 
 - **host-mount** (default) - mounts guest filesystems with `mount(8)` and runs
   guest tools via `chroot` into that tree; requires root or `CAP_SYS_ADMIN`.
@@ -52,7 +52,7 @@ oc mtv settings set --setting virt_v2v_image_fqin \
   --value quay.io/kubev2v/kc-v2v:devel-amd64
 ```
 
-See [docs/forklift-usage.md](docs/forklift-usage.md) for full usage instructions.
+See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage instructions.
 
 ## Design Highlights
 
@@ -97,24 +97,35 @@ dependencies, build, test, and PR guidance.
 
 ## Documentation
 
+### Apps
+
+- [docs/README.md](docs/README.md) - Documentation index
+- [docs/apps/README.md](docs/apps/README.md) - Complete conversion flow
+- [docs/apps/kc-v2v.md](docs/apps/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
+- [docs/apps/kc-copy.md](docs/apps/kc-copy.md) - NFC disk copy stage CLI
+- [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
+- [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
+- [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
+- [docs/apps/examples/](docs/apps/examples/README.md) - JSON samples and runnable example
+- [docs/apps/kc-prepare.md](docs/apps/kc-prepare.md) - kc-prepare pipeline
+- [docs/apps/kc-convert-linux.md](docs/apps/kc-convert-linux.md) - Linux converter pipeline
+- [docs/apps/kc-convert-windows.md](docs/apps/kc-convert-windows.md) - Windows converter pipeline
+- [docs/apps/kc-finalize.md](docs/apps/kc-finalize.md) - kc-finalize pipeline
+
+### Architecture
+
+- [docs/architecture/README.md](docs/architecture/README.md) - Architecture reference index
+- [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md) - Privilege model: host-mount vs guestfish / libguestfs appliance
+- [docs/architecture/guest-os-handlers.md](docs/architecture/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
+- [docs/architecture/conversion-paths.md](docs/architecture/conversion-paths.md) - OS + source-hypervisor conversion path reference
+
+### Contributing
+
 - [community/architecture.md](community/architecture.md) - Design principles for contributors and agents
 - [community/CONTRIBUTING.md](community/CONTRIBUTING.md) - Build, test, layout, and dependencies
 - [community/commits.md](community/commits.md) - Commit subject and message body conventions
 - [community/pull-requests.md](community/pull-requests.md) - Branch naming and PR writing guidelines
 - [community/code-review.md](community/code-review.md) - Code review priorities and report shape
-- [docs/README.md](docs/README.md) - Complete conversion flow
-- [docs/kc-v2v.md](docs/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
-- [docs/kc-copy.md](docs/kc-copy.md) - NFC disk copy stage CLI
-- [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
-- [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
-- [docs/forklift-usage.md](docs/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
-- [docs/privilege-model.md](docs/privilege-model.md) - Privilege model: host-mount vs guestfish / libguestfs appliance
-- [docs/guest-os-handlers.md](docs/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
-- [docs/examples/](docs/examples/README.md) - JSON samples and runnable example
-- [docs/kc-prepare.md](docs/kc-prepare.md) - kc-prepare pipeline
-- [docs/kc-convert-linux.md](docs/kc-convert-linux.md) - Linux converter pipeline
-- [docs/kc-convert-windows.md](docs/kc-convert-windows.md) - Windows converter pipeline
-- [docs/kc-finalize.md](docs/kc-finalize.md) - kc-finalize pipeline
 
 ## License
 

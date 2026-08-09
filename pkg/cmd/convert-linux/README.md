@@ -26,4 +26,4 @@ uefi, hypervisor, guestagent, nicnaming).
 
 Writes `ConverterOutput` JSON on success.
 
-Full block table: [`docs/kc-convert-linux.md`](../../../docs/kc-convert-linux.md).
+Full block table: [`docs/apps/kc-convert-linux.md`](../../../docs/apps/kc-convert-linux.md).

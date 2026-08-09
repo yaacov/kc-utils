@@ -30,10 +30,8 @@ mount or device operations themselves — they access guest disks exclusively
 through `pkg/guest/`. `kc-convert-linux` runs guest commands (dracut,
 grub-mkconfig) via `guest.RunInGuest`, which the direct backend implements as
 `chroot` and the guestfs backend implements as an in-appliance shell.
-`kc-convert-windows` reads virtio-win drivers from the pre-extracted tree at
-`/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).
-filesystem (no loop device; works in unprivileged pods) — this is not guest-disk
-I/O.
+`kc-convert-windows` reads virtio-win drivers from the pre-extracted host-side tree at
+`/usr/share/virtio-win/drivers/by-os/` and copies them into the guest via the `Guest` handle; it does not read that driver tree from guest-disk I/O.
 
 ## Host-Mount Approach (default)
 
@@ -42,7 +40,7 @@ runs guest commands with `chroot` into that mount (for example `dracut` /
 `grub-mkconfig` during convert). All disk I/O goes through the host kernel's
 filesystem and block layers with no intermediary.
 
-```
+```text
 Host kernel
   ├── kc-prepare        mount(8) → guest FS at /tmp/kc-guest/
   ├── kc-convert-*      chroot /tmp/kc-guest … (and file I/O under that tree)
@@ -87,7 +85,7 @@ called the "appliance."
    below). Each command — mount, download/upload, fsck, fstrim, etc. — is sent
    to `guestfsd` over virtio-serial and run inside the VM.
 
-```
+```text
 kc-v2v / kc-prepare / kc-finalize (unprivileged)
   └── virt-guestfish (--listen / --remote)   # or guestfish when no symlink
         └── QEMU (appliance VM, LIBGUESTFS_BACKEND=direct)

@@ -19,4 +19,4 @@ own README with detailed exports and mechanism.
 | — | Static IP | [`staticip/`](staticip/) | helper | PowerShell/registry static IP script generation |
 
 Orchestrator: [`pkg/cmd/convert-windows/`](../cmd/convert-windows/).
-Docs: [`docs/kc-convert-windows.md`](../../docs/kc-convert-windows.md).
+Docs: [`docs/apps/kc-convert-windows.md`](../../docs/apps/kc-convert-windows.md).

@@ -7,7 +7,7 @@ work directory; adjust for your environment.
 
 - Linux host with root (for `kc-prepare` and `kc-finalize`)
 - Built binaries: `make build` → `bin/kc-prepare`, etc.
-- Runtime tools: see [External dependencies](../../community/CONTRIBUTING.md#external-dependencies)
+- Runtime tools: see [External dependencies](../../../community/CONTRIBUTING.md#external-dependencies)
 - For the runnable script: `jq`, loop device support, and optionally
   `libguestfs-tools` to create a test disk image
 
@@ -30,7 +30,7 @@ work directory; adjust for your environment.
 From the repository root, as root:
 
 ```bash
-sudo docs/examples/run-linux-disk.sh
+sudo docs/apps/examples/run-linux-disk.sh
 ```
 
 This creates a phony RHEL disk image (via `tests/make-disk-linux.sh`), runs
@@ -40,7 +40,7 @@ Equivalent manual steps:
 
 ```bash
 sudo mkdir -p /var/lib/kc /mnt/kc-guest
-sudo cp docs/examples/prepare-input-linux.json /var/lib/kc/prepare-input.json
+sudo cp docs/apps/examples/prepare-input-linux.json /var/lib/kc/prepare-input.json
 # Edit disk path in prepare-input.json to your image path
 
 sudo bin/kc-prepare \
@@ -104,11 +104,11 @@ Offline `qemu-guest-agent` for **RHEL-family** guests uses host RPMs (not VirtIO
 /usr/share/kc-packages/rpm/el10/x86_64/qemu-guest-agent-*.rpm
 ```
 
-The kc-v2v image stages these via [`build/kc-v2v/stage-linux-packages.sh`](../../build/kc-v2v/stage-linux-packages.sh).
+The kc-v2v image stages these via [`build/kc-v2v/stage-linux-packages.sh`](../../../build/kc-v2v/stage-linux-packages.sh).
 For a local convert run without the image, populate that tree (or bind-mount it) and pass
 `kc-convert-linux --offline`. See [kc-convert-linux.md](../kc-convert-linux.md).
 
-More detail: [pkg/convert-windows/driversource/plugins/README.md](../../pkg/convert-windows/driversource/plugins/README.md).
+More detail: [pkg/convert-windows/driversource/plugins/README.md](../../../pkg/convert-windows/driversource/plugins/README.md).
 
 ## Reference tests
 

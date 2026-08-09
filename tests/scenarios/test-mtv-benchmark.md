@@ -25,7 +25,7 @@ Optional overrides: `RHEL_VM` / `WIN_VM`, `NS`, `SKIP_CLEANUP`,
 `KEEP_BETWEEN_TESTS`, `KEEP_IMAGE_SETTING`, `DISABLE_WAIT_FOR_REBOOT`,
 `MEM_INTERVAL`, `INTERVAL`, `MAX_ATTEMPTS`.
 
-Warm / preflight caveats: [docs/forklift-usage.md](../../docs/forklift-usage.md).
+Warm / preflight caveats: [docs/apps/forklift-usage.md](../../docs/apps/forklift-usage.md).
 
 ## Test Steps
 
@@ -52,7 +52,7 @@ Under `tests/scenarios/runs/` (gitignored):
 - `test-mtv-benchmark-<ts>.html` — Chart.js dashboard for this run
 
 Each `-mem/` directory holds per-VM CSVs and conversion-pod logs. Archive under
-[`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) when publishing.
+[`docs/architecture/ref-baseline/runs/`](../../docs/architecture/ref-baseline/runs/) when publishing.
 
 Regenerate a dashboard later:
 
@@ -93,4 +93,4 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 Narrative comparison of archived results:
 [virt-v2v-vs-kc-v2v.md](virt-v2v-vs-kc-v2v.md). Published tables and dashboard:
-[docs/ref-baseline/README.md](../../docs/ref-baseline/README.md).
+[docs/architecture/ref-baseline/README.md](../../docs/architecture/ref-baseline/README.md).

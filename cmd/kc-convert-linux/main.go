@@ -1,7 +1,7 @@
 //go:build linux
 
 // kc-convert-linux converts a mounted Linux guest for KubeVirt.
-// Documentation: docs/kc-convert-linux.md
+// Documentation: docs/apps/kc-convert-linux.md
 package main
 
 import (

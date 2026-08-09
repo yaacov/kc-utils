@@ -29,4 +29,4 @@ output).
 
 Writes `ConverterOutput` JSON on success.
 
-Full block table: [`docs/kc-convert-windows.md`](../../../docs/kc-convert-windows.md).
+Full block table: [`docs/apps/kc-convert-windows.md`](../../../docs/apps/kc-convert-windows.md).

@@ -9,7 +9,7 @@ Cold migration comparison on OpenShift MTV, same source VMs and storage class, s
 
 Default SC: `ocs-storagecluster-ceph-rbd-virtualization`  
 `feature_windows_wait_for_reboot=false` (fair conversion comparison)  
-Canonical metrics: archived under [`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) and summarized in [`docs/ref-baseline/README.md`](../../docs/ref-baseline/README.md). Runner: [`test-mtv-benchmark.sh`](test-mtv-benchmark.sh) (`MODE=compare`). Per-run Chart.js dashboards are written to [`runs/`](runs/) as `test-mtv-benchmark-<ts>.html`.
+Canonical metrics: archived under [`docs/architecture/ref-baseline/runs/`](../../docs/architecture/ref-baseline/runs/) and summarized in [`docs/architecture/ref-baseline/README.md`](../../docs/architecture/ref-baseline/README.md). Runner: [`test-mtv-benchmark.sh`](test-mtv-benchmark.sh) (`MODE=compare`). Per-run Chart.js dashboards are written to [`runs/`](runs/) as `test-mtv-benchmark-<ts>.html`.
 
 ---
 
@@ -90,4 +90,4 @@ kc-v2v peaks later (guest convert / finalize); virt-v2v shows higher spikes, esp
 | Peak memory | **kc-v2v** (lower, especially Windows) |
 | Peak CPU | **kc-v2v** (lower) |
 
-Live charts: [docs/ref-baseline/dashboard.html](../../docs/ref-baseline/dashboard.html).
+Live charts: [docs/architecture/ref-baseline/dashboard.html](../../docs/architecture/ref-baseline/dashboard.html).

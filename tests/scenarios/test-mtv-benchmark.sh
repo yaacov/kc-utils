@@ -27,7 +27,7 @@
 #   runs/test-mtv-benchmark-<ts>-<converter>.log
 #   runs/test-mtv-benchmark-<ts>-<converter>-mem/
 #   runs/test-mtv-benchmark-<ts>.html  (dashboard)
-# Archive under docs/ref-baseline/runs/ when publishing a comparison.
+# Archive under docs/architecture/ref-baseline/runs/ when publishing a comparison.
 
 set -euo pipefail
 

@@ -31,7 +31,7 @@ Root selection is configured in `PrepareInput.options.root` (not a CLI flag).
 
 ## Pipeline Blocks
 
-Order matches [`pkg/cmd/prepare/pipeline.go`](../pkg/cmd/prepare/pipeline.go):
+Order matches [`pkg/cmd/prepare/pipeline.go`](../../pkg/cmd/prepare/pipeline.go):
 
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|

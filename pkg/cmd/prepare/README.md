@@ -26,4 +26,4 @@ resolution — see [`pkg/prepare/README.md`](../../prepare/README.md#guest-sub-p
 | 8 | [`pkg/prepare/firmware/`](../../prepare/firmware/) | pluggable | Firmware detection |
 | 9 | [`pkg/prepare/converter/`](../../prepare/converter/) | pluggable | Converter selection |
 
-Full block table: [`docs/kc-prepare.md`](../../../docs/kc-prepare.md).
+Full block table: [`docs/apps/kc-prepare.md`](../../../docs/apps/kc-prepare.md).

@@ -51,7 +51,7 @@ Each stage binary has its own:
 - `cmd/kc-*/main.go` — CLI entry point with blank imports for plugin loading
 - `pkg/cmd/<stage>/pipeline.go` — stage orchestrator; wires blocks together
 - `pkg/<stage>/` — block packages
-- `docs/kc-<stage>.md` — CLI flags, block descriptions, and behavioral notes
+- `docs/apps/kc-<stage>.md` — CLI flags, block descriptions, and behavioral notes
 
 **Hard rule:** No `pkg/<stage>/` package may import from another stage's `pkg/<other-stage>/`. Stages communicate exclusively through JSON files on disk and a shared mount point. This makes each binary independently compilable, testable, and deployable.
 
@@ -131,7 +131,7 @@ All disk access goes through `pkg/guest/`. Never leak backend-specific logic int
 No cross-stage imports under `pkg/`. Stages (binaries) talk via JSON files; blocks within a stage talk via explicit parameters and return values through the stage orchestrator.
 
 ### 6. Keep docs in sync
-When modifying a pipeline block, update the corresponding `docs/<stage>.md` file (e.g., `docs/kc-convert-linux.md`, `docs/kc-prepare.md`). CLI flags, block descriptions, plugin tables, and behavioral notes must reflect the current code. A code change without a matching docs update is incomplete.
+When modifying a pipeline block, update the corresponding `docs/apps/kc-<stage>.md` file (e.g., `docs/apps/kc-convert-linux.md`, `docs/apps/kc-prepare.md`). CLI flags, block descriptions, plugin tables, and behavioral notes must reflect the current code. A code change without a matching docs update is incomplete.
 
 ## What NOT to Do
 

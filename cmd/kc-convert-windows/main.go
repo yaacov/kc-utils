@@ -1,7 +1,7 @@
 //go:build linux
 
 // kc-convert-windows converts a mounted Windows guest for KubeVirt.
-// Documentation: docs/kc-convert-windows.md
+// Documentation: docs/apps/kc-convert-windows.md
 package main
 
 import (

@@ -14,4 +14,4 @@ own README with detailed exports and mechanism.
 | 6 | Metadata | [`metadata/`](metadata/) | strict | Assemble and write TargetMeta JSON |
 
 Orchestrator: [`pkg/cmd/finalize/`](../cmd/finalize/).
-Docs: [`docs/kc-finalize.md`](../../docs/kc-finalize.md).
+Docs: [`docs/apps/kc-finalize.md`](../../docs/apps/kc-finalize.md).

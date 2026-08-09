@@ -11,7 +11,7 @@
       "type": "disk"
     },
     "options": {
-      "root": "first"
+      "root": "single"
     }
   },
   "prepare": {

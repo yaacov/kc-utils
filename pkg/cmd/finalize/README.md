@@ -18,4 +18,4 @@ Writes `TargetMeta` JSON on success.
 | 5 target | [`pkg/finalize/target/`](../../finalize/target/) | strict |
 | 6 metadata | [`pkg/finalize/metadata/`](../../finalize/metadata/) | strict |
 
-Full block table: [`docs/kc-finalize.md`](../../../docs/kc-finalize.md).
+Full block table: [`docs/apps/kc-finalize.md`](../../../docs/apps/kc-finalize.md).

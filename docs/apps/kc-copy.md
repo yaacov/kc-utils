@@ -2,10 +2,10 @@
 
 NFC disk copy stage for blank-PVC population in Forklift vSphere migrations.
 `kc-v2v` invokes it as a subprocess (same pattern as `kc-prepare`); it is also
-usable standalone for copy-only debugging. See [docs/README.md](README.md) for
+usable standalone for copy-only debugging. See [README.md](README.md) for
 the conversion flow and [kc-v2v.md](kc-v2v.md) for orchestration.
 
-Runs the copy executor from [`pkg/copy/`](../pkg/copy/) via
+Runs the copy executor from [`pkg/copy/`](../../pkg/copy/) via
 `copy.Run(CopyInput)`.
 
 Uses pure Go govmomi NFC export -- no VDDK, nbdkit, or nbdcopy required.
@@ -176,4 +176,4 @@ binaries. Point `kc-v2v` at that directory with `KC_BIN_DIR=$PWD/bin`.
 ## Related
 
 - [kc-v2v.md](kc-v2v.md) — full orchestrator including copy gate
-- [pkg/v2v/README.md](../pkg/v2v/README.md) — package internals
+- [pkg/v2v/README.md](../../pkg/v2v/README.md) — package internals

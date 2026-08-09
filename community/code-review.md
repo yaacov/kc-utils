@@ -55,11 +55,11 @@ Check against [architecture.md](architecture.md) and guest conventions in
 - **Default:** Whether changed code needs doc updates; only review docs in
   scope or clearly impacted by the diff.
 - **Full mode:** Accuracy of block tables, CLI flags, and architecture claims
-  in `community/architecture.md` and `docs/kc-*.md`.
+  in `community/architecture.md` and `docs/apps/kc-*.md`.
 
 In both modes:
 
-- **`docs/kc-*.md`:** Pipeline block add/remove/rename/behavior and CLI flags.
+- **`docs/apps/kc-*.md`:** Pipeline block add/remove/rename/behavior and CLI flags.
 - **`community/architecture.md`:** Structural pattern changes still hold.
 - **`community/CONTRIBUTING.md`:** Build, test, or dependency changes reflected.
 - **Package READMEs:** Plugin add/remove keeps `plugins/README.md` current.

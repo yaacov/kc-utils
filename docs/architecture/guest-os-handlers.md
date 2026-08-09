@@ -16,8 +16,8 @@ kc-prepare  →  InspectData (distro / major / minor / product_name)
 
 | OS | Registry | Classifier | Orchestrator |
 |----|----------|------------|--------------|
-| Linux | [`pkg/convert-linux/distro/`](../pkg/convert-linux/distro/) | First matching `DistroHandler.Matches` | [`pkg/cmd/convert-linux/pipeline.go`](../pkg/cmd/convert-linux/pipeline.go) |
-| Windows | [`pkg/convert-windows/version/`](../pkg/convert-windows/version/) | First matching handler in registration order | [`pkg/cmd/convert-windows/pipeline.go`](../pkg/cmd/convert-windows/pipeline.go) |
+| Linux | [`pkg/convert-linux/distro/`](../../pkg/convert-linux/distro/) | First matching `DistroHandler.Matches` | [`pkg/cmd/convert-linux/pipeline.go`](../../pkg/cmd/convert-linux/pipeline.go) |
+| Windows | [`pkg/convert-windows/version/`](../../pkg/convert-windows/version/) | First matching handler in registration order | [`pkg/cmd/convert-windows/pipeline.go`](../../pkg/cmd/convert-windows/pipeline.go) |
 
 ---
 
@@ -27,9 +27,9 @@ kc-prepare  →  InspectData (distro / major / minor / product_name)
 
 | Handler | Source file | Matches `inspect.distro` |
 |---------|-------------|--------------------------|
-| `rhel` | [`pkg/convert-linux/distro/plugins/rhel/rhel.go`](../pkg/convert-linux/distro/plugins/rhel/rhel.go) | `rhel`, `centos`, `rocky`, `almalinux`, `ol`, `fedora`, `amzn` |
-| `debian` | [`pkg/convert-linux/distro/plugins/debian/debian.go`](../pkg/convert-linux/distro/plugins/debian/debian.go) | `debian`, `ubuntu` |
-| `suse` | [`pkg/convert-linux/distro/plugins/suse/suse.go`](../pkg/convert-linux/distro/plugins/suse/suse.go) | `sles`, `opensuse-leap`, `opensuse-tumbleweed` |
+| `rhel` | [`pkg/convert-linux/distro/plugins/rhel/rhel.go`](../../pkg/convert-linux/distro/plugins/rhel/rhel.go) | `rhel`, `centos`, `rocky`, `almalinux`, `ol`, `fedora`, `amzn` |
+| `debian` | [`pkg/convert-linux/distro/plugins/debian/debian.go`](../../pkg/convert-linux/distro/plugins/debian/debian.go) | `debian`, `ubuntu` |
+| `suse` | [`pkg/convert-linux/distro/plugins/suse/suse.go`](../../pkg/convert-linux/distro/plugins/suse/suse.go) | `sles`, `opensuse-leap`, `opensuse-tumbleweed` |
 
 If no handler matches, the pipeline logs a warning and continues with generic
 defaults (console `ttyS0`, RPM/dnf assumptions below).
@@ -44,7 +44,7 @@ Registration is via blank import in [`cmd/kc-convert-linux/main.go`](../cmd/kc-c
 | `debian` | `ttyS0` | `console=ttyS0` | Console only |
 | `suse` | `ttyS0` | `console=ttyS0` | Console only |
 
-**Console** — [`pkg/convert-linux/bootconfig/console.go`](../pkg/convert-linux/bootconfig/console.go)
+**Console** — [`pkg/convert-linux/bootconfig/console.go`](../../pkg/convert-linux/bootconfig/console.go)
 (`ConfigureConsole`, pipeline block 9):
 
 - Removes `rhgb` and `quiet` from the bootloader config.
@@ -56,24 +56,24 @@ setup and bootloader plugins.
 
 ### Package format and package manager (parallel lookup)
 
-Separate from `DistroHandler`, [`distro.Format`](../pkg/convert-linux/distro/distro.go)
-and [`distro.Name`](../pkg/convert-linux/distro/distro.go) map the raw
+Separate from `DistroHandler`, [`distro.Format`](../../pkg/convert-linux/distro/distro.go)
+and [`distro.Name`](../../pkg/convert-linux/distro/distro.go) map the raw
 `inspect.distro` string (pipeline blocks 2–3):
 
 | `inspect.distro` | Format (`Format`) | Package manager (`Name`) |
 |------------------|-------------------|--------------------------|
 | `debian`, `ubuntu` | `deb` | `apt` |
 | `sles`, `opensuse-leap`, `opensuse-tumbleweed` | `rpm` | `zypper` |
-| `rhel`, `centos`, `rocky`, `alma`, `ol`, `fedora` | `rpm` | `dnf` |
+| `rhel`, `centos`, `rocky`, `almalinux`, `ol`, `fedora`, `amzn` | `rpm` | `dnf` |
 | anything else | `rpm` (warn) | `dnf` |
 
 These drive:
 
 | Concern | Code | Behavior |
 |---------|------|----------|
-| Kernel scan | [`pkg/cmd/convert-linux/pipeline.go`](../pkg/cmd/convert-linux/pipeline.go) `scanKernels` | Tries `rpm` scanner first, then `deb` |
-| qemu-guest-agent install | [`pkg/convert-linux/guestagent/install.go`](../pkg/convert-linux/guestagent/install.go) | Local copy + firstboot `rpm -ivh` / `dpkg -i`, or network `dnf`/`apt`/`zypper` |
-| Offline QGA package pick | [`pkg/convert-linux/guestagent/plugins/packagesource/directory/`](../pkg/convert-linux/guestagent/plugins/packagesource/directory/) | RPM: versioned `rpm/el{N}/{arch}/` (exact `el{major}` or nearest lower); DEB: flat `deb/{arch}/` |
+| Kernel scan | [`pkg/cmd/convert-linux/pipeline.go`](../../pkg/cmd/convert-linux/pipeline.go) `scanKernels` | Tries `rpm` scanner first, then `deb` |
+| qemu-guest-agent install | [`pkg/convert-linux/guestagent/install.go`](../../pkg/convert-linux/guestagent/install.go) | Local copy + firstboot `rpm -ivh` / `dpkg -i`, or network `dnf`/`apt`/`zypper` |
+| Offline QGA package pick | [`pkg/convert-linux/guestagent/plugins/packagesource/directory/`](../../pkg/convert-linux/guestagent/plugins/packagesource/directory/) | RPM: versioned `rpm/el{N}/{arch}/` (exact `el{major}` or nearest lower); DEB: flat `deb/{arch}/` |
 
 RHEL-family offline packages are staged in the kc-v2v image under
 `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` by
@@ -96,15 +96,15 @@ handler name.
 ### Handler plugins and classification order
 
 Handlers register most-specific-first in
-[`pkg/convert-windows/version/register.go`](../pkg/convert-windows/version/register.go).
-[`version.Classify`](../pkg/convert-windows/version/version.go) returns the
+[`pkg/convert-windows/version/register.go`](../../pkg/convert-windows/version/register.go).
+[`version.Classify`](../../pkg/convert-windows/version/version.go) returns the
 first `Matches()` hit, or `winunknown`.
 
 Product names are normalized before substring checks (strip NUL, `(R)`, `(TM)`,
 collapse whitespace) in
-[`pkg/convert-windows/version/match.go`](../pkg/convert-windows/version/match.go).
+[`pkg/convert-windows/version/match.go`](../../pkg/convert-windows/version/match.go).
 The same normalization exists for driver alias expansion in
-[`pkg/convert-windows/driversource/osversion.go`](../pkg/convert-windows/driversource/osversion.go).
+[`pkg/convert-windows/driversource/osversion.go`](../../pkg/convert-windows/driversource/osversion.go).
 
 | Handler | Match rule (primary) | Example guests |
 |---------|----------------------|----------------|
@@ -120,7 +120,7 @@ The same normalization exists for driver alias expansion in
 | `winxp` | 5.1, or product contains “windows xp” | Windows XP |
 | `winunknown` | fallback | Unrecognized product / missing inspect |
 
-Implementation: [`pkg/convert-windows/version/handlers.go`](../pkg/convert-windows/version/handlers.go).
+Implementation: [`pkg/convert-windows/version/handlers.go`](../../pkg/convert-windows/version/handlers.go).
 
 ### Per-version behavior matrix
 
@@ -134,8 +134,8 @@ consume these flags.
 
 **QEMU-GA** — whether qemu-ga is collected and installed. Handlers
 `win2008`, `winvista`, `win2003`, and `winxp` omit GA MSIs during
-[`CollectDrivers`](../pkg/convert-windows/driversource/collect.go) (see
-[`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go)).
+[`CollectDrivers`](../../pkg/convert-windows/driversource/collect.go) (see
+[`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go)).
 **yes‡** means the handler collects GA when a matching `qemu-ga*.msi` exists
 under `/usr/share/virtio-win/guest-agent/`; the `qemuga` firstboot contributor
 runs only when `qemu-ga` appears in `DriverFiles`. **—** means GA is not
@@ -155,7 +155,7 @@ collected for that handler.
 | `winxp` | `xp` † | Batch only | Registry `.bat` | **skipped** | `.bat` | `criticaldb` | yes | — |
 | `winunknown` | generic alias match | Modern PS | Net cmdlets | `Get-Disk` | PS PnP | `driverdb` | no | yes‡ |
 
-**Launcher kinds** ([`pkg/convert-windows/firstboot/firstboot.go`](../pkg/convert-windows/firstboot/firstboot.go)):
+**Launcher kinds** ([`pkg/convert-windows/firstboot/firstboot.go`](../../pkg/convert-windows/firstboot/firstboot.go)):
 
 - **Modern PS** — run `.bat` contributors, then `powershell -ExecutionPolicy Bypass -File` for `.ps1`.
 - **PS 1.0** — `reg add` execution policy, then `powershell -File` (no `-ExecutionPolicy` flag).
@@ -165,13 +165,13 @@ collected for that handler.
 
 | Stage | Code | How handler is used |
 |-------|------|---------------------|
-| Driver lookup | [`driversource.CollectDrivers`](../pkg/convert-windows/driversource/collect.go) → [`FindBestOSDirWithPrefs`](../pkg/convert-windows/driversource/osdir.go) | Passes `DriverOSPreferences()` and optional `DriverOSFallbacks()` (e.g. `win2008` → `2k8R2` when `2k8` is absent); omits qemu-ga MSIs when [`CollectGuestAgentMSI`](../pkg/convert-windows/version/guestagent.go) is false |
-| Firstboot launcher | [`firstboot.Configure`](../pkg/convert-windows/firstboot/firstboot.go) | `Version.FirstbootLauncher()` selects `firstboot.bat` template |
-| Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` runs when `qemu-ga` is in `DriverFiles` |
-| Static IP scripts | [`staticip`](../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
-| VMware cleanup | [`vmwarecleanup`](../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../pkg/convert-windows/staticip/staticip.go) |
-| Driver registration | [`pkg/cmd/convert-windows/pipeline.go`](../pkg/cmd/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
-| NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only) |
+| Driver lookup | [`driversource.CollectDrivers`](../../pkg/convert-windows/driversource/collect.go) → [`FindBestOSDirWithPrefs`](../../pkg/convert-windows/driversource/osdir.go) | Passes `DriverOSPreferences()` and optional `DriverOSFallbacks()` (e.g. `win2008` → `2k8R2` when `2k8` is absent); omits qemu-ga MSIs when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) is false |
+| Firstboot launcher | [`firstboot.Configure`](../../pkg/convert-windows/firstboot/firstboot.go) | `Version.FirstbootLauncher()` selects `firstboot.bat` template |
+| Firstboot contributors | [`pkg/convert-windows/firstboot/plugins/*`](../../pkg/convert-windows/firstboot/plugins/) | Each contributor reads `ContributorConfig.Version` — e.g. `pnputil` emits `.bat` when `!SupportsPowerShell()`, `diskonliner` skips when `DiskOnlineSkip`, `qemuga` runs when `qemu-ga` is in `DriverFiles` |
+| Static IP scripts | [`staticip`](../../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
+| VMware cleanup | [`vmwarecleanup`](../../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../../pkg/convert-windows/staticip/staticip.go) |
+| Driver registration | [`pkg/cmd/convert-windows/pipeline.go`](../../pkg/cmd/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
+| NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only) |
 
 ### Pre–Win 8 virtio-win drivers
 
@@ -194,17 +194,17 @@ directory-only under `/usr/share/virtio-win/drivers/by-os/`.
 ### Adding a Windows version handler
 
 1. Add a type implementing `VersionHandler` in
-   [`pkg/convert-windows/version/handlers.go`](../pkg/convert-windows/version/handlers.go).
+   [`pkg/convert-windows/version/handlers.go`](../../pkg/convert-windows/version/handlers.go).
 2. Register it in
-   [`pkg/convert-windows/version/register.go`](../pkg/convert-windows/version/register.go)
+   [`pkg/convert-windows/version/register.go`](../../pkg/convert-windows/version/register.go)
    **before** less-specific handlers (broader matches go last).
 3. Blank-import `pkg/convert-windows/version` from
-   [`cmd/kc-convert-windows/main.go`](../cmd/kc-convert-windows/main.go) (triggers
+   [`cmd/kc-convert-windows/main.go`](../../cmd/kc-convert-windows/main.go) (triggers
    `register.go` `init`).
 4. Add classification tests in
-   [`pkg/convert-windows/version/version_test.go`](../pkg/convert-windows/version/version_test.go).
+   [`pkg/convert-windows/version/version_test.go`](../../pkg/convert-windows/version/version_test.go).
 5. If driver dirs are new, extend
-   [`CanonicalOSVersions`](../pkg/convert-windows/driversource/osversion.go) and
+   [`CanonicalOSVersions`](../../pkg/convert-windows/driversource/osversion.go) and
    ensure the virtio-win tree (or archived merge script) contains matching
    `by-os/<arch>/<dir>/` paths.
 
@@ -212,6 +212,8 @@ directory-only under `/usr/share/virtio-win/drivers/by-os/`.
 
 ## Related docs
 
-- [kc-convert-linux.md](kc-convert-linux.md) — full Linux pipeline blocks
-- [kc-convert-windows.md](kc-convert-windows.md) — full Windows pipeline blocks
-- [build/kc-v2v/README.md](../build/kc-v2v/README.md) — image-staged guest packages and virtio-win ISO downloads
+- [conversion-paths-linux.md](conversion-paths-linux.md) — Linux hypervisor cleanup and distro install matrices
+- [conversion-paths-windows.md](conversion-paths-windows.md) — Windows hypervisor cleanup and version install matrices
+- [../apps/kc-convert-linux.md](../apps/kc-convert-linux.md) — full Linux pipeline blocks
+- [../apps/kc-convert-windows.md](../apps/kc-convert-windows.md) — full Windows pipeline blocks
+- [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) — image-staged guest packages and virtio-win ISO downloads
