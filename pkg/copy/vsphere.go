@@ -13,6 +13,9 @@ import (
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/nfc"
+	"github.com/vmware/govmomi/session"
+	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/soap"
 	vimtypes "github.com/vmware/govmomi/vim25/types"
 )
 
@@ -35,8 +38,8 @@ var diskTargetIDRE = regexp.MustCompile(`(?i)^disk-\d+\.vmdk$`)
 
 // ExportVM starts an NFC export of the named VM and returns a Lease with
 // per-disk HTTPS download URLs. The caller must call Complete or Abort.
-func ExportVM(ctx context.Context, host, datacenter string, insecure bool, vmName string) (*Lease, error) {
-	client, err := vsphereConnect(ctx, host, insecure)
+func ExportVM(ctx context.Context, host, datacenter string, insecure bool, caBundle, vmName string) (*Lease, error) {
+	client, err := vsphereConnect(ctx, host, insecure, caBundle)
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +370,7 @@ func copyBusRank(bus string) int {
 
 // --- vSphere connection helpers (standalone, no pkg/v2v dependency) ---
 
-func vsphereConnect(ctx context.Context, host string, insecure bool) (*govmomi.Client, error) {
+func vsphereConnect(ctx context.Context, host string, insecure bool, caBundle string) (*govmomi.Client, error) {
 	sdk := &url.URL{
 		Scheme: "https",
 		Host:   host,
@@ -378,11 +381,28 @@ func vsphereConnect(ctx context.Context, host string, insecure bool) (*govmomi.C
 		return nil, err
 	}
 	sdk.User = url.UserPassword(user, password)
-	client, err := govmomi.NewClient(ctx, sdk, insecure)
+
+	tlsCfg, err := tlsConfig(insecure, caBundle)
+	if err != nil {
+		return nil, err
+	}
+
+	soapClient := soap.NewClient(sdk, insecure)
+	soapClient.DefaultTransport().TLSClientConfig = tlsCfg
+
+	vimClient, err := vim25.NewClient(ctx, soapClient)
 	if err != nil {
 		return nil, fmt.Errorf("connect to vSphere: %w", err)
 	}
-	return client, nil
+
+	c := &govmomi.Client{
+		Client:         vimClient,
+		SessionManager: session.NewManager(vimClient),
+	}
+	if err = c.Login(ctx, sdk.User); err != nil {
+		return nil, fmt.Errorf("connect to vSphere: %w", err)
+	}
+	return c, nil
 }
 
 func vsphereCredentials() (user, password string, err error) {

@@ -44,7 +44,7 @@ kc-copy \
   --output copy-progress.json
 ```
 
-Or with JSON input:
+Or with JSON input (skip TLS verification):
 
 ```bash
 cat > copy-input.json <<'EOF'
@@ -52,6 +52,7 @@ cat > copy-input.json <<'EOF'
   "host": "vcenter.example.com",
   "datacenter": "mydatacenter",
   "insecure": true,
+  "ca_bundle": "/opt/ca-bundle.crt",
   "vm_name": "my-vm",
   "fingerprint": "...",
   "source_disks": ["[ds] vm/disk1.vmdk"],
@@ -62,6 +63,30 @@ EOF
 
 kc-copy --input copy-input.json
 ```
+
+Secure TLS with a custom CA bundle (Forklift default when `insecureSkipVerify=false`):
+
+```bash
+cat > copy-input.json <<'EOF'
+{
+  "host": "vcenter.example.com",
+  "datacenter": "mydatacenter",
+  "insecure": false,
+  "ca_bundle": "/opt/ca-bundle.crt",
+  "vm_name": "my-vm",
+  "fingerprint": "...",
+  "source_disks": ["[ds] vm/disk1.vmdk"],
+  "workdir": "/var/tmp/v2v",
+  "output_path": "copy-progress.json"
+}
+EOF
+
+kc-copy --input copy-input.json
+```
+
+When `kc-v2v` writes `copy-input.json`, it sets `insecure` and `ca_bundle` from
+`V2V_libvirtURL` (`no_verify=1` or `cacert=/opt/ca-bundle.crt`) and
+`V2V_caBundle`.
 
 `source_disks` / `--disk-path` selects which NFC lease disks to copy (required).
 
@@ -79,6 +104,7 @@ writes `copy-input.json`, and runs `kc-copy --input …` from `KC_BIN_DIR`
 | `--host` / `host` | — | (required) — vCenter or ESXi hostname |
 | `--datacenter` / `datacenter` | — | (optional) — vSphere datacenter name |
 | `--insecure` / `insecure` | — | `false` — skip TLS certificate verification |
+| `--ca-bundle` / `ca_bundle` | — | `/opt/ca-bundle.crt` — PEM CA bundle for secure TLS (ignored when `insecure` is true) |
 | `--vm-name` / `vm_name` | `V2V_vmName` | (required) |
 | `--fingerprint` / `fingerprint` | `V2V_fingerprint` | (required) |
 | `--disk-path` / `source_disks` | `V2V_diskPath` | (required) — VMDKs to select from the NFC lease |
@@ -92,6 +118,19 @@ vSphere credentials (Forklift conversion pod layout):
 |------|---------|
 | `/etc/secret/accessKeyId` | vSphere username |
 | `/etc/secret/secretKey` | vSphere password |
+| `/etc/secret/cacert` | Custom CA (when provider uses secure TLS) |
+| `/opt/ca-bundle.crt` | Symlink to custom or system CA bundle (created at startup) |
+
+### TLS modes (Forklift parity)
+
+At startup, `kc-copy` calls `LinkCertificates` (same as `kc-v2v`): it symlinks
+`/opt/ca-bundle.crt` to `/etc/secret/cacert` when present, otherwise to the
+system CA bundle.
+
+| Mode | How it is selected | Behavior |
+|------|-------------------|----------|
+| Skip verify | `insecure: true`, `--insecure`, or `V2V_libvirtURL` with `no_verify=1` | TLS verification disabled for vCenter SDK and NFC downloads |
+| Custom CA | `insecure: false` and `ca_bundle` (default `/opt/ca-bundle.crt`; Forklift sets `?cacert=/opt/ca-bundle.crt` in `V2V_libvirtURL`) | Both connections trust the PEM bundle at that path |
 
 Progress is written to the `--output` path (default `copy-progress.json`; when
 omitted in JSON input, falls back to `$WORKDIR/copy-progress.json`).

@@ -19,7 +19,8 @@ const DefaultCopyConcurrency = 4
 type CopyInput struct {
 	Host            string   `json:"host"`
 	Datacenter      string   `json:"datacenter,omitempty"`
-	Insecure        bool     `json:"insecure,omitempty"`
+	Insecure        bool     `json:"insecure"`
+	CaBundle        string   `json:"ca_bundle"`
 	VMName          string   `json:"vm_name"`
 	Fingerprint     string   `json:"fingerprint"`
 	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
@@ -100,7 +101,7 @@ func Run(input *CopyInput) error {
 		outputPath = input.Workdir + "/copy-progress.json"
 	}
 
-	lease, err := ExportVM(ctx, input.Host, input.Datacenter, input.Insecure, input.VMName)
+	lease, err := ExportVM(ctx, input.Host, input.Datacenter, input.Insecure, input.CaBundle, input.VMName)
 	if err != nil {
 		return fmt.Errorf("NFC export: %w", err)
 	}
@@ -123,7 +124,10 @@ func Run(input *CopyInput) error {
 		"concurrency", concurrency,
 	)
 
-	httpClient := newInsecureHTTPClient()
+	httpClient, err := newHTTPClient(input.Insecure, input.CaBundle)
+	if err != nil {
+		return fmt.Errorf("TLS config: %w", err)
+	}
 	progress := Progress{}
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
