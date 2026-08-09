@@ -19,10 +19,11 @@ import (
 	_ "github.com/yaacov/kc-utils/pkg/finalize/fstrim/plugins/default"
 
 	// Plugin registrations: customizers
-	_ "github.com/yaacov/kc-utils/pkg/finalize/customize/plugins/dynamicscripts"
+	_ "github.com/yaacov/kc-utils/pkg/finalize/customize/plugins/dynamicscriptslinux"
+	_ "github.com/yaacov/kc-utils/pkg/finalize/customize/plugins/dynamicscriptswindows"
 	_ "github.com/yaacov/kc-utils/pkg/finalize/customize/plugins/native"
 
-	// firstboot handler (used by dynamicscripts customizer)
+	// firstboot handler (used by dynamicscriptslinux customizer)
 	_ "github.com/yaacov/kc-utils/pkg/common/firstboot/plugins/systemd"
 )
 

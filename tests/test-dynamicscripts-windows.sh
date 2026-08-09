@@ -1,5 +1,5 @@
 #!/bin/bash -
-# Test: dynamicscripts plugin — Windows firstboot script copy.
+# Test: dynamicscriptswindows plugin — Windows firstboot script copy.
 
 source "$(cd "$(dirname "$0")" && pwd)/functions.sh"
 set -e

@@ -65,8 +65,8 @@ Example: [examples/target-meta.json](examples/target-meta.json).
 
 | Interface | Implementations |
 |-----------|----------------|
-| `Customizer` | `native` (hostname, timezone, SELinux relabel), `dynamicscripts` (user-provided scripts for Linux and Windows) |
-| `FirstBootHandler` | `systemd` (implementation in `pkg/common/firstboot/`, used by `dynamicscripts` customizer) |
+| `Customizer` | `native` (hostname, timezone, SELinux relabel), `dynamicscriptslinux`, `dynamicscriptswindows` (user-provided scripts) |
+| `FirstBootHandler` | `systemd` (implementation in `pkg/common/firstboot/`, used by `dynamicscriptslinux` customizer) |
 
 ## Cleanup Sequence
 
