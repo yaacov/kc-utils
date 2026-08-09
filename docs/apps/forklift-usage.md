@@ -17,7 +17,7 @@ Point Forklift at the kc-v2v container image and run migrations as usual.
 
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \
-  --value quay.io/kubev2v/kc-v2v:devel-amd64
+  --value quay.io/yaacov/kc-v2v:devel-amd64
 ```
 
 All subsequent migrations will use kc-v2v for guest conversion.
