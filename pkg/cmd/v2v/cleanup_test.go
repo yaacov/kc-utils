@@ -26,7 +26,7 @@ func TestTeardownOnlyArgsIncludesPrepareWhenPresent(t *testing.T) {
 		"--teardown-only",
 		"--mount-root", "/tmp/kc-guest",
 		"--log-level", "info",
-		"--prepare-data", prepareOut,
+		"--input", prepareOut,
 		"--guestfs",
 	}
 	if len(args) != len(want) {

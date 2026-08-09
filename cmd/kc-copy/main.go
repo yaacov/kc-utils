@@ -19,7 +19,10 @@ func main() {
 	logger.Init("info")
 
 	inputFile := flag.String("input", "", "input JSON file (CopyInput)")
-	libvirtURL := flag.String("libvirt-url", os.Getenv(config.EnvLibvirtURL), "vCenter URL (vpx://...)")
+	outputFile := flag.String("output", "copy-progress.json", "output JSON file")
+	host := flag.String("host", "", "vCenter/ESXi hostname (e.g. vcenter.example.com)")
+	datacenter := flag.String("datacenter", "", "vSphere datacenter name")
+	insecure := flag.Bool("insecure", false, "skip TLS certificate verification")
 	vmName := flag.String("vm-name", os.Getenv(config.EnvVmName), "VM name")
 	fingerprint := flag.String("fingerprint", os.Getenv(config.EnvFingerprint), "vCenter SSL thumbprint")
 	diskPath := flag.String("disk-path", os.Getenv(config.EnvDiskPath), "comma-separated source vmdk paths to copy")
@@ -30,7 +33,7 @@ func main() {
 
 	logger.Init(*logLevel)
 
-	input, err := loadInput(*inputFile, *libvirtURL, *vmName, *fingerprint, *diskPath, *workdir, *copyConcurrency)
+	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *vmName, *fingerprint, *diskPath, *workdir, *outputFile, *copyConcurrency)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -51,7 +54,7 @@ func main() {
 	}
 }
 
-func loadInput(inputFile, libvirtURL, vmName, fingerprint, diskPath, workdir string, copyConcurrency int) (kccopy.CopyInput, error) {
+func loadInput(inputFile, host, datacenter string, insecure bool, vmName, fingerprint, diskPath, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
 	if inputFile != "" {
 		data, err := os.ReadFile(inputFile)
 		if err != nil {
@@ -67,15 +70,21 @@ func loadInput(inputFile, libvirtURL, vmName, fingerprint, diskPath, workdir str
 		if input.CopyConcurrency == 0 {
 			input.CopyConcurrency = copyConcurrency
 		}
+		if input.OutputPath == "" {
+			input.OutputPath = outputPath
+		}
 		return input, nil
 	}
 
 	input := kccopy.CopyInput{
-		VCenterURL:      libvirtURL,
+		Host:            host,
+		Datacenter:      datacenter,
+		Insecure:        insecure,
 		VMName:          vmName,
 		Fingerprint:     fingerprint,
 		SourceDisks:     splitDiskPath(diskPath),
 		Workdir:         workdir,
+		OutputPath:      outputPath,
 		CopyConcurrency: copyConcurrency,
 	}
 	if err := validateInput(&input); err != nil {
@@ -85,8 +94,8 @@ func loadInput(inputFile, libvirtURL, vmName, fingerprint, diskPath, workdir str
 }
 
 func validateInput(input *kccopy.CopyInput) error {
-	if input.VCenterURL == "" {
-		return fmt.Errorf("--libvirt-url is required (or use --input)")
+	if input.Host == "" {
+		return fmt.Errorf("--host is required (or use --input)")
 	}
 	if input.VMName == "" {
 		return fmt.Errorf("--vm-name is required (or use --input)")

@@ -35,7 +35,7 @@ EOF
     --mount-root "$MOUNT_ROOT" \
     --log-level error
 
-check_json_field "$d/prepare.json" '.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
 grep -q 'Red Hat' "$MOUNT_ROOT/etc/os-release"
 if grep -q 'Debian' "$MOUNT_ROOT/etc/os-release"; then
     echo "FAIL: second OS content visible at mount root"
@@ -43,7 +43,7 @@ if grep -q 'Debian' "$MOUNT_ROOT/etc/os-release"; then
 fi
 
 # Second root partition must not be mounted at guest /.
-mounted=$(jq -r '.disks[0].partitions[] | select(.mount_point=="/") | .index' "$d/prepare.json")
+mounted=$(jq -r '.prepare.disks[0].partitions[] | select(.mount_point=="/") | .index' "$d/prepare.json")
 if [ "$mounted" != "1" ]; then
     echo "FAIL: expected partition 1 mounted at /, got index $mounted"
     exit 1

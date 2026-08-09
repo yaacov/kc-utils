@@ -26,6 +26,7 @@ import (
 // Config holds Windows converter pipeline configuration.
 type Config struct {
 	PrepareData types.PrepareOutput
+	Pipeline    *types.PipelineData
 	MountRoot   string
 	OutputPath  string
 	Offline     bool
@@ -195,7 +196,8 @@ func Run(cfg *Config) error {
 	}
 
 	slog.Debug("writing output")
-	if err := types.WriteJSON(cfg.OutputPath, output); err != nil {
+	cfg.Pipeline.Convert = output
+	if err := types.WriteJSON(cfg.OutputPath, cfg.Pipeline); err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
 

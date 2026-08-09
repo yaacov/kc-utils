@@ -21,6 +21,15 @@ func WriteJSON(path string, v any) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
+// PipelineData is the unified envelope that accumulates stage outputs as it
+// flows through the pipeline: kc-prepare → kc-convert-* → kc-finalize.
+type PipelineData struct {
+	Input   *PrepareInput    `json:"input,omitempty"`
+	Prepare *PrepareOutput   `json:"prepare,omitempty"`
+	Convert *ConverterOutput `json:"convert,omitempty"`
+	Target  *TargetMeta      `json:"target,omitempty"`
+}
+
 // PrepareInput is the JSON input to kc-prepare.
 type PrepareInput struct {
 	Disks  []DiskSpec `json:"disks"`

@@ -7,9 +7,17 @@
 #
 # Disk copy uses govmomi NFC export (pure Go, no VDDK required).
 #
-# Guest conversion assets (Forklift virt-v2v parity + kc offline Linux QGA):
-#   - virtio-win ISOs → /usr/share/virtio-win/ (Windows drivers + qemu-ga MSI)
-#   - qemu-guest-agent RPMs → /usr/share/kc-packages/rpm/el{8,9,10}/x86_64/
+# Guest conversion assets (stage 2 → copied into runtime image):
+#
+#   /usr/share/virtio-win/
+#   ├── drivers/by-os/<arch>/<os-version>/*.inf …   Windows virtio drivers
+#   └── guest-agent/                                 qemu-ga MSI installers
+#
+#   /usr/share/kc-packages/
+#   └── rpm/
+#       ├── el8/x86_64/qemu-guest-agent-*.rpm        offline Linux QGA
+#       ├── el9/x86_64/qemu-guest-agent-*.rpm
+#       └── el10/x86_64/qemu-guest-agent-*.rpm
 
 # ── Stage 1: Go build ────────────────────────────────────────────────
 FROM docker.io/library/golang:1.24 AS builder
@@ -34,14 +42,14 @@ RUN dnf install -y --setopt=install_weak_deps=False curl bsdtar && dnf clean all
 # Place ISOs in build/kc-v2v/cache/ to avoid re-downloading on each build.
 ARG VIRTIO_WIN_MODERN_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso
 ARG VIRTIO_WIN_LEGACY_URL=https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.160-1/virtio-win-0.1.160.iso
-COPY build/kc-v2v/download-virtio-win.sh /tmp/download-virtio-win.sh
+COPY build/kc-v2v/stage-virtio-win.sh /tmp/stage-virtio-win.sh
 COPY build/kc-v2v/cache/ /tmp/virtio-win-cache/
-RUN chmod +x /tmp/download-virtio-win.sh && \
+RUN chmod +x /tmp/stage-virtio-win.sh && \
     VIRTIO_WIN_MODERN_URL="$VIRTIO_WIN_MODERN_URL" \
     VIRTIO_WIN_LEGACY_URL="$VIRTIO_WIN_LEGACY_URL" \
     VIRTIO_WIN_CACHE_DIR=/tmp/virtio-win-cache \
-    /tmp/download-virtio-win.sh && \
-    rm -rf /tmp/download-virtio-win.sh /tmp/virtio-win-cache
+    /tmp/stage-virtio-win.sh && \
+    rm -rf /tmp/stage-virtio-win.sh /tmp/virtio-win-cache
 
 # Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)
 COPY build/kc-v2v/stage-linux-packages.sh /tmp/stage-linux-packages.sh
@@ -54,7 +62,7 @@ FROM registry.fedoraproject.org/fedora:44
 
 RUN dnf install -y --setopt=install_weak_deps=False \
         qemu-img cryptsetup lvm2 clevis clevis-luks \
-        hivex perl-hivex ntfs-3g e2fsprogs xfsprogs btrfs-progs \
+        hivex perl-hivex \
         libguestfs guestfs-tools libguestfs-xfs && \
     dnf clean all
 

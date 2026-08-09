@@ -35,9 +35,11 @@ cat > "$d/convert.json" <<'EOF'
 {"guestcaps": {"block_bus": "virtio", "net_bus": "virtio", "arch": "x86_64"}}
 EOF
 
+jq -n --slurpfile p "$d/prepare.json" --slurpfile c "$d/convert.json" \
+    '{prepare: $p[0], convert: $c[0]}' > "$d/pipeline.json"
+
 "$BIN_DIR/kc-finalize" \
-    --prepare-data "$d/prepare.json" \
-    --convert-data "$d/convert.json" \
+    --input "$d/pipeline.json" \
     --output "$d/target-meta.json" \
     --mount-root "$root" \
     --log-level debug

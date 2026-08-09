@@ -249,8 +249,9 @@ deterministic and do not depend on the guest booting successfully.
 
 ## PR checklist
 
-- [ ] `make check` passes
-- [ ] Run relevant e2e tests when changing convert, guest, or pipeline behavior
+- [ ] `make lint` passes
+- [ ] `make test` passes
+- [ ] `make test-e2e-container` passes (full e2e in Fedora container)
 - [ ] Keep the change focused
 - [ ] Follow [architecture.md](architecture.md) for structural changes
 - [ ] Branch and PR description follow [pull-requests.md](pull-requests.md)

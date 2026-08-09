@@ -2,34 +2,61 @@
 
 Canonical architecture guide for contributors and agents. Read this before modifying code structure, splitting/merging files, adding packages, or refactoring.
 
-## Core Principle: Self-Contained Code Blocks
+## Structure: Stages and Blocks
 
-Code is organized so that **each block can be worked on in isolation**. An agent (human or AI) working on one block should never need to understand the internals of another block — only its input/output interface. Blocks must have **no side effects** that leak into other blocks.
+kc-utils is built from **stages** and **blocks**:
 
-This means:
-- A block receives typed inputs and produces typed outputs. That contract is the only coupling.
-- Never reach into another block's internal state, files, or global variables.
-- If two blocks need shared behavior, it goes in `pkg/common/` or `pkg/guest/` — the designated shared layers.
-- When in doubt, duplicate a small amount of code rather than create a hidden dependency between blocks.
-
-## Pipeline Stage Isolation
-
-The pipeline is four **separate binaries** executed as OS subprocesses:
+- **Stage** — a pipeline step shipped as its own binary (`kc-prepare`, `kc-convert-linux`, `kc-finalize`, …). The stage orchestrator wires blocks together and handles I/O between pipeline steps (JSON on disk, shared mount).
+- **Block** — an independent unit of logic inside a stage (hypervisor removal, driver install, distro detection, …). Block code lives in `pkg/<stage>/`; the stage orchestrator lives in `pkg/cmd/<stage>/pipeline.go`.
 
 ```
 kc-prepare → kc-convert-linux / kc-convert-windows → kc-finalize
+  (stage)              (stage)                              (stage)
+     │                     │                                    │
+  blocks                blocks                               blocks
+(pkg/prepare/)   (pkg/convert/linux|windows/)            (pkg/finalize/)
 ```
 
-Each binary has its own:
+## Block Isolation
+
+Each block is a self-contained code unit with a typed input/output **contract**. An agent (human or AI) working on one block should only need that contract — not the internals of sibling blocks.
+
+This means:
+- A block receives typed inputs and produces typed outputs. That contract is the only coupling between blocks.
+- Blocks do not import or share implementation code with other blocks.
+- Never reach into another block's internal state, files, or global variables.
+- Blocks must have **no side effects** that leak into other blocks.
+
+### Sharing code
+
+Prefer **not** sharing implementation — readability and maintainability come first; no early optimization. When two blocks look similar, duplicating a small amount of code is often the right call.
+
+**Types and structs are the exception.** Shared types are the contracts between blocks and stages; they belong in `pkg/common/` (e.g. `pkg/common/types/`).
+
+When implementation must be shared:
+
+| Scope | Where it lives |
+|-------|----------------|
+| Between blocks in the same stage | Stage level — the orchestrator (`pkg/cmd/<stage>/`) or stage-local helpers under `pkg/<stage>/`, not imports between block packages |
+| Between stages | `pkg/common/` — types, registries, and other cross-stage infrastructure |
+| Guest disk access (all stages) | `pkg/guest/` — the `Backend` abstraction; blocks use the `Guest` handle, never the backend directly |
+
+If block B needs output from block A, the stage orchestrator passes it explicitly — block B does not import block A.
+
+## Pipeline Stage Isolation
+
+The pipeline runs four **stage binaries** as OS subprocesses (see diagram above).
+
+Each stage binary has its own:
 - `cmd/kc-*/main.go` — CLI entry point with blank imports for plugin loading
-- `pkg/cmd/<stage>/pipeline.go` — thin orchestrator that wires blocks together
-- `pkg/<stage>/` — block packages (the actual logic)
+- `pkg/cmd/<stage>/pipeline.go` — stage orchestrator; wires blocks together
+- `pkg/<stage>/` — block packages
 - `docs/kc-<stage>.md` — CLI flags, block descriptions, and behavioral notes
 
 **Hard rule:** No `pkg/<stage>/` package may import from another stage's `pkg/<other-stage>/`. Stages communicate exclusively through JSON files on disk and a shared mount point. This makes each binary independently compilable, testable, and deployable.
 
-The only cross-stage shared code lives in:
-- `pkg/common/` — types, logger, plugin registry, config editors, compression, Windows registry access
+Cross-stage shared code lives in:
+- `pkg/common/` — types (contracts), logger, plugin registry, config editors, compression, Windows registry access
 - `pkg/guest/` — guest disk access abstraction (the Backend interface)
 - `pkg/v2v/` — orchestrator libraries (config, env, inspection) used only by `kc-v2v`
 
@@ -84,7 +111,7 @@ To add a new hypervisor, distro, driver source, etc.: drop a file into `plugins/
 In order of importance:
 
 ### 1. Block isolation and no side effects
-Each block is a self-contained unit. An agent working on block A should only need to know: what types go in, what types come out, and what `Guest` methods are available. No global state, no cross-block coupling, no hidden channels.
+Each block is a self-contained unit with a clear contract. An agent working on block A should only need to know: what types go in, what types come out, and what `Guest` methods are available. No shared implementation between blocks; no global state; no hidden channels.
 
 ### 2. Readability and maintainability
 Code should be scannable. A developer landing in a pipeline file should immediately see the sequence of operations. Prefer:
@@ -101,14 +128,14 @@ Prefer the block/plugin structure even when it means more files or a few extra l
 All disk access goes through `pkg/guest/`. Never leak backend-specific logic into blocks.
 
 ### 5. Stage isolation
-No cross-stage imports under `pkg/`. Stages talk via JSON files.
+No cross-stage imports under `pkg/`. Stages (binaries) talk via JSON files; blocks within a stage talk via explicit parameters and return values through the stage orchestrator.
 
 ### 6. Keep docs in sync
 When modifying a pipeline block, update the corresponding `docs/<stage>.md` file (e.g., `docs/kc-convert-linux.md`, `docs/kc-prepare.md`). CLI flags, block descriptions, plugin tables, and behavioral notes must reflect the current code. A code change without a matching docs update is incomplete.
 
 ## What NOT to Do
 
-- **Don't create shared packages to eliminate small duplications across stages.** If `prepare/` and `finalize/` both have a 12-line registry wrapper, that duplication is acceptable — it keeps each stage self-contained. Only consolidate into `pkg/common/` when the shared code is substantial and both stages genuinely need the same contract.
+- **Don't share implementation prematurely.** Duplicate before extracting. Shared helpers within a stage belong at stage level; shared code across stages belongs in `pkg/common/`. Types are always shared — they are the contracts.
 - **Don't inline trivial plugin files.** A plugin that is "just 10 lines" still serves the architectural purpose of being independently addable/removable via blank imports.
 - **Don't add cross-block dependencies.** If block B needs something from block A, pass it through the pipeline orchestrator as an explicit parameter — don't import block A from block B.
 - **Don't check which backend is active outside `pkg/guest/`.** No `if mode == ModeGuestfs` in block code.
@@ -116,7 +143,7 @@ When modifying a pipeline block, update the corresponding `docs/<stage>.md` file
 
 ## File Organization Conventions
 
-- Path pattern: `<layer>/<utility>/<semantic-name>/` — utility matches the binary, semantic name describes what the block does.
-- Pipeline orchestrators are thin: they wire blocks together, handle errors, and pass data. Logic lives in `pkg/`.
+- Path pattern: `<layer>/<stage>/<semantic-name>/` — stage matches the binary, semantic name describes what the block does.
+- Stage orchestrators (`pkg/cmd/<stage>/pipeline.go`) wire blocks together, handle errors, and pass data. Logic lives in block packages under `pkg/<stage>/`.
 - Test files live alongside the code they test (`*_test.go`).
 - Each pluggable block has a `plugins/README.md` documenting available implementations.

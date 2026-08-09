@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/url"
 	"os"
 	"regexp"
@@ -36,15 +35,15 @@ var diskTargetIDRE = regexp.MustCompile(`(?i)^disk-\d+\.vmdk$`)
 
 // ExportVM starts an NFC export of the named VM and returns a Lease with
 // per-disk HTTPS download URLs. The caller must call Complete or Abort.
-func ExportVM(ctx context.Context, libvirtURL, vmName string) (*Lease, error) {
-	client, err := vsphereConnect(ctx, libvirtURL)
+func ExportVM(ctx context.Context, host, datacenter string, insecure bool, vmName string) (*Lease, error) {
+	client, err := vsphereConnect(ctx, host, insecure)
 	if err != nil {
 		return nil, err
 	}
 
 	finder := find.NewFinder(client.Client, true)
-	if dcName := vsphereDatacenter(libvirtURL); dcName != "" {
-		if dc, dcErr := finder.Datacenter(ctx, dcName); dcErr == nil {
+	if datacenter != "" {
+		if dc, dcErr := finder.Datacenter(ctx, datacenter); dcErr == nil {
 			finder.SetDatacenter(dc)
 		}
 	}
@@ -368,10 +367,11 @@ func copyBusRank(bus string) int {
 
 // --- vSphere connection helpers (standalone, no pkg/v2v dependency) ---
 
-func vsphereConnect(ctx context.Context, libvirtURL string) (*govmomi.Client, error) {
-	sdk, insecure, err := vsphereSdkURL(libvirtURL)
-	if err != nil {
-		return nil, err
+func vsphereConnect(ctx context.Context, host string, insecure bool) (*govmomi.Client, error) {
+	sdk := &url.URL{
+		Scheme: "https",
+		Host:   host,
+		Path:   "/sdk",
 	}
 	user, password, err := vsphereCredentials()
 	if err != nil {
@@ -383,28 +383,6 @@ func vsphereConnect(ctx context.Context, libvirtURL string) (*govmomi.Client, er
 		return nil, fmt.Errorf("connect to vSphere: %w", err)
 	}
 	return client, nil
-}
-
-func vsphereSdkURL(libvirtURL string) (*url.URL, bool, error) {
-	u, err := url.Parse(libvirtURL)
-	if err != nil {
-		return nil, false, fmt.Errorf("parse libvirt URL: %w", err)
-	}
-	host := u.Hostname()
-	if host == "" {
-		return nil, false, fmt.Errorf("libvirt URL has no host: %s", libvirtURL)
-	}
-	if p := u.Port(); p != "" {
-		host = net.JoinHostPort(host, p)
-	}
-	insecure := strings.Contains(u.RawQuery, "no_verify=1") ||
-		strings.Contains(u.RawQuery, "no_verify")
-	sdk := &url.URL{
-		Scheme: "https",
-		Host:   host,
-		Path:   "/sdk",
-	}
-	return sdk, insecure, nil
 }
 
 func vsphereCredentials() (user, password string, err error) {
@@ -422,16 +400,4 @@ func vsphereCredentials() (user, password string, err error) {
 		return "", "", fmt.Errorf("vSphere credentials in /etc/secret are empty")
 	}
 	return user, password, nil
-}
-
-func vsphereDatacenter(libvirtURL string) string {
-	u, err := url.Parse(libvirtURL)
-	if err != nil {
-		return ""
-	}
-	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(parts) == 0 {
-		return ""
-	}
-	return parts[0]
 }

@@ -3,6 +3,8 @@ package env
 import (
 	"fmt"
 	"log/slog"
+	"net"
+	"net/url"
 	"strings"
 
 	kccopy "github.com/yaacov/kc-utils/pkg/copy"
@@ -100,20 +102,35 @@ func ValidateCopySourceCount(sources []string) error {
 // BuildCopyInput maps a loaded config and resolved source disks to copy input.
 // SourceDisks selects which NFC lease disks kc-copy will stream.
 func BuildCopyInput(cfg *Config, sources []string) *kccopy.CopyInput {
-	in := &kccopy.CopyInput{
-		VCenterURL:      cfg.LibvirtURL,
+	host, datacenter, insecure := parseLibvirtURL(cfg.LibvirtURL)
+	return &kccopy.CopyInput{
+		Host:            host,
+		Datacenter:      datacenter,
+		Insecure:        insecure,
 		VMName:          cfg.VmName,
 		Fingerprint:     cfg.Fingerprint,
 		SourceDisks:     sources,
 		Workdir:         cfg.Workdir,
 		CopyConcurrency: cfg.CopyConcurrency,
 	}
-	if IsVSphereSource(cfg) && cfg.LibvirtURL != "" && cfg.VmName != "" {
-		if inv, err := vsphere.LoadInventory(cfg); err == nil {
-			in.VMMoref = inv.Moref
-		}
+}
+
+func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool) {
+	u, err := url.Parse(libvirtURL)
+	if err != nil {
+		return "", "", false
 	}
-	return in
+	host = u.Hostname()
+	if p := u.Port(); p != "" {
+		host = net.JoinHostPort(host, p)
+	}
+	insecure = strings.Contains(u.RawQuery, "no_verify=1") ||
+		strings.Contains(u.RawQuery, "no_verify")
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) > 0 && parts[0] != "" {
+		datacenter = parts[0]
+	}
+	return host, datacenter, insecure
 }
 
 func splitDiskPath(raw string) []string {

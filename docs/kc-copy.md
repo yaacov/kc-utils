@@ -22,7 +22,7 @@ stays in `kc-v2v` (`env.NeedsCopy`, `ValidateCopyMode`, `ResolveCopySources`,
 `kc-copy` has no subcommands. Two input modes:
 
 1. **`--input copy-input.json`** — read `CopyInput` directly
-2. **Minimal flags** — `--libvirt-url`, `--vm-name`, `--fingerprint`, `--disk-path`
+2. **Minimal flags** — `--host`, `--vm-name`, `--fingerprint`, `--disk-path`
 
 Exit codes:
 
@@ -34,15 +34,14 @@ Exit codes:
 ```bash
 make build-kc-copy
 
-export V2V_libvirtURL=vpx://user@vcenter/...
-export V2V_vmName=my-vm
-export V2V_fingerprint=...
-
 kc-copy \
-  --libvirt-url "$V2V_libvirtURL" \
-  --vm-name "$V2V_vmName" \
-  --fingerprint "$V2V_fingerprint" \
-  --disk-path "[ds] vm/disk1.vmdk,[ds] vm/disk2.vmdk"
+  --host vcenter.example.com \
+  --datacenter mydatacenter \
+  --insecure \
+  --vm-name my-vm \
+  --fingerprint "AB:CD:..." \
+  --disk-path "[ds] vm/disk1.vmdk,[ds] vm/disk2.vmdk" \
+  --output copy-progress.json
 ```
 
 Or with JSON input:
@@ -50,11 +49,14 @@ Or with JSON input:
 ```bash
 cat > copy-input.json <<'EOF'
 {
-  "vcenter_url": "vpx://user@vcenter/...",
+  "host": "vcenter.example.com",
+  "datacenter": "mydatacenter",
+  "insecure": true,
   "vm_name": "my-vm",
   "fingerprint": "...",
   "source_disks": ["[ds] vm/disk1.vmdk"],
-  "workdir": "/var/tmp/v2v"
+  "workdir": "/var/tmp/v2v",
+  "output_path": "copy-progress.json"
 }
 EOF
 
@@ -74,11 +76,14 @@ writes `copy-input.json`, and runs `kc-copy --input …` from `KC_BIN_DIR`
 
 | Flag / JSON field | Env fallback | Default |
 |-------------------|--------------|---------|
-| `--libvirt-url` / `vcenter_url` | `V2V_libvirtURL` | (required) |
+| `--host` / `host` | — | (required) — vCenter or ESXi hostname |
+| `--datacenter` / `datacenter` | — | (optional) — vSphere datacenter name |
+| `--insecure` / `insecure` | — | `false` — skip TLS certificate verification |
 | `--vm-name` / `vm_name` | `V2V_vmName` | (required) |
 | `--fingerprint` / `fingerprint` | `V2V_fingerprint` | (required) |
 | `--disk-path` / `source_disks` | `V2V_diskPath` | (required) — VMDKs to select from the NFC lease |
 | `--work-dir` / `workdir` | — | `/var/tmp/v2v` |
+| `--output` / `output_path` | — | `copy-progress.json` — progress output file |
 | `--copy-concurrency` / `copy_concurrency` | `V2V_copyConcurrency` | `4` (capped at disk count; `1` = sequential) |
 
 vSphere credentials (Forklift conversion pod layout):
@@ -88,8 +93,8 @@ vSphere credentials (Forklift conversion pod layout):
 | `/etc/secret/accessKeyId` | vSphere username |
 | `/etc/secret/secretKey` | vSphere password |
 
-Progress is written to `$WORKDIR/copy-progress.json` (default workdir:
-`/var/tmp/v2v`).
+Progress is written to the `--output` path (default `copy-progress.json`; when
+omitted in JSON input, falls back to `$WORKDIR/copy-progress.json`).
 
 ## Copy Flow
 

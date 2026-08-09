@@ -66,6 +66,13 @@ Order matches [`pkg/cmd/prepare/pipeline.go`](../pkg/cmd/prepare/pipeline.go):
 Invalid values (including `ask`) are rejected. On explicit `single` multiboot failure,
 `PrepareOutput` may include `root_candidates` and `error` when the output file is written.
 
+Guestfs remount (convert/finalize) enriches missing secondary mounts via
+`inspect-os` / `inspect-get-mountpoints`. That enrichment matches the preferred
+root (device at `/` from prepare `root_device`) against the full `inspect-os`
+list; if no preferred root is present it defaults to the first inspect root.
+A preferred root that is not listed by `inspect-os` is an error. When prepare
+and inspect disagree on which device owns a guest path, prepare wins.
+
 Example inputs: [examples/prepare-input-linux.json](examples/prepare-input-linux.json),
 [examples/prepare-input-multiboot.json](examples/prepare-input-multiboot.json).
 Example outputs: [examples/prepare-output-complete.json](examples/prepare-output-complete.json),

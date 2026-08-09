@@ -15,15 +15,14 @@ Requires Linux (`//go:build linux`).
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
-| `--prepare-data` | yes\* | | Path to PrepareOutput JSON (from kc-prepare) |
-| `--convert-data` | yes\* | | Path to ConverterOutput JSON (from kc-convert-linux or kc-convert-windows) |
-| `--output` | no | `target-meta.json` | Path to write TargetMeta JSON |
+| `--input` | yes\* | | Path to PipelineData JSON (from kc-convert-linux or kc-convert-windows; contains `prepare` and `convert` sections) |
+| `--output` | no | `target-meta.json` | Path to write PipelineData JSON (with `target` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Guest mount root (live mounts in direct mode; path key for `pkg/guest` in guestfs mode) |
 | `--guestfs` | no | `false` | Use libguestfs appliance instead of privileged mounts (adopts shared `GUESTFISH_PID` from `kc-v2v`; does not exit it) |
 | `--teardown-only` | no | `false` | Reclaim orphaned guest resources only (no metadata) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
-\* Not required with `--teardown-only`. `--prepare-data` is optional then (mount-root-only fallback).
+\* Not required with `--teardown-only`. `--input` is optional then (mount-root-only fallback).
 
 ## Pipeline Blocks
 
@@ -42,8 +41,7 @@ Note: Blocks 2-4 are implemented as inline calls to `pkg/guest.Guest` methods in
 
 ## Input
 
-- `PrepareOutput` JSON: OS info, disk layout, mount paths, source metadata
-- `ConverterOutput` JSON: GuestCaps, converter-specific warnings
+- `PipelineData` JSON: contains `prepare` section (OS info, disk layout, mount paths, source metadata) and `convert` section (GuestCaps, converter-specific warnings)
 - Guest access at `--mount-root` (Customize and Fstrim via `pkg/guest`; then teardown)
 
 Example inputs: [examples/prepare-output-complete.json](examples/prepare-output-complete.json),
@@ -89,5 +87,5 @@ This path reclaims **orphaned host resources only** — no Sync, customize, trim
 or TargetMeta — via `Guest.TeardownDiscard()` (required when qcow2 overlays will
 be discarded).
 
-If `--prepare-data` is missing or unusable, cleanup falls back to mount-root-only
+If `--input` is missing or unusable, cleanup falls back to mount-root-only
 reclamation.

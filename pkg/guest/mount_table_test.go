@@ -52,3 +52,50 @@ func TestWithRootMountEmpty(t *testing.T) {
 		t.Fatalf("empty rootDevice: %#v", got)
 	}
 }
+
+func TestWithRootMountRewritesSlash(t *testing.T) {
+	disks := []types.DiskInfo{{
+		Partitions: []types.PartitionInfo{
+			{DevicePath: "/dev/sda2", FSType: "xfs", MountPoint: "/"},
+			{DevicePath: "/dev/sda1", FSType: "xfs", MountPoint: "/boot"},
+			{DevicePath: "/dev/sda3", FSType: "xfs"},
+		},
+	}}
+	got := WithRootMount(disks, "/dev/sda3")
+	var slashDev string
+	slashCount := 0
+	for _, p := range got[0].Partitions {
+		if p.MountPoint == "/" {
+			slashCount++
+			slashDev = p.DevicePath
+		}
+	}
+	if slashCount != 1 || slashDev != "/dev/sda3" {
+		t.Fatalf("want single / on /dev/sda3, got %#v", got[0].Partitions)
+	}
+	if disks[0].Partitions[0].MountPoint != "/" {
+		t.Fatal("input mutated")
+	}
+}
+
+func TestWithRootMountSetsExistingDevice(t *testing.T) {
+	disks := []types.DiskInfo{{
+		Partitions: []types.PartitionInfo{
+			{DevicePath: "/dev/sda1", FSType: "xfs", MountPoint: "/boot"},
+			{DevicePath: "/dev/rhel/root", FSType: "xfs"},
+		},
+	}}
+	got := WithRootMount(disks, "/dev/rhel/root")
+	found := false
+	for _, p := range got[0].Partitions {
+		if p.DevicePath == "/dev/rhel/root" && p.MountPoint == "/" {
+			found = true
+		}
+		if p.MountPoint == "/" && p.DevicePath != "/dev/rhel/root" {
+			t.Fatalf("extra /: %#v", p)
+		}
+	}
+	if !found {
+		t.Fatalf("root not set: %#v", got[0].Partitions)
+	}
+}

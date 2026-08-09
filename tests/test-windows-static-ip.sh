@@ -40,8 +40,10 @@ cat > "$d/prepare.json" <<'EOF'
 }
 EOF
 
+jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
+
 "$BIN_DIR/kc-convert-windows" \
-    --prepare-data "$d/prepare.json" \
+    --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \
     --offline \

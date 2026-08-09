@@ -24,6 +24,7 @@ import (
 // Config holds prepare pipeline configuration.
 type Config struct {
 	Input      types.PrepareInput
+	Pipeline   *types.PipelineData
 	MountRoot  string
 	OutputPath string
 	UseGuestfs bool
@@ -139,7 +140,7 @@ func Run(cfg *Config) error {
 	if err != nil {
 		var mb *root.MultiBootError
 		if errors.As(err, &mb) {
-			writeMultibootError(cfg.OutputPath, output, mb)
+			writeMultibootError(cfg, output, mb)
 		}
 		return err
 	}
@@ -203,7 +204,8 @@ func Run(cfg *Config) error {
 
 	output.Status = "complete"
 
-	if err := types.WriteJSON(cfg.OutputPath, output); err != nil {
+	cfg.Pipeline.Prepare = output
+	if err := types.WriteJSON(cfg.OutputPath, cfg.Pipeline); err != nil {
 		return fmt.Errorf("writing output: %w", err)
 	}
 
@@ -211,11 +213,12 @@ func Run(cfg *Config) error {
 	return nil
 }
 
-func writeMultibootError(outputPath string, output *types.PrepareOutput, mb *root.MultiBootError) {
+func writeMultibootError(cfg *Config, output *types.PrepareOutput, mb *root.MultiBootError) {
 	output.Status = "error"
 	output.Error = mb.Error()
 	output.RootCandidates = mb.Candidates
-	_ = types.WriteJSON(outputPath, output)
+	cfg.Pipeline.Prepare = output
+	_ = types.WriteJSON(cfg.OutputPath, cfg.Pipeline)
 }
 
 func rescanAfterDecrypt(g *guest.Guest, unlocked, lvPaths []string, disks []types.DiskInfo) ([]string, []types.DiskInfo) {

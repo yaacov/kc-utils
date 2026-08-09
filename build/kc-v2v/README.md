@@ -45,7 +45,7 @@ Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`per
 
 | Path | Source | Purpose |
 |------|--------|---------|
-| `/usr/share/virtio-win/drivers/by-os/` | [`download-virtio-win.sh`](download-virtio-win.sh) — modern ISO (0.1.285) + legacy ISO (0.1.160) | Windows VirtIO drivers (all versions including pre–Win 8) |
+| `/usr/share/virtio-win/drivers/by-os/` | [`stage-virtio-win.sh`](stage-virtio-win.sh) — modern ISO (0.1.285) + legacy ISO (0.1.160) | Windows VirtIO drivers (all versions including pre–Win 8) |
 | `/usr/share/virtio-win/guest-agent/` | same script (modern ISO) | qemu-ga MSIs |
 | `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` | [`stage-linux-packages.sh`](stage-linux-packages.sh) | Offline Linux `qemu-guest-agent` for RHEL-family guests |
 
@@ -53,7 +53,7 @@ Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`per
 
 ### Pre–Win 8 virtio-win OS dirs
 
-Build stage [`download-virtio-win.sh`](download-virtio-win.sh) downloads a
+Build stage [`stage-virtio-win.sh`](stage-virtio-win.sh) downloads a
 legacy ISO (virtio-win **0.1.160**) and extracts pre–Win 8 by-os dirs
 (`2k8`, `2k3`, `xp`, `vista`) that are missing from the modern ISO.
 

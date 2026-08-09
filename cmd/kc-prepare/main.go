@@ -77,8 +77,11 @@ func main() {
 		"sourceType", input.Source.Type,
 	)
 
+	pipeline := &types.PipelineData{Input: &input}
+
 	cfg := &prepare.Config{
 		Input:      input,
+		Pipeline:   pipeline,
 		MountRoot:  *mountRoot,
 		OutputPath: *outputFile,
 		UseGuestfs: *useGuestfs,

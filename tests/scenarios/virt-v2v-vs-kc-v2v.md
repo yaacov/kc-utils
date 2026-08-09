@@ -10,7 +10,7 @@ Cold migration comparison on OpenShift MTV (cluster `qemtvd-07`), same VMs and s
 VMs: `mtv-func-cold-rhel9-staticips`, `mtv-func-win2008`  
 Default SC: `ocs-storagecluster-ceph-rbd-virtualization`  
 `feature_windows_wait_for_reboot=false` (fair conversion comparison)  
-Canonical metrics: archived under [`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) and summarized in [`docs/ref-baseline/README.md`](../../docs/ref-baseline/README.md). Runner: [`test-mtv-ref-baseline.sh`](test-mtv-ref-baseline.sh).
+Canonical metrics: archived under [`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) and summarized in [`docs/ref-baseline/README.md`](../../docs/ref-baseline/README.md). Runner: [`test-mtv-benchmark.sh`](test-mtv-benchmark.sh) (`MODE=compare`). Per-run Chart.js dashboards are written to [`runs/`](runs/) as `test-mtv-benchmark-<ts>.html`.
 
 ---
 

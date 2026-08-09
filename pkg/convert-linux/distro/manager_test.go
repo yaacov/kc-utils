@@ -12,4 +12,7 @@ func TestName(t *testing.T) {
 	if got := Name("rhel"); got != "dnf" {
 		t.Errorf("rhel: expected dnf, got %q", got)
 	}
+	if got := Name("alt"); got != "apt" {
+		t.Errorf("alt: expected apt, got %q", got)
+	}
 }

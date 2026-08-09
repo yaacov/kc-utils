@@ -100,7 +100,7 @@ echo "=== kc-prepare ==="
     --log-level "$LOG_LEVEL" \
     $GUESTFS_FLAG
 
-CONVERTER=$(jq -r '.converter' "$WORK_DIR/prepare-out.json")
+CONVERTER=$(jq -r '.prepare.converter' "$WORK_DIR/prepare-out.json")
 echo "Detected converter: $CONVERTER"
 
 OFFLINE_FLAG=""
@@ -108,7 +108,7 @@ $OFFLINE && OFFLINE_FLAG="--offline"
 
 echo "=== $CONVERTER ==="
 "$BIN_DIR/$CONVERTER" \
-    --prepare-data "$WORK_DIR/prepare-out.json" \
+    --input "$WORK_DIR/prepare-out.json" \
     --output "$WORK_DIR/convert-out.json" \
     --mount-root "$MOUNT_ROOT" \
     $OFFLINE_FLAG \
@@ -117,8 +117,7 @@ echo "=== $CONVERTER ==="
 
 echo "=== kc-finalize ==="
 "$BIN_DIR/kc-finalize" \
-    --prepare-data "$WORK_DIR/prepare-out.json" \
-    --convert-data "$WORK_DIR/convert-out.json" \
+    --input "$WORK_DIR/convert-out.json" \
     --output "$WORK_DIR/target-meta.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level "$LOG_LEVEL" \

@@ -42,7 +42,7 @@ EOF
 
 # Verify prepare completed.
 test -f "$d/prepare.json"
-check_json_field "$d/prepare.json" '.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
 
 # Verify guest is mounted.
 test -f "$MOUNT_ROOT/etc/os-release" || {
@@ -68,9 +68,10 @@ cat > "$d/convert.json" <<EOF
 }
 EOF
 
+jq --slurpfile c "$d/convert.json" '. + {convert: $c[0]}' "$d/prepare.json" > "$d/pipeline.json"
+
 "$BIN_DIR/kc-finalize" \
-    --prepare-data "$d/prepare.json" \
-    --convert-data "$d/convert.json" \
+    --input "$d/pipeline.json" \
     --output "$d/finalize.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level debug

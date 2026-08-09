@@ -36,7 +36,7 @@ EOF
     --mount-root "$MOUNT_ROOT" \
     --log-level error
 
-check_json_field "$d/prepare.json" '.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
 test -f "$MOUNT_ROOT/etc/os-release"
 grep -q 'Red Hat' "$MOUNT_ROOT/etc/os-release"
 

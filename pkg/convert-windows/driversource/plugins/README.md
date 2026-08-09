@@ -19,7 +19,7 @@ Conversion uses the **directory** source only (`CollectDrivers`).
 
 The kc-v2v container image downloads virtio-win ISOs from the public
 [Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
-at build time (see [`build/kc-v2v/download-virtio-win.sh`](../../../../build/kc-v2v/download-virtio-win.sh)).
+at build time (see [`build/kc-v2v/stage-virtio-win.sh`](../../../../build/kc-v2v/stage-virtio-win.sh)).
 Drivers are extracted under `/usr/share/virtio-win/drivers/by-os/` and qemu-ga
 MSIs under `/usr/share/virtio-win/guest-agent/`.
 

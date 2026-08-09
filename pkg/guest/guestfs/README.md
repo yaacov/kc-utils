@@ -24,7 +24,9 @@ fs.go           — Filesystem operations (read/write/glob/readdir/upload/downlo
 session.go      — guestfish --listen session management, SharedListener
 discover.go     — Partition and LVM discovery via guestfish
 probe.go        — Filesystem probe mount/unmount
-mount_specs.go  — Mount spec recording for session re-attach
+mount_specs.go  — Mount spec recording for session re-attach; inspect-os
+                  enrichment matches preferred `/` (else first); path conflicts
+                  keep prepare
 util.go         — guestfishBinary, quoteGuestfish, runGuestfsCmd, scripts
 ```
 

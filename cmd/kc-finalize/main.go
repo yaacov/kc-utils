@@ -27,8 +27,7 @@ import (
 )
 
 func main() {
-	prepareFile := flag.String("prepare-data", "", "prepare output JSON")
-	convertFile := flag.String("convert-data", "", "converter output JSON")
+	inputFile := flag.String("input", "", "pipeline JSON file")
 	outputFile := flag.String("output", "target-meta.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
@@ -43,18 +42,18 @@ func main() {
 			MountRoot:  *mountRoot,
 			UseGuestfs: *useGuestfs,
 		}
-		if *prepareFile != "" {
-			prepareRaw, err := os.ReadFile(*prepareFile)
+		if *inputFile != "" {
+			data, err := os.ReadFile(*inputFile)
 			if err != nil {
-				slog.Error("reading prepare data", "error", err)
+				slog.Error("reading input", "error", err)
 				os.Exit(1)
 			}
-			var prepareData types.PrepareOutput
-			if err := json.Unmarshal(prepareRaw, &prepareData); err != nil {
-				slog.Error("parsing prepare JSON", "error", err)
+			var pipeline types.PipelineData
+			if err := json.Unmarshal(data, &pipeline); err != nil {
+				slog.Error("parsing pipeline JSON", "error", err)
 				os.Exit(1)
 			}
-			cfg.PrepareData = prepareData
+			cfg.Pipeline = &pipeline
 		}
 		if err := finalize.TeardownOnly(cfg); err != nil {
 			slog.Error("teardown-only failed", "error", err)
@@ -63,40 +62,33 @@ func main() {
 		return
 	}
 
-	if *prepareFile == "" || *convertFile == "" {
-		fmt.Fprintln(os.Stderr, "error: --prepare-data and --convert-data are required")
+	if *inputFile == "" {
+		fmt.Fprintln(os.Stderr, "error: --input is required")
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	prepareRaw, err := os.ReadFile(*prepareFile)
+	data, err := os.ReadFile(*inputFile)
 	if err != nil {
-		slog.Error("reading prepare data", "error", err)
-		os.Exit(1)
-	}
-	var prepareData types.PrepareOutput
-	if err := json.Unmarshal(prepareRaw, &prepareData); err != nil {
-		slog.Error("parsing prepare JSON", "error", err)
+		slog.Error("reading input", "error", err)
 		os.Exit(1)
 	}
 
-	convertRaw, err := os.ReadFile(*convertFile)
-	if err != nil {
-		slog.Error("reading convert data", "error", err)
+	var pipeline types.PipelineData
+	if err := json.Unmarshal(data, &pipeline); err != nil {
+		slog.Error("parsing pipeline JSON", "error", err)
 		os.Exit(1)
 	}
-	var convertData types.ConverterOutput
-	if err := json.Unmarshal(convertRaw, &convertData); err != nil {
-		slog.Error("parsing convert JSON", "error", err)
+	if pipeline.Prepare == nil || pipeline.Convert == nil {
+		slog.Error("pipeline JSON missing 'prepare' and/or 'convert' sections")
 		os.Exit(1)
 	}
 
 	cfg := &finalize.Config{
-		PrepareData: prepareData,
-		ConvertData: convertData,
-		MountRoot:   *mountRoot,
-		OutputPath:  *outputFile,
-		UseGuestfs:  *useGuestfs,
+		Pipeline:   &pipeline,
+		MountRoot:  *mountRoot,
+		OutputPath: *outputFile,
+		UseGuestfs: *useGuestfs,
 	}
 
 	if err := finalize.Run(cfg); err != nil {

@@ -5,24 +5,26 @@ package copy
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"runtime"
 	"sync"
+
+	"github.com/yaacov/kc-utils/pkg/common/types"
 )
 
 const DefaultCopyConcurrency = 4
 
 // CopyInput is the standalone input to Run.
 type CopyInput struct {
-	VCenterURL      string   `json:"vcenter_url"`
+	Host            string   `json:"host"`
+	Datacenter      string   `json:"datacenter,omitempty"`
+	Insecure        bool     `json:"insecure,omitempty"`
 	VMName          string   `json:"vm_name"`
-	VMMoref         string   `json:"vm_moref,omitempty"`
 	Fingerprint     string   `json:"fingerprint"`
 	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
 	Workdir         string   `json:"workdir"`
+	OutputPath      string   `json:"output_path,omitempty"`
 	CopyConcurrency int      `json:"copy_concurrency,omitempty"`
 }
 
@@ -55,8 +57,8 @@ func ClampConcurrency(n, disks int) int {
 
 // Run copies vSphere disks into empty PVC targets via NFC export.
 func Run(input *CopyInput) error {
-	if input.VCenterURL == "" {
-		return fmt.Errorf("vcenter_url is required")
+	if input.Host == "" {
+		return fmt.Errorf("host is required")
 	}
 	if input.VMName == "" {
 		return fmt.Errorf("vm_name is required")
@@ -93,7 +95,12 @@ func Run(input *CopyInput) error {
 		"vm", input.VMName,
 	)
 
-	lease, err := ExportVM(ctx, input.VCenterURL, input.VMName)
+	outputPath := input.OutputPath
+	if outputPath == "" {
+		outputPath = input.Workdir + "/copy-progress.json"
+	}
+
+	lease, err := ExportVM(ctx, input.Host, input.Datacenter, input.Insecure, input.VMName)
 	if err != nil {
 		return fmt.Errorf("NFC export: %w", err)
 	}
@@ -176,7 +183,7 @@ func Run(input *CopyInput) error {
 				Target:     target.Path,
 				Status:     "complete",
 			})
-			if err := writeProgress(input, progress); err != nil {
+			if err := types.WriteJSON(outputPath, progress); err != nil {
 				slog.Warn("failed to write copy progress", "error", err)
 			}
 			slog.Info("disk copy recorded",
@@ -199,15 +206,6 @@ func Run(input *CopyInput) error {
 
 	slog.Info("NFC disk copy complete", "disks", total)
 	return nil
-}
-
-func writeProgress(input *CopyInput, p Progress) error {
-	path := input.Workdir + "/copy-progress.json"
-	data, err := json.MarshalIndent(p, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o644)
 }
 
 func logDiscoveredTargets(targets []Target) error {

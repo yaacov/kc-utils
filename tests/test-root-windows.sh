@@ -39,9 +39,9 @@ EOF
     --mount-root "$MOUNT_ROOT" \
     --log-level error
 
-check_json_field "$d/prepare.json" '.status' 'complete'
-check_json_field "$d/prepare.json" '.inspect.type' 'windows'
-test -n "$(jq -r '.root_device' "$d/prepare.json")"
+check_json_field "$d/prepare.json" '.prepare.status' 'complete'
+check_json_field "$d/prepare.json" '.prepare.inspect.type' 'windows'
+test -n "$(jq -r '.prepare.root_device' "$d/prepare.json")"
 test -d "$MOUNT_ROOT/Windows/System32/Config"
 
 echo "PASS: test-root-windows"

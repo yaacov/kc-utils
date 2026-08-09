@@ -21,8 +21,9 @@ func Format(distro string) string {
 	switch distro {
 	case "debian", "ubuntu":
 		return "deb"
-	case "rhel", "centos", "rocky", "alma", "ol", "fedora",
-		"sles", "opensuse-leap", "opensuse-tumbleweed":
+	case "rhel", "centos", "rocky", "almalinux", "alma", "ol", "fedora", "amzn",
+		"sles", "opensuse-leap", "opensuse-tumbleweed",
+		"alt":
 		return "rpm"
 	default:
 		slog.Warn("unrecognized distro, defaulting to rpm package format", "distro", distro)
@@ -33,7 +34,7 @@ func Format(distro string) string {
 // Name returns the package manager command family for a distro ID.
 func Name(distro string) string {
 	switch distro {
-	case "debian", "ubuntu":
+	case "debian", "ubuntu", "alt":
 		return "apt"
 	case "sles", "opensuse-leap", "opensuse-tumbleweed":
 		return "zypper"

@@ -10,7 +10,8 @@
                   |  kc-prepare   |
                   +---------------+
                           |
-                  PrepareOutput JSON
+                  PipelineData JSON
+                  (input + prepare)
                   + mounted guest FS
                           |
              +------------+------------+
@@ -20,7 +21,8 @@
   | kc-convert-linux  |    | kc-convert-windows    |
   +-------------------+    +-----------------------+
              |                         |
-      ConverterOutput JSON      ConverterOutput JSON
+      PipelineData JSON         PipelineData JSON
+      (+ convert section)       (+ convert section)
              |                         |
              +------------+------------+
                           |
@@ -29,7 +31,8 @@
                   |  kc-finalize  |
                   +---------------+
                           |
-                  TargetMeta JSON
+                  PipelineData JSON
+                  (+ target section)
 ```
 
 The orchestrator (Forklift, `kc-v2v`, a shell script, or any external caller)
@@ -80,9 +83,7 @@ multiboot recovery, and Windows virtio-win setup.
 | Type | Produced By | Consumed By | Contents |
 |------|-------------|-------------|----------|
 | `PrepareInput` | Orchestrator | kc-prepare | Disk paths, source metadata, LUKS keys, `options.root`, other options |
-| `PrepareOutput` | kc-prepare | converter + kc-finalize | OS info, firmware, disk layout, root device, mount paths, converter name |
-| `ConverterOutput` | kc-convert-linux / kc-convert-windows | kc-finalize | GuestCaps (virtio, display, etc.) |
-| `TargetMeta` | kc-finalize | Orchestrator | Everything needed to create the target KVM VM |
+| `PipelineData` | kc-prepare (creates), converter + kc-finalize (extend) | converter, kc-finalize, orchestrator | Accumulates sections: `input`, `prepare`, `convert`, `target` -- each stage adds its section |
 
 ## CLI Invocation
 
@@ -92,27 +93,26 @@ A typical conversion sequence:
 # 1. Prepare: open disks, inspect OS, mount filesystems
 kc-prepare \
   --input      /tmp/kc/prepare-input.json \
-  --output     /tmp/kc/prepare-output.json \
+  --output     /tmp/kc/pipeline.json \
   --mount-root /mnt/guest
 
 # 2. Convert (orchestrator picks based on PrepareOutput.converter)
 kc-convert-linux \
-  --prepare-data /tmp/kc/prepare-output.json \
-  --output       /tmp/kc/converter-output.json \
-  --mount-root   /mnt/guest
+  --input      /tmp/kc/pipeline.json \
+  --output     /tmp/kc/pipeline.json \
+  --mount-root /mnt/guest
 
 # or for Windows guests:
 kc-convert-windows \
-  --prepare-data /tmp/kc/prepare-output.json \
-  --output       /tmp/kc/converter-output.json \
-  --mount-root   /mnt/guest
+  --input      /tmp/kc/pipeline.json \
+  --output     /tmp/kc/pipeline.json \
+  --mount-root /mnt/guest
 
 # 3. Finalize: unmount, trim, fsck, assign buses, emit metadata
 kc-finalize \
-  --prepare-data /tmp/kc/prepare-output.json \
-  --convert-data /tmp/kc/converter-output.json \
-  --output       /tmp/kc/target-meta.json \
-  --mount-root   /mnt/guest
+  --input      /tmp/kc/pipeline.json \
+  --output     /tmp/kc/pipeline.json \
+  --mount-root /mnt/guest
 ```
 
 All binaries also accept `--log-level` (`debug`, `info`, `warn`, `error`).
@@ -131,9 +131,7 @@ each binary stateless and independently testable.
 ```
 /tmp/kc/
   prepare-input.json      written by orchestrator
-  prepare-output.json     written by kc-prepare
-  converter-output.json   written by kc-convert-linux or kc-convert-windows
-  target-meta.json        written by kc-finalize
+  pipeline.json           written by kc-prepare, updated by converter and kc-finalize
 ```
 
 ### Shared Mount Directory
@@ -204,7 +202,7 @@ Each binary links only the plugins it needs via blank imports in
 - [kc-v2v.md](kc-v2v.md) — Forklift conversion pod entrypoint (copy + pipeline + HTTP)
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
 - [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
-- [../tests/scenarios/README.md](../tests/scenarios/README.md) — Cluster smoke / baseline tests (manual)
+- [../tests/scenarios/README.md](../tests/scenarios/README.md) — Cluster benchmark tests (manual)
 
 ### Design
 

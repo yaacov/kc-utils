@@ -14,8 +14,8 @@ Requires Linux (`//go:build linux`).
 
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
-| `--prepare-data` | yes | | Path to PrepareOutput JSON (from kc-prepare) |
-| `--output` | no | `convert-out.json` | Path to write ConverterOutput JSON |
+| `--input` | yes | | Path to PipelineData JSON (from kc-prepare) |
+| `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
@@ -47,7 +47,7 @@ Block numbers match the pipeline comments in `pkg/cmd/convert-windows/pipeline.g
 
 ## Input
 
-- `PrepareOutput` JSON (from kc-prepare): OS info, disk layout, mount paths
+- `PipelineData` JSON (from kc-prepare): OS info, disk layout, mount paths (in `prepare` section)
 - Mounted guest filesystem at `--mount-root`
 
 VirtIO drivers are read from the **conversion host**, not from JSON or CLI flags.

@@ -20,7 +20,11 @@ func (b *Backend) ensureMounted() error {
 	if b.mountsActive {
 		return nil
 	}
-	script := mountScriptPrefix(b.effectiveMountSpecs())
+	specs, err := b.effectiveMountSpecs()
+	if err != nil {
+		return err
+	}
+	script := mountScriptPrefix(specs)
 	if _, err := b.session.remoteScript(script); err != nil {
 		return fmt.Errorf("mounting guest filesystems: %w", err)
 	}

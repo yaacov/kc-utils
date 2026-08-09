@@ -19,11 +19,11 @@ work directory; adjust for your environment.
 | [prepare-input-windows.json](prepare-input-windows.json) | kc-prepare | Windows guest + static IPs |
 | [prepare-input-multiboot.json](prepare-input-multiboot.json) | kc-prepare | Multiboot with `options.root=first` (also the default when omitted) |
 | [prepare-input-luks.json](prepare-input-luks.json) | kc-prepare | LUKS keyfile mapping |
-| [prepare-output-complete.json](prepare-output-complete.json) | converters, kc-finalize | Successful prepare result |
+| [prepare-output-complete.json](prepare-output-complete.json) | converters, kc-finalize | Example `prepare` section of PipelineData |
 | [prepare-output-error-multiboot.json](prepare-output-error-multiboot.json) | orchestrator | Explicit `options.root=single` multiboot failure + candidates |
-| [convert-output-linux.json](convert-output-linux.json) | kc-finalize | Linux converter output |
-| [convert-output-windows.json](convert-output-windows.json) | kc-finalize | Windows converter output |
-| [target-meta.json](target-meta.json) | orchestrator | Final VM metadata |
+| [convert-output-linux.json](convert-output-linux.json) | kc-finalize | Example `convert` section (Linux) of PipelineData |
+| [convert-output-windows.json](convert-output-windows.json) | kc-finalize | Example `convert` section (Windows) of PipelineData |
+| [target-meta.json](target-meta.json) | orchestrator | Example `target` section of PipelineData |
 
 ## Quick run (Linux test disk)
 
@@ -45,20 +45,19 @@ sudo cp docs/examples/prepare-input-linux.json /var/lib/kc/prepare-input.json
 
 sudo bin/kc-prepare \
   --input /var/lib/kc/prepare-input.json \
-  --output /var/lib/kc/prepare-output.json \
+  --output /var/lib/kc/pipeline.json \
   --mount-root /mnt/kc-guest
 
-CONVERTER=$(jq -r .converter /var/lib/kc/prepare-output.json)
+CONVERTER=$(jq -r .converter /var/lib/kc/pipeline.json)
 sudo bin/"$CONVERTER" \
-  --prepare-data /var/lib/kc/prepare-output.json \
-  --output /var/lib/kc/convert-output.json \
+  --input /var/lib/kc/pipeline.json \
+  --output /var/lib/kc/pipeline.json \
   --mount-root /mnt/kc-guest \
   --offline
 
 sudo bin/kc-finalize \
-  --prepare-data /var/lib/kc/prepare-output.json \
-  --convert-data /var/lib/kc/convert-output.json \
-  --output /var/lib/kc/target-meta.json \
+  --input /var/lib/kc/pipeline.json \
+  --output /var/lib/kc/pipeline.json \
   --mount-root /mnt/kc-guest
 ```
 

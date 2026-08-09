@@ -63,22 +63,26 @@ prepare_json=$(mktemp)
 cleanup_fn rm -f "$prepare_json"
 make_linux_prepare_json "$d" "rhel" 9 2 "x86_64" "Red Hat Enterprise Linux 9.2" "bios" > "$prepare_json"
 
+pipeline_json=$(mktemp)
+cleanup_fn rm -f "$pipeline_json"
+jq -n --slurpfile p "$prepare_json" '{prepare: $p[0]}' > "$pipeline_json"
+
 # Run converter
 output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
-    --prepare-data "$prepare_json" \
+    --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \
     --offline \
     --log-level debug
 
 # Verify output JSON
-check_json_field "$output_json" '.guestcaps.block_bus' 'virtio'
-check_json_field "$output_json" '.guestcaps.net_bus' 'virtio'
-check_json_field "$output_json" '.guestcaps.arch' 'x86_64'
-check_json_field "$output_json" '.guestcaps.rtc_utc' 'true'
+check_json_field "$output_json" '.convert.guestcaps.block_bus' 'virtio'
+check_json_field "$output_json" '.convert.guestcaps.net_bus' 'virtio'
+check_json_field "$output_json" '.convert.guestcaps.arch' 'x86_64'
+check_json_field "$output_json" '.convert.guestcaps.rtc_utc' 'true'
 
 # Verify fstab remapped to virtio
 grep -q '/dev/vda1' "$d/etc/fstab"

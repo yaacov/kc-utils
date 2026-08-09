@@ -29,10 +29,11 @@ make_windows_hives "$root"
 
 # Generate prepare JSON for Windows Server 2022.
 make_windows_prepare_json "$root" 10 0 x86_64 "Windows Server 2022" bios > "$d/prepare.json"
+jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
 
 # Run the Windows converter.
 "$BIN_DIR/kc-convert-windows" \
-    --prepare-data "$d/prepare.json" \
+    --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \
     --offline \
@@ -42,22 +43,22 @@ make_windows_prepare_json "$root" 10 0 x86_64 "Windows Server 2022" bios > "$d/p
 test -f "$d/output.json"
 
 # Verify guestcaps fields.
-check_json_field "$d/output.json" '.guestcaps.block_bus' 'virtio'
-check_json_field "$d/output.json" '.guestcaps.net_bus' 'virtio'
-check_json_field "$d/output.json" '.guestcaps.arch' 'x86_64'
-check_json_field "$d/output.json" '.guestcaps.machine_type' 'q35'
-check_json_field "$d/output.json" '.guestcaps.virtio_rng' 'true'
-check_json_field "$d/output.json" '.guestcaps.virtio_balloon' 'true'
-check_json_field "$d/output.json" '.guestcaps.virtio_socket' 'true'
-check_json_field "$d/output.json" '.guestcaps.isa_pvpanic' 'true'
-check_json_field "$d/output.json" '.guestcaps.virtio_1_0' 'true'
-check_json_field "$d/output.json" '.guestcaps.rtc_utc' 'false'
+check_json_field "$d/output.json" '.convert.guestcaps.block_bus' 'virtio'
+check_json_field "$d/output.json" '.convert.guestcaps.net_bus' 'virtio'
+check_json_field "$d/output.json" '.convert.guestcaps.arch' 'x86_64'
+check_json_field "$d/output.json" '.convert.guestcaps.machine_type' 'q35'
+check_json_field "$d/output.json" '.convert.guestcaps.virtio_rng' 'true'
+check_json_field "$d/output.json" '.convert.guestcaps.virtio_balloon' 'true'
+check_json_field "$d/output.json" '.convert.guestcaps.virtio_socket' 'true'
+check_json_field "$d/output.json" '.convert.guestcaps.isa_pvpanic' 'true'
+check_json_field "$d/output.json" '.convert.guestcaps.virtio_1_0' 'true'
+check_json_field "$d/output.json" '.convert.guestcaps.rtc_utc' 'false'
 
 # Compare guestcaps against golden output.
 expected="$TESTS_DIR/expected/windows-basic-caps.json"
 if [ -f "$expected" ]; then
     # Extract guestcaps from actual output and compare with expected.
-    actual_caps=$(jq '.guestcaps' "$d/output.json")
+    actual_caps=$(jq '.convert.guestcaps' "$d/output.json")
     expected_caps=$(jq '.guestcaps' "$expected")
     if [ "$actual_caps" != "$expected_caps" ]; then
         echo "FAIL: guestcaps mismatch with golden output"

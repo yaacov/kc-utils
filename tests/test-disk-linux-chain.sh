@@ -35,11 +35,11 @@ test -f "$d/convert-out.json"
 test -f "$d/target-meta.json"
 
 # Verify prepare completed.
-check_json_field "$d/prepare-out.json" '.status' 'complete'
+check_json_field "$d/prepare-out.json" '.prepare.status' 'complete'
 
 # Verify converter output has guestcaps.
-check_json_field "$d/convert-out.json" '.guestcaps.block_bus' 'virtio'
-check_json_field "$d/convert-out.json" '.guestcaps.net_bus' 'virtio'
+check_json_field "$d/convert-out.json" '.convert.guestcaps.block_bus' 'virtio'
+check_json_field "$d/convert-out.json" '.convert.guestcaps.net_bus' 'virtio'
 
 # Verify guest is unmounted after finalize.
 if mountpoint -q /tmp/kc-guest 2>/dev/null; then

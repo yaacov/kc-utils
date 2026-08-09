@@ -6,8 +6,9 @@ coverage.out
 tests/bin/
 tests/*.log
 tests/*.img
+tests/scenarios/runs/*
 
-# Cached virtio-win ISOs (download-virtio-win.sh)
+# Cached virtio-win ISOs (stage-virtio-win.sh)
 build/kc-v2v/cache/*.iso
 
 # Editor and IDE
