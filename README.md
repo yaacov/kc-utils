@@ -1,10 +1,16 @@
-# KVM Converter Utilities (kc-utils)
+# Kvm Converter Utilities (kc-utils)
 
 Converts virtual machines disks from VMware, Xen, VirtualBox, Parallels, Hyper-V, EC2,
 Nutanix AHV, and other disk-based sources to run on KVM with virtio drivers.
 The core pipeline is four pure-Go binaries that inspect and mount guest disks,
 convert the guest OS (Linux or Windows), then unmount, validate filesystems, and
 emit JSON metadata for creating the target VM.
+
+<p align="center">
+  <br>
+  <img src="docs/logo.png" alt="kc-utils logo" width="420">
+  <br><br>
+</p>
 
 kc-utils are a pure Go re-implementation of [virt-v2v-in-place](https://libguestfs.org/virt-v2v-in-place.1.html);
 see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
@@ -16,12 +22,6 @@ see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
   [libguestfs](https://libguestfs.org/) appliance, driven by the `guestfish`
   CLI: a minimal QEMU appliance VM mounts the guest disks internally, so no
   host root or `CAP_SYS_ADMIN` is required.
-
-<p align="center">
-  <br>
-  <img src="docs/logo.png" alt="kc-utils logo" width="400">
-  <br><br>
-</p>
 
 **[Benchmark](docs/ref-baseline/README.md)** :
 On OpenShift MTV cold migrations, kc-v2v matches or beats virt-v2v wall time

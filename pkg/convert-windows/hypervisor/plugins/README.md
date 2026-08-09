@@ -1,11 +1,21 @@
 # hypervisor plugins
 
-Two plugin registries in this block:
+Two plugin registries in this block for removing source hypervisor artifacts
+from Windows guests. Removal happens in two phases: first the `WindowsRemove`
+plugins delete hypervisor software, tools directories, and registry uninstall
+keys from the offline guest filesystem; then the `WindowsServiceDisabler`
+plugins set hypervisor service registry entries to `Start=4` (disabled) so
+they do not start on the next boot. Both phases operate on the Windows registry
+hives (SYSTEM and SOFTWARE) opened via the `pkg/common/registry` package.
 
 ## WindowsRemove
 
 Remove hypervisor-specific software from the guest filesystem.
 `Detect` uses the SOFTWARE hive for Uninstall keys (SYSTEM alone is not enough).
+Each plugin's `Remove` method deletes tool directories from the guest
+filesystem, removes uninstall registry keys, and optionally schedules a
+firstboot script for cleanup that requires Windows to be running (e.g. MSI
+uninstallation via `msiexec`).
 
 | Key | Package | Hypervisor |
 |-----|---------|------------|
@@ -16,12 +26,38 @@ Remove hypervisor-specific software from the guest filesystem.
 | `ec2` | remove/ec2/ | EC2 cloud-init cleanup |
 | `virtualbox` | remove/virtualbox/ | VirtualBox guest additions |
 
+### vmware
+
+**What it does:** Removes VMware Tools from the Windows guest — the most
+complex removal due to VMware's deep integration.
+
+**How it works:** Detects via the `Program Files\VMware\VMware Tools` directory
+or the VMware Tools uninstall registry key. Removes the tools directory, cleans
+up MSI product entries from `Classes\Installer\Products` and
+`UserData\S-1-5-18\Products` in the SOFTWARE hive (decoding Windows Installer
+GUIDs), removes scheduled tasks under
+`Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\VMware`, and
+writes a firstboot PowerShell script that runs `msiexec /x {GUID} /qn` for
+each found MSI product, queries `Win32_Product` for remaining VMware entries,
+and stops/deletes residual VMware services.
+
+### nutanix / awspv / ec2launch / ec2 / virtualbox
+
+**What they do:** Each removes its respective hypervisor's guest tools,
+following the same `Detect` → `Remove` pattern — checking for known
+directories and registry keys, deleting files, and cleaning up uninstall
+entries.
+
 ## WindowsServiceDisabler
 
 Disable hypervisor services via registry (`Start=4`).
+Each plugin declares the service names it manages via `ServiceNames()`. The
+`DisableServices` method sets `Start=4` (disabled) in the SYSTEM hive for each
+service that has an existing registry key under
+`{CurrentControlSet}\Services\`.
 
 | Key | Package | Hypervisor |
 |-----|---------|------------|
-| `vmware` | services/vmware/ | VMware services |
+| `vmware` | services/vmware/ | VMware services (`VMTools`, `VGAuthService`, `VMwarePhysicalDiskHelper`, `vm3dservice`, `VMUSBArbService`) |
 | `nutanix` | services/nutanix/ | Nutanix services |
 | `virtualbox` | services/virtualbox/ | VirtualBox services |

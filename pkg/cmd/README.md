@@ -1,6 +1,14 @@
 # pkg/cmd/
 
-Thin orchestrators per utility. All pipeline blocks live under [`pkg/`](../).
+Thin orchestrators that wire pipeline blocks into executable sequences. Each
+orchestrator's `pipeline.go` reads a JSON input (produced by the previous
+stage), runs its blocks in order, and writes a JSON output for the next stage.
+The orchestrators contain no conversion logic themselves — all work is
+delegated to block packages under [`pkg/`](../).
+
+The four core binaries form a linear pipeline:
+**kc-prepare** → **kc-convert-linux** or **kc-convert-windows** → **kc-finalize**.
+The `kc-v2v` orchestrator wraps the full pipeline and adds vSphere integration.
 
 | Utility | README | Orchestrator |
 |---------|--------|--------------|

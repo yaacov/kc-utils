@@ -1,7 +1,23 @@
 # kc-convert-linux — orchestrator
 
 [`pipeline.go`](pipeline.go) is a thin orchestrator for kc-convert-linux. It
-runs 16 semantic blocks in order under [`pkg/convert-linux/`](../../convert-linux/).
+reads `PrepareOutput` JSON from kc-prepare, re-attaches to the already-mounted
+guest filesystem, and runs 17 semantic blocks in order to convert a Linux guest
+from its source hypervisor to KVM with virtio drivers.
+
+**What it does:** Classifies the distribution, detects the bootloader, scans
+and selects kernels, remaps device names, fixes UEFI boot entries, removes
+source hypervisor tools, installs the QEMU guest agent, cleans stale guest
+state, injects virtio modules into the initramfs, preserves NIC naming for
+static IPs, runs an offline SELinux relabel, and builds the GuestCaps output.
+
+**How it works:** Each block is either pluggable (dispatched via a
+`plugin.Registry` — distro, bootloader, remap, kernel scan, UEFI, hypervisor,
+guestagent, nicnaming) or strict (fixed logic — bootconfig, guestcleanup,
+initramfs, kernel select, guestcaps, SELinux). Pluggable blocks iterate all
+registered plugins: `Detect`/`Matches` selects which run, errors are recorded
+as warnings but do not abort the pipeline (except initramfs failure, which is
+fatal since the VM will not boot without virtio drivers).
 
 **Pluggable:** `pkg/convert-linux/<block>/plugins/` (distro, bootloader, remap, kernel,
 uefi, hypervisor, guestagent, nicnaming).

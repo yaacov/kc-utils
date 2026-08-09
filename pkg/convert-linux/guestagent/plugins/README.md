@@ -1,12 +1,35 @@
 # guestagent plugins
 
-Two plugin registries in this block:
+Two plugin registries in this block for installing the QEMU Guest Agent on
+Linux guests. The guest agent enables the KubeVirt host to communicate with the
+running VM for graceful shutdown, filesystem freeze/thaw (for consistent
+snapshots), and network information reporting. Installation is handled by a
+combination of agent detection and package sourcing: the `GuestAgent` plugin
+detects and manages the agent lifecycle, while the `PackageSource` plugin
+locates the agent package on the conversion host.
 
 ## GuestAgent
 
 | Key | Package | Description |
 |-----|---------|-------------|
 | `qemu-ga` | agent/qemuga/ | Detect / remove existing qemu-ga; firstboot installs via local RPM or network |
+
+### qemu-ga
+
+**What it does:** Manages the QEMU Guest Agent lifecycle during conversion —
+detects any existing installation, removes it if present (to avoid version
+conflicts), and schedules a firstboot installation from either a local package
+or the guest's package manager.
+
+**How it works:** During conversion, checks for existing `qemu-guest-agent`
+packages and `qemu-ga` binaries on the guest. If found, removes them to ensure
+a clean install. Then locates a suitable package via the `PackageSource`
+registry (the `directory` source). If a local RPM/DEB is available, copies it
+into the guest and generates firstboot commands to install it via
+`rpm -ivh` / `dpkg -i`. If no local package is found and the guest is online,
+generates firstboot commands to install via the guest's package manager
+(`dnf`/`yum`/`apt`/`zypper`). The firstboot commands are installed via the
+shared `pkg/common/firstboot` handler (systemd oneshot service).
 
 ## PackageSource
 

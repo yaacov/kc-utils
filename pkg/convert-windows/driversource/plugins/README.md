@@ -2,6 +2,12 @@
 
 `DriverSource` interface — locate VirtIO-Win driver files on the conversion host.
 
+Windows guests need VirtIO drivers (storage, network, display, balloon, serial)
+to boot and operate under KVM. These drivers are not part of Windows — they
+must be injected during conversion from a pre-extracted driver tree on the
+conversion host. Each driver source plugin knows where to find these files and
+how to filter them for the guest's architecture and Windows version.
+
 ```go
 type DriverSource interface {
     Available() bool
@@ -14,6 +20,19 @@ Conversion uses the **directory** source only (`CollectDrivers`).
 | Key | Package | Default path | Description |
 |-----|---------|--------------|-------------|
 | `directory` | directory/ | `/usr/share/virtio-win/drivers/by-os` | Read pre-extracted driver tree. Filter by guest arch and Windows version |
+
+### directory
+
+**What it does:** Locates VirtIO-Win driver files from a pre-extracted
+directory tree on the conversion host, filtering by guest architecture (x86,
+amd64) and Windows version.
+
+**How it works:** `Available()` checks whether the driver directory exists.
+`FindDrivers` walks the `by-os/` tree, matching directories against the guest's
+OS version string (with version-specific preferences and fallbacks provided by
+the `VersionHandler`). For each matching directory, collects `.sys`, `.inf`,
+`.cat`, and `.msi` files into `DriverFile` structs that include the host path,
+driver name, and metadata needed by the copy and registration blocks.
 
 ## Driver tree population
 
