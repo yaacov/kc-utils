@@ -30,6 +30,10 @@ mount_specs.go  — Mount spec recording for session re-attach; inspect-os
 util.go         — guestfishBinary, quoteGuestfish, runGuestfsCmd, scripts
 ```
 
+`FSCheck` maps ext*, xfs, and ntfs/ntfs3 to guestfish `e2fsck-f`, `xfs-repair`,
+and `ntfsfix` on unmounted block devices (prepare before mount; finalize after
+`umount-all`).
+
 On RHEL/UBI, prefer `virt-guestfish` when present (symlink) so NTFS mounts pass
 the winsupport allowlist; Fedora uses plain `guestfish` — see
 [docs/architecture/privilege-model.md](../../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
