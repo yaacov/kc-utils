@@ -74,7 +74,7 @@ func ValidateCopyMode(cfg *Config) error {
 
 // ResolveCopySources returns ordered vmdk paths for disk copy.
 func ResolveCopySources(cfg *Config) ([]string, error) {
-	if paths := splitDiskPath(cfg.DiskPath); len(paths) > 0 {
+	if paths := SplitDiskPath(cfg.DiskPath); len(paths) > 0 {
 		return paths, nil
 	}
 	if IsVSphereSource(cfg) && cfg.LibvirtURL != "" && cfg.VmName != "" {
@@ -133,7 +133,8 @@ func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool)
 	return host, datacenter, insecure
 }
 
-func splitDiskPath(raw string) []string {
+// SplitDiskPath splits a comma-separated disk path string into individual paths.
+func SplitDiskPath(raw string) []string {
 	if strings.TrimSpace(raw) == "" {
 		return nil
 	}
