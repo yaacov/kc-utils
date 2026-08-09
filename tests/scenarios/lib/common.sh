@@ -155,16 +155,46 @@ disable_windows_wait_for_reboot() {
   oc mtv settings set --setting feature_windows_wait_for_reboot --value false
 }
 
+# Fetch vCenter TLS certificate for secure provider creation.
+fetch_vsphere_cacert() {
+  local host="$1"
+  local cert_file
+  cert_file="$(mktemp /tmp/vsphere-cacert.XXXXXX.pem)"
+  if ! echo | openssl s_client -showcerts -connect "${host}:443" 2>/dev/null \
+      | openssl x509 >"${cert_file}"; then
+    rm -f "${cert_file}"
+    echo "ERROR: failed to fetch vSphere CA cert from ${host}:443" >&2
+    exit 1
+  fi
+  if [[ ! -s "${cert_file}" ]]; then
+    rm -f "${cert_file}"
+    echo "ERROR: empty vSphere CA cert from ${host}:443" >&2
+    exit 1
+  fi
+  echo "${cert_file}"
+}
+
 create_vsphere_and_host_providers() {
   local ns="$1"
   local provider="${2:-vsphere-test}"
+  local -a tls_args=()
 
-  echo "Creating vSphere provider (url=https://${GOVC_URL}/sdk)..."
+  if [[ "${PROVIDER_INSECURE_SKIP_TLS:-false}" == "true" ]]; then
+    echo "Creating vSphere provider (url=https://${GOVC_URL}/sdk, insecure TLS)..."
+    tls_args=(--provider-insecure-skip-tls)
+  else
+    echo "Creating vSphere provider (url=https://${GOVC_URL}/sdk, CA from ${GOVC_URL}:443)..."
+    require_bin openssl
+    local cacert_file
+    cacert_file="$(fetch_vsphere_cacert "${GOVC_URL}")"
+    tls_args=(--cacert "@${cacert_file}")
+  fi
+
   oc mtv create provider --name "${provider}" --type vsphere \
     --url "https://${GOVC_URL}/sdk" \
     --username "${GOVC_USERNAME}" \
     --password "${GOVC_PASSWORD}" \
-    --provider-insecure-skip-tls \
+    "${tls_args[@]}" \
     -n "${ns}"
 
   echo "Creating OpenShift provider..."

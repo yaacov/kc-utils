@@ -15,6 +15,7 @@
 #   RHEL_VM / WIN_VM        source VM names (auto-picked from mtv-func* if unset)
 #   NS                      namespace (required in .env)
 #   PROVIDER                vSphere provider name (required in .env)
+#   PROVIDER_INSECURE_SKIP_TLS  true = skip TLS verify; false = fetch CA from GOVC_URL:443
 #   SKIP_CLEANUP            keep NS on exit (default true); use cleanup script to remove later
 #   KEEP_BETWEEN_TESTS      leave RHEL plan/pods after RHEL (default true)
 #   KEEP_IMAGE_SETTING      leave virt_v2v_image_fqin / reboot flag (default true)

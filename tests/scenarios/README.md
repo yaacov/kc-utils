@@ -103,6 +103,7 @@ To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
 | Variable | Required in `.env` | Description |
 |---|---|---|
 | `GOVC_URL` / `GOVC_USERNAME` / `GOVC_PASSWORD` | yes | vSphere credentials |
+| `PROVIDER_INSECURE_SKIP_TLS` | no | `true` skips TLS verify; `false` (default) fetches CA from `GOVC_URL:443` |
 | `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
 | `NS` | yes | Test namespace |
 | `PROVIDER` | yes | vSphere provider name |
