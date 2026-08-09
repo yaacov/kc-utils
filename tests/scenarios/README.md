@@ -13,9 +13,10 @@ tests/scenarios/
 ├── test-mtv-benchmark.sh          # runner (MODE=kc | compare)
 ├── test-mtv-benchmark-cleanup.sh  # standalone cleanup
 ├── test-mtv-benchmark.md          # test plan
+├── .env.example                   # template — copy to .env (gitignored)
 ├── virt-v2v-vs-kc-v2v.md           # published comparison narrative
 ├── lib/
-│   ├── common.sh                  # preflight, settings, providers, inventory wait
+│   ├── common.sh                  # .env load, preflight, settings, providers
 │   ├── cleanup.sh                 # namespace/plan/settings cleanup helpers
 │   ├── generate-run-dashboard.py
 │   └── parse-kc-v2v-pod-phases.sh
@@ -30,8 +31,10 @@ Published archives and the static comparison dashboard live under
 
 - `oc` with the `mtv` plugin, `jq`, `python3` (dashboard generation)
 - MTV installed; `vddk_image` configured
-- `GOVC_URL`, `GOVC_USERNAME`, `GOVC_PASSWORD` for vSphere with `mtv-func*` VMs
-- A cluster-pullable kc-v2v image (`make build-kc-v2v-image push-kc-v2v-image`)
+- `tests/scenarios/.env` with vSphere creds, `KC_V2V_IMAGE`, `NS`, and `PROVIDER`
+  (copy from `.env.example`)
+- MTV installed; `vddk_image` configured
+- vSphere inventory with RHEL and Windows VMs (or pin `RHEL_VM` / `WIN_VM` in `.env`)
 
 Integration reference: [docs/forklift-usage.md](../../docs/forklift-usage.md).
 
@@ -39,12 +42,8 @@ Integration reference: [docs/forklift-usage.md](../../docs/forklift-usage.md).
 
 ```bash
 make build-kc-v2v-image push-kc-v2v-image
-export KC_V2V_IMAGE=quay.io/you/kc-v2v:devel-amd64
-export GOVC_URL=... GOVC_USERNAME=... GOVC_PASSWORD=...
-
-# Optional but recommended: pin source VMs
-export RHEL_VM=mtv-func-cold-rhel9-staticips
-export WIN_VM=mtv-func-win2008
+cp tests/scenarios/.env.example tests/scenarios/.env
+# edit .env: GOVC_*, KC_V2V_IMAGE, NS, PROVIDER; optional RHEL_VM / WIN_VM
 
 # Independent kc-v2v benchmark (logs + mem/CPU/net + pod logs + HTML)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
@@ -101,18 +100,18 @@ To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
 
 ## Environment variables
 
-| Variable | Default | Description |
+| Variable | Required in `.env` | Description |
 |---|---|---|
-| `MODE` | `kc` | `kc` = independent kc run; `compare` = kc then ref |
-| `KC_V2V_IMAGE` | (required) | kc-v2v image FQIN |
-| `GOVC_*` | — | vSphere credentials |
-| `RHEL_VM` / `WIN_VM` | auto-picked | Pin source VMs (recommended) |
-| `NS` | `mtv-kc-v2v-bench` | Test namespace |
-| `PROVIDER` | `vsphere-test` | vSphere provider name |
-| `SKIP_CLEANUP` | `true` | Keep namespace after exit |
-| `KEEP_BETWEEN_TESTS` | `true` | Leave RHEL plan/pods while running Windows |
-| `KEEP_IMAGE_SETTING` | `true` | Do not restore `virt_v2v_image_fqin` |
-| `DISABLE_WAIT_FOR_REBOOT` | `true` | Set `feature_windows_wait_for_reboot=false` |
-| `MEM_INTERVAL` | `10` | Seconds between metric samples |
-| `INTERVAL` | `10` | Seconds between plan status polls |
-| `MAX_ATTEMPTS` | `180` | Max poll attempts (~30 min per plan) |
+| `GOVC_URL` / `GOVC_USERNAME` / `GOVC_PASSWORD` | yes | vSphere credentials |
+| `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
+| `NS` | yes | Test namespace |
+| `PROVIDER` | yes | vSphere provider name |
+| `RHEL_VM` / `WIN_VM` | no | Pin source VMs (auto-picked when unset) |
+| `MODE` | no | `kc` or `compare` (default `kc`, shell override) |
+| `SKIP_CLEANUP` | no | Keep namespace after exit (default `true`) |
+| `KEEP_BETWEEN_TESTS` | no | Leave RHEL plan/pods while running Windows (default `true`) |
+| `KEEP_IMAGE_SETTING` | no | Do not restore `virt_v2v_image_fqin` (default `true`) |
+| `DISABLE_WAIT_FOR_REBOOT` | no | Set `feature_windows_wait_for_reboot=false` (default `true`) |
+| `MEM_INTERVAL` | no | Seconds between metric samples (default `10`) |
+| `INTERVAL` | no | Seconds between plan status polls (default `10`) |
+| `MAX_ATTEMPTS` | no | Max poll attempts (~30 min per plan, default `180`) |

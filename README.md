@@ -49,7 +49,7 @@ kc-v2v is a drop-in replacement for the virt-v2v conversion image in
 
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \
-  --value quay.io/yaacov/kc-v2v:devel-amd64
+  --value quay.io/kubev2v/kc-v2v:devel-amd64
 ```
 
 See [docs/forklift-usage.md](docs/forklift-usage.md) for full usage instructions.

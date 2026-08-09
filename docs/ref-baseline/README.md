@@ -17,10 +17,7 @@ This directory keeps the dashboard, archived runs, and result tables.
 ```bash
 # From repo root — build/push image under test, then:
 make build-kc-v2v-image push-kc-v2v-image
-export KC_V2V_IMAGE=quay.io/you/kc-v2v:devel-amd64
-export GOVC_URL=... GOVC_USERNAME=... GOVC_PASSWORD=...
-# Optional: pin VMs
-export RHEL_VM=mtv-func-cold-rhel9-staticips WIN_VM=mtv-func-win2008
+cp tests/scenarios/.env.example tests/scenarios/.env   # GOVC_*, optional VM pins
 
 # Independent kc-v2v benchmark (stores logs + mem/CPU/net + pod logs + HTML)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
@@ -31,19 +28,19 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 ### Prerequisites
 
-`oc`, `oc mtv`, `jq`, `python3`, and `GOVC_URL` / `GOVC_USERNAME` / `GOVC_PASSWORD`
-environment variables pointing to a vSphere with `mtv-func*` VMs.
-`KC_V2V_IMAGE` must be set to a cluster-pullable kc-v2v FQIN.
+`oc`, `oc mtv`, `jq`, `python3`, and a configured `tests/scenarios/.env`
+(`GOVC_*`, `KC_V2V_IMAGE`, `NS`, `PROVIDER`; see `.env.example`).
 
 ### Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `MODE` | `kc` | `kc` = independent kc run; `compare` = kc then ref |
-| `KC_V2V_IMAGE` | (required) | kc-v2v image FQIN |
-| `NS` | `mtv-kc-v2v-bench` | Namespace to create for the test |
-| `PROVIDER` | `vsphere-test` | vSphere provider name |
-| `RHEL_VM` / `WIN_VM` | (auto-picked) | Source VM names; auto-discovered from `mtv-func*` inventory |
+| `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
+| `NS` | yes | Namespace to create for the test |
+| `PROVIDER` | yes | vSphere provider name |
+| `GOVC_*` | yes | vSphere credentials |
+| `RHEL_VM` / `WIN_VM` | no | Source VM names; auto-discovered when unset |
 | `SKIP_CLEANUP` | `true` | Keep the namespace after the test |
 | `KEEP_BETWEEN_TESTS` | `true` | Leave RHEL plan/pods while running Windows |
 | `KEEP_IMAGE_SETTING` | `true` | Leave `virt_v2v_image_fqin` after exit |
@@ -83,7 +80,7 @@ Parse kc-v2v pod logs with
 | Run | Image | Timestamp | Directory |
 |---|---|---|---|
 | **ref** | operator default (virt-v2v) | 2026-08-05T21:15:38Z | `runs/ref-20260805T211538Z*` |
-| **kc-v2v** | `quay.io/yaacov/kc-v2v:devel-amd64` | 2026-08-05T20:42:33Z | `runs/kc-20260805T204233Z*` |
+| **kc-v2v** | kc-v2v image under test | 2026-08-05T20:42:33Z | `runs/kc-20260805T204233Z*` |
 
 Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK
 

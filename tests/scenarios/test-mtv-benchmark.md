@@ -17,8 +17,7 @@ Two modes:
 
 - `oc` with `mtv` plugin, `jq`, and `python3` (for the per-run dashboard)
 - MTV installed with VDDK image configured
-- `GOVC_URL`, `GOVC_USERNAME`, `GOVC_PASSWORD`
-- `KC_V2V_IMAGE` set to a cluster-pullable kc-v2v FQIN
+- `tests/scenarios/.env` configured (`GOVC_*`, `KC_V2V_IMAGE`, `NS`, `PROVIDER`)
 - At least one inventory VM matching `mtv-func*` with a RHEL guest and one with Windows
   (or pin with `RHEL_VM` / `WIN_VM`)
 
@@ -79,10 +78,8 @@ python3 tests/scenarios/lib/generate-run-dashboard.py \
 # Build and push the image under test
 make build-kc-v2v-image push-kc-v2v-image
 
-export KC_V2V_IMAGE=quay.io/you/kc-v2v:devel-amd64
-export GOVC_URL=... GOVC_USERNAME=... GOVC_PASSWORD=...
-# Optional: pin VMs
-export RHEL_VM=mtv-func-cold-rhel9-staticips WIN_VM=mtv-func-win2008
+cp tests/scenarios/.env.example tests/scenarios/.env
+# edit .env
 
 # Independent kc-v2v benchmark (default)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh

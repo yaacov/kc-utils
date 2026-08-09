@@ -7,15 +7,14 @@
 #   kc       Run once with KC_V2V_IMAGE (independent kc-v2v benchmark). Default.
 #   compare  Run twice: kc-v2v then operator-default virt-v2v (full compare).
 #
-# Prerequisites: oc, oc mtv, jq, GOVC_URL/USERNAME/PASSWORD, VDDK configured,
-#   and KC_V2V_IMAGE set to a cluster-pullable kc-v2v FQIN.
+# Prerequisites: oc, oc mtv, jq, tests/scenarios/.env configured, VDDK on cluster.
 #
-# Env overrides:
+# Env overrides (in .env or shell after load):
 #   MODE                    kc | compare (default kc)
-#   KC_V2V_IMAGE            conversion image FQIN (required)
+#   KC_V2V_IMAGE            conversion image FQIN (required in .env)
 #   RHEL_VM / WIN_VM        source VM names (auto-picked from mtv-func* if unset)
-#   NS                      namespace (default mtv-kc-v2v-bench)
-#   PROVIDER                vSphere provider name (default vsphere-test)
+#   NS                      namespace (required in .env)
+#   PROVIDER                vSphere provider name (required in .env)
 #   SKIP_CLEANUP            keep NS on exit (default true); use cleanup script to remove later
 #   KEEP_BETWEEN_TESTS      leave RHEL plan/pods after RHEL (default true)
 #   KEEP_IMAGE_SETTING      leave virt_v2v_image_fqin / reboot flag (default true)
@@ -39,8 +38,6 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/cleanup.sh"
 
 MODE="${MODE:-kc}"
-NS="${NS:-mtv-kc-v2v-bench}"
-PROVIDER="${PROVIDER:-vsphere-test}"
 RHEL_VM="${RHEL_VM:-}"
 WIN_VM="${WIN_VM:-}"
 SKIP_CLEANUP="${SKIP_CLEANUP:-true}"
@@ -50,7 +47,6 @@ DISABLE_WAIT_FOR_REBOOT="${DISABLE_WAIT_FOR_REBOOT:-true}"
 INTERVAL="${INTERVAL:-10}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-180}"
 MEM_INTERVAL="${MEM_INTERVAL:-10}"
-KC_V2V_IMAGE="${KC_V2V_IMAGE:-}"
 V2V_LABEL="forklift.app=virt-v2v"
 RUN_TS="$(date -u +%Y%m%dT%H%M%SZ)"
 RUNS_DIR="${SCENARIO_DIR}/runs"
@@ -64,7 +60,9 @@ MEM_DIR=""
 
 usage() {
   cat <<EOF
-Usage: MODE=kc|compare KC_V2V_IMAGE=<fqin> $0
+Usage: MODE=kc|compare $0
+
+  Configure tests/scenarios/.env first (see .env.example).
 
   MODE=kc       Independent kc-v2v benchmark (default)
   MODE=compare  kc-v2v then operator-default virt-v2v
@@ -443,10 +441,7 @@ case "${MODE}" in
     ;;
 esac
 
-if [[ -z "${KC_V2V_IMAGE}" ]]; then
-  echo "ERROR: KC_V2V_IMAGE must be set (e.g. quay.io/you/kc-v2v:devel-amd64)." >&2
-  exit 1
-fi
+require_env KC_V2V_IMAGE
 
 echo "=========================================="
 echo "MTV conversion benchmark"

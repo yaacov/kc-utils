@@ -7,11 +7,11 @@
 #
 # Examples:
 #   ./tests/scenarios/test-mtv-benchmark-cleanup.sh
-#   NS=mtv-kc-v2v-bench ./tests/scenarios/test-mtv-benchmark-cleanup.sh --namespace-only
-#   RHEL_VM=mtv-func-cold-rhel9-staticips ./tests/scenarios/test-mtv-benchmark-cleanup.sh --release-rhel
+#   NS=other-ns ./tests/scenarios/test-mtv-benchmark-cleanup.sh --namespace-only
+#   RHEL_VM=my-rhel-vm ./tests/scenarios/test-mtv-benchmark-cleanup.sh --release-rhel
 #
-# Env:
-#   NS        Benchmark namespace (default mtv-kc-v2v-bench)
+# Env (tests/scenarios/.env):
+#   NS        Benchmark namespace
 #   RHEL_VM   Migrated RHEL VM name (for --release-rhel)
 
 set -euo pipefail
@@ -22,7 +22,6 @@ source "${SCRIPT_DIR}/lib/common.sh"
 # shellcheck source=lib/cleanup.sh
 source "${SCRIPT_DIR}/lib/cleanup.sh"
 
-NS="${NS:-mtv-kc-v2v-bench}"
 SCOPE="all"
 
 usage() {
@@ -39,8 +38,8 @@ Options:
   --release-plans    Delete benchmark plans (RHEL + Windows) in the namespace
   -h, --help         Show this help
 
-Environment:
-  NS        Benchmark namespace (default: mtv-kc-v2v-bench)
+Environment (tests/scenarios/.env):
+  NS        Benchmark namespace
   RHEL_VM   Migrated RHEL VM name (for --release-rhel)
 EOF
 }

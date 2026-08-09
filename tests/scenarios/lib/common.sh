@@ -5,6 +5,30 @@
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCENARIO_DIR="$(cd "${LIB_DIR}/.." && pwd)"
 
+# Load tests/scenarios/.env (required). Copy from .env.example on first setup.
+load_scenario_env() {
+  local env_file="${SCENARIO_DIR}/.env"
+  if [[ ! -f "${env_file}" ]]; then
+    echo "ERROR: ${env_file} not found." >&2
+    echo "Tip: cp tests/scenarios/.env.example tests/scenarios/.env" >&2
+    exit 1
+  fi
+  set -a
+  # shellcheck source=/dev/null
+  source "${env_file}"
+  set +a
+}
+
+require_env() {
+  local var="$1"
+  if [[ -z "${!var:-}" ]]; then
+    echo "ERROR: ${var} must be set in tests/scenarios/.env" >&2
+    exit 1
+  fi
+}
+
+load_scenario_env
+
 fmt_dur() {
   local s="$1"
   printf "%dm%02ds" $((s / 60)) $((s % 60))
@@ -45,9 +69,12 @@ preflight_mtv_cluster() {
   require_bin jq
 
   if [[ -z "${GOVC_URL:-}" || -z "${GOVC_USERNAME:-}" || -z "${GOVC_PASSWORD:-}" ]]; then
-    echo "ERROR: GOVC_URL, GOVC_USERNAME, and GOVC_PASSWORD must be set." >&2
+    echo "ERROR: GOVC_URL, GOVC_USERNAME, and GOVC_PASSWORD must be set in tests/scenarios/.env" >&2
     exit 1
   fi
+
+  require_env NS
+  require_env PROVIDER
 
   if ! oc mtv settings get --setting vddk_image &>/dev/null; then
     echo "ERROR: Cannot read MTV settings. Is MTV installed on this cluster?" >&2
@@ -108,7 +135,7 @@ restore_mtv_settings() {
 set_virt_v2v_image() {
   local image="$1"
   if [[ -z "${image}" ]]; then
-    echo "ERROR: conversion image FQIN is empty. Set KC_V2V_IMAGE." >&2
+    echo "ERROR: conversion image FQIN is empty. Set KC_V2V_IMAGE in tests/scenarios/.env." >&2
     exit 1
   fi
   echo "Setting virt_v2v_image_fqin=${image}"

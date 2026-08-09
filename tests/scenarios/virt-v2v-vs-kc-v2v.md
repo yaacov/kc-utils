@@ -1,13 +1,12 @@
 # Forklift conversion: virt-v2v vs kc-v2v
 
-Cold migration comparison on OpenShift MTV (cluster `qemtvd-07`), same VMs and storage class, sequential runs (RHEL then Windows).
+Cold migration comparison on OpenShift MTV, same source VMs and storage class, sequential runs (RHEL then Windows).
 
 | Converter | Image | Run id |
 |---|---|---|
 | **virt-v2v** (default Forklift) | operator default | `20260805T211538Z` (`runs/ref-20260805T211538Z*`) |
-| **kc-v2v** | `quay.io/yaacov/kc-v2v:devel-amd64` | `20260805T204233Z` (`runs/kc-20260805T204233Z*`) |
+| **kc-v2v** | kc-v2v image under test | `20260805T204233Z` (`runs/kc-20260805T204233Z*`) |
 
-VMs: `mtv-func-cold-rhel9-staticips`, `mtv-func-win2008`  
 Default SC: `ocs-storagecluster-ceph-rbd-virtualization`  
 `feature_windows_wait_for_reboot=false` (fair conversion comparison)  
 Canonical metrics: archived under [`docs/ref-baseline/runs/`](../../docs/ref-baseline/runs/) and summarized in [`docs/ref-baseline/README.md`](../../docs/ref-baseline/README.md). Runner: [`test-mtv-benchmark.sh`](test-mtv-benchmark.sh) (`MODE=compare`). Per-run Chart.js dashboards are written to [`runs/`](runs/) as `test-mtv-benchmark-<ts>.html`.

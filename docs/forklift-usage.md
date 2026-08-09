@@ -17,7 +17,7 @@ Point Forklift at the kc-v2v container image and run migrations as usual.
 
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \
-  --value quay.io/yaacov/kc-v2v:devel-amd64
+  --value quay.io/kubev2v/kc-v2v:devel-amd64
 ```
 
 All subsequent migrations will use kc-v2v for guest conversion.
@@ -73,8 +73,7 @@ Manual MTV scenario tests live under
 ```bash
 # Build, push, then benchmark (logs + mem/CPU/net + pod logs + HTML)
 make build-kc-v2v-image push-kc-v2v-image
-export KC_V2V_IMAGE=quay.io/you/kc-v2v:devel-amd64
-export GOVC_URL=... GOVC_USERNAME=... GOVC_PASSWORD=...
+cp tests/scenarios/.env.example tests/scenarios/.env   # set KC_V2V_IMAGE, GOVC_*, etc.
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh          # independent kc-v2v
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # kc then operator default
 ./tests/scenarios/test-mtv-benchmark-cleanup.sh          # delete NS + reset MTV settings
