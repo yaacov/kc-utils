@@ -111,9 +111,29 @@ Disk copy settings:
 | Variable | Default |
 |----------|---------|
 | `V2V_copyConcurrency` | `4` (max parallel NFC disk copies; capped at disk count) |
-| `V2V_caBundle` | `/opt/ca-bundle.crt` (CA symlink dest) |
-| `V2V_caCert` | `/etc/secret/cacert` (preferred CA source if present) |
-| `V2V_systemCaBundle` | `/etc/pki/tls/certs/ca-bundle.crt.bak` (fallback) |
+
+### TLS (kc-v2v / Forklift)
+
+kc-v2v uses Forklift conversion-pod signals only (no `V2V_caCert` env vars):
+
+| Forklift signal | TLS mode |
+|-----------------|----------|
+| `no_verify=1` in `V2V_libvirtURL` | Insecure |
+| `/etc/secret/cacert` mounted | Custom CA |
+| Secure, no provider CA in secret | System CA |
+
+At startup, kc-v2v calls `LinkCertificates`: when `/etc/secret/cacert` exists,
+symlinks `/opt/ca-bundle.crt` → secret (Forklift virt-v2v parity).
+
+When disk copy runs, `env.BuildCopyInput` writes `copy-input.json` for
+`kc-copy`. That maps Forklift TLS state into kc-copy's two input fields
+(`kc-copy` does not interpret Forklift signals itself):
+
+| Forklift state | `copy-input.json` |
+|----------------|-------------------|
+| `no_verify=1` in `V2V_libvirtURL` | `"insecure": true` |
+| `/etc/secret/cacert` mounted | `"ca_cert": "/etc/secret/cacert"` |
+| Secure, no provider CA in secret | omit both → kc-copy uses system CA |
 
 Workdir defaults: `/var/tmp/v2v` (JSON handoff files), mount root `/tmp/kc-guest`.
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	kccopy "github.com/yaacov/kc-utils/pkg/copy"
+	v2vtls "github.com/yaacov/kc-utils/pkg/v2v/tls"
 	"github.com/yaacov/kc-utils/pkg/v2v/vsphere"
 )
 
@@ -74,7 +75,7 @@ func ValidateCopyMode(cfg *Config) error {
 
 // ResolveCopySources returns ordered vmdk paths for disk copy.
 func ResolveCopySources(cfg *Config) ([]string, error) {
-	if paths := SplitDiskPath(cfg.DiskPath); len(paths) > 0 {
+	if paths := kccopy.SplitDiskPath(cfg.DiskPath); len(paths) > 0 {
 		return paths, nil
 	}
 	if IsVSphereSource(cfg) && cfg.LibvirtURL != "" && cfg.VmName != "" {
@@ -99,58 +100,40 @@ func ValidateCopySourceCount(sources []string) error {
 	return nil
 }
 
-// BuildCopyInput maps a loaded config and resolved source disks to copy input.
+// BuildCopyInput maps Forklift TLS state and copy settings to kc-copy input.
+// kc-copy only sees the resulting insecure/ca_cert fields in copy-input.json.
 // SourceDisks selects which NFC lease disks kc-copy will stream.
 func BuildCopyInput(cfg *Config, sources []string) *kccopy.CopyInput {
-	host, datacenter, insecure, caBundle := parseLibvirtURL(cfg.LibvirtURL)
-	if caBundle == "" {
-		caBundle = cfg.CaBundle
-	}
-	if caBundle == "" {
-		caBundle = DefaultCaBundle
-	}
-	return &kccopy.CopyInput{
+	host, datacenter, insecure := parseLibvirtURL(cfg.LibvirtURL)
+	in := &kccopy.CopyInput{
 		Host:            host,
 		Datacenter:      datacenter,
 		Insecure:        insecure,
-		CaBundle:        caBundle,
 		VMName:          cfg.VmName,
 		Fingerprint:     cfg.Fingerprint,
 		SourceDisks:     sources,
 		Workdir:         cfg.Workdir,
 		CopyConcurrency: cfg.CopyConcurrency,
 	}
+	if ProviderCACertMounted() {
+		in.CaCert = DefaultCaCert
+	}
+	return in
 }
 
-func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool, caBundle string) {
+func parseLibvirtURL(libvirtURL string) (host, datacenter string, insecure bool) {
 	u, err := url.Parse(libvirtURL)
 	if err != nil {
-		return "", "", false, ""
+		return "", "", false
 	}
 	host = u.Hostname()
 	if p := u.Port(); p != "" {
 		host = net.JoinHostPort(host, p)
 	}
-	insecure = strings.Contains(u.RawQuery, "no_verify=1") ||
-		strings.Contains(u.RawQuery, "no_verify")
-	caBundle = u.Query().Get("cacert")
+	insecure = v2vtls.InsecureFromQuery(u.RawQuery)
 	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
 	if len(parts) > 0 && parts[0] != "" {
 		datacenter = parts[0]
 	}
-	return host, datacenter, insecure, caBundle
-}
-
-// SplitDiskPath splits a comma-separated disk path string into individual paths.
-func SplitDiskPath(raw string) []string {
-	if strings.TrimSpace(raw) == "" {
-		return nil
-	}
-	var paths []string
-	for _, part := range strings.Split(raw, ",") {
-		if path := strings.TrimSpace(part); path != "" {
-			paths = append(paths, path)
-		}
-	}
-	return paths
+	return host, datacenter, insecure
 }

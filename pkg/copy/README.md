@@ -5,10 +5,7 @@ Downloads VMDK disks from vCenter/ESXi over HTTPS — no VMware VDDK library
 required — and writes raw disk images to PVC targets (block devices or
 filesystem images).
 
-This package implements the `kc-copy` binary's core logic. In the kc-v2v
-pipeline, `kc-copy` runs as an optional first step to pull VM disks from
-vSphere into local PVCs before the prepare/convert/finalize stages operate
-on them.
+This package implements the `kc-copy` binary's core logic.
 
 ## How it works
 
@@ -19,10 +16,11 @@ on them.
 
 2. **NFC export** — connects to vSphere using credentials from
    `/etc/secret/accessKeyId` and `/etc/secret/secretKey`, locates the VM by
-   name, and starts an NFC export lease via govmomi. TLS uses the same policy
-   as Forklift virt-v2v: skip verify when `insecure` is set, otherwise trust
-   the CA bundle at `ca_bundle` (default `/opt/ca-bundle.crt` after
-   `LinkCertificates`). The lease provides HTTPS URLs for each virtual disk.
+   name, and starts an NFC export lease via govmomi. vCenter SDK TLS comes from
+   `CopyInput.insecure` and `CopyInput.ca_cert` (`pkg/v2v/tls.CopyTLS`), with
+   optional vCenter thumbprint fallback (`fingerprint`). ESXi NFC disk
+   downloads reuse the govmomi client; ESXi host thumbprints from the lease
+   are registered during export (see `nfc.go`).
 
 3. **Disk matching** — filters the NFC lease URLs to only the requested
    source VMDK paths (snapshot delta suffixes like `-000001.vmdk` are
@@ -68,7 +66,8 @@ memory-constrained pods.
 | `copy.go` | Entry point (`Run`), target validation, concurrent copy orchestration |
 | `vmdk.go` | `StreamToRaw` — VMDK decompression and raw disk writing |
 | `vsphere.go` | vSphere connection, NFC lease management, disk URL mapping |
-| `download.go` | HTTP download, `CopyDisk`, progress logging |
+| `nfc.go` | ESXi NFC HTTPS download via govmomi lease thumbprints |
+| `download.go` | NFC download orchestration, `CopyDisk`, progress logging |
 | `filter.go` | VMDK path normalization and NFC lease filtering |
 | `target.go` | PVC target discovery (`DiscoverTargets`, `EmptyTargets`) |
 | `drain_linux.go` | Linux page-cache drain via fdatasync + fadvise |

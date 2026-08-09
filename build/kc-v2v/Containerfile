@@ -33,7 +33,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-prep
     CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' -o /out/kc-copy ./cmd/kc-copy
 
 # ── Stage 2: download guest conversion assets ────────────────────────
-FROM registry.fedoraproject.org/fedora:44 AS downloader
+FROM quay.io/fedora/fedora:44 AS downloader
 
 RUN dnf install -y --setopt=install_weak_deps=False curl bsdtar && dnf clean all
 
@@ -58,9 +58,10 @@ RUN chmod +x /tmp/stage-linux-packages.sh && \
     rm -f /tmp/stage-linux-packages.sh
 
 # ── Stage 3: runtime ─────────────────────────────────────────────────
-FROM registry.fedoraproject.org/fedora:44
+FROM quay.io/fedora/fedora:44
 
 RUN dnf install -y --setopt=install_weak_deps=False \
+        ca-certificates \
         qemu-img cryptsetup lvm2 clevis clevis-luks \
         hivex perl-hivex \
         libguestfs guestfs-tools libguestfs-xfs && \

@@ -13,6 +13,24 @@ Point Forklift at the kc-v2v container image and run migrations as usual.
 - MTV (Forklift) installed on the cluster
 - A source provider (e.g. vSphere) configured in Forklift
 
+## Naming: Forklift vs kc-utils
+
+Forklift keeps **virt-v2v** names for the conversion pod and cluster settings.
+kc-utils replaces only the **container image contents** (entrypoint `kc-v2v`).
+
+| Layer | Forklift / MTV name | kc-utils name | Notes |
+|-------|---------------------|---------------|--------|
+| Cluster setting (`oc mtv settings`) | `virt_v2v_image_fqin` | Image FQIN value, e.g. `quay.io/you/kc-v2v:tag` | There is **no** `kc-v2v` MTV setting |
+| Controller env (synced from setting) | `VIRT_V2V_IMAGE` | Same FQIN string | Operator deployment, not pod env |
+| Conversion pod label | `forklift.app=virt-v2v` | — | `oc get pods -l forklift.app=virt-v2v` |
+| Pod container name | `virt-v2v` | Runs `/usr/bin/kc-v2v` when using this image |
+| Pod environment | `V2V_*` | Read by `kc-v2v` via `pkg/v2v/env` | Forklift `AppConfig`; not `KC_*` |
+| Local tests / Makefile | — | `KC_V2V_IMAGE` | Test helper only; scripts set `virt_v2v_image_fqin` from it |
+
+Upstream default image: `quay.io/kubev2v/forklift-virt-v2v`. To use kc-utils,
+set **`virt_v2v_image_fqin`** to your **`kc-v2v`** image — the pod is still
+called virt-v2v in MTV.
+
 ## 1. Configure the conversion image
 
 ```bash
@@ -20,7 +38,8 @@ oc mtv settings set --setting virt_v2v_image_fqin \
   --value quay.io/yaacov/kc-v2v:devel-amd64
 ```
 
-All subsequent migrations will use kc-v2v for guest conversion.
+All subsequent migrations run the **virt-v2v conversion pod** with your
+**kc-v2v** container image (same MTV setting name as upstream virt-v2v).
 
 ## 2. Create a migration plan
 

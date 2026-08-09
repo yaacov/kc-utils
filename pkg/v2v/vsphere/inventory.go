@@ -39,7 +39,7 @@ func LoadInventory(cfg *config.Config) (*Inventory, error) {
 	if cfg.LibvirtURL == "" || cfg.VmName == "" {
 		return nil, fmt.Errorf("V2V_libvirtURL and V2V_vmName are required for vSphere inventory")
 	}
-	key := cfg.LibvirtURL + "\x00" + cfg.VmName
+	key := cfg.LibvirtURL + "\x00" + cfg.VmName + "\x00" + cfg.Fingerprint
 	cache.Lock()
 	defer cache.Unlock()
 	if cache.inv != nil && cache.key == key {
@@ -52,28 +52,28 @@ func LoadInventory(cfg *config.Config) (*Inventory, error) {
 		}
 		return cache.inv, cache.err
 	}
-	cache.inv, cache.err = loadInventory(context.Background(), cfg.LibvirtURL, cfg.VmName)
+	cache.inv, cache.err = loadInventory(context.Background(), cfg)
 	cache.key = key
 	return cache.inv, cache.err
 }
 
-func loadInventory(ctx context.Context, libvirtURL, vmName string) (*Inventory, error) {
-	client, err := connect(ctx, libvirtURL)
+func loadInventory(ctx context.Context, cfg *config.Config) (*Inventory, error) {
+	client, err := connect(ctx, cfg.LibvirtURL, cfg.Fingerprint)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = client.Logout(ctx) }()
 
 	finder := find.NewFinder(client.Client, true)
-	if dcName := datacenterName(libvirtURL); dcName != "" {
+	if dcName := datacenterName(cfg.LibvirtURL); dcName != "" {
 		if dc, dcErr := finder.Datacenter(ctx, dcName); dcErr == nil {
 			finder.SetDatacenter(dc)
 		}
 	}
 
-	vm, err := finder.VirtualMachine(ctx, vmName)
+	vm, err := finder.VirtualMachine(ctx, cfg.VmName)
 	if err != nil {
-		return nil, fmt.Errorf("find VM %q: %w", vmName, err)
+		return nil, fmt.Errorf("find VM %q: %w", cfg.VmName, err)
 	}
 
 	var vmMo mo.VirtualMachine
@@ -89,7 +89,7 @@ func loadInventory(ctx context.Context, libvirtURL, vmName string) (*Inventory, 
 	}
 
 	if vmMo.Config == nil {
-		return nil, fmt.Errorf("VM %q has no config", vmName)
+		return nil, fmt.Errorf("VM %q has no config", cfg.VmName)
 	}
 
 	inv := &Inventory{
@@ -104,10 +104,10 @@ func loadInventory(ctx context.Context, libvirtURL, vmName string) (*Inventory, 
 		inv.HostName = vmMo.Guest.HostName
 	}
 	if len(inv.Disks) == 0 {
-		return nil, fmt.Errorf("no vmdk disks found for VM %q", vmName)
+		return nil, fmt.Errorf("no vmdk disks found for VM %q", cfg.VmName)
 	}
 	slog.Info("loaded vSphere inventory",
-		"vm", vmName,
+		"vm", cfg.VmName,
 		"moref", inv.Moref,
 		"disks", len(inv.Disks),
 		"nics", len(inv.NICs),

@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,10 +13,19 @@ import (
 
 const downloadBufSize = 256 << 10 // 256 KiB read buffer per disk
 
+type nfcDownloader interface {
+	downloadURL(ctx context.Context, rawURL string) (io.ReadCloser, error)
+}
+
 // CopyDisk downloads a single disk from an NFC export URL and writes raw
 // data to the target path (block device or filesystem disk.img).
-// The caller should share a single http.Client across concurrent downloads.
-func CopyDisk(ctx context.Context, client *http.Client, disk DiskURL, target Target, onProgress func(pct int)) error {
+// Downloads use the govmomi client on lease so ESXi thumbprints from the NFC
+// lease are honored (see Lease.downloadURL).
+func CopyDisk(ctx context.Context, lease *Lease, disk DiskURL, target Target, onProgress func(pct int)) error {
+	return copyDiskFromDownloader(ctx, lease, disk, target, onProgress)
+}
+
+func copyDiskFromDownloader(ctx context.Context, dl nfcDownloader, disk DiskURL, target Target, onProgress func(pct int)) error {
 	if err := ensureTargetFile(target); err != nil {
 		return err
 	}
@@ -40,20 +49,11 @@ func CopyDisk(ctx context.Context, client *http.Client, disk DiskURL, target Tar
 		"size", disk.Size,
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, disk.URL, nil)
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
-
-	resp, err := client.Do(req)
+	body, err := dl.downloadURL(ctx, disk.URL)
 	if err != nil {
 		return fmt.Errorf("HTTP GET %s: %w", disk.DiskPath, err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP GET %s: status %d", disk.DiskPath, resp.StatusCode)
-	}
+	defer body.Close()
 
 	lastPct := -1
 	progressCb := func(written, total int64) {
@@ -72,7 +72,7 @@ func CopyDisk(ctx context.Context, client *http.Client, disk DiskURL, target Tar
 
 	dw := newDrainWriter(f)
 
-	br := bufio.NewReaderSize(resp.Body, downloadBufSize)
+	br := bufio.NewReaderSize(body, downloadBufSize)
 	if err := StreamToRaw(ctx, br, dw, progressCb); err != nil {
 		return fmt.Errorf("stream to raw %s: %w", target.Path, err)
 	}

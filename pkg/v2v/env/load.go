@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+
+	"github.com/yaacov/kc-utils/pkg/v2v/config"
 )
 
 // Load reads V2V_* environment variables and CLI flags.
@@ -20,9 +22,6 @@ func Load() (*Config, error) {
 		LogLevel:             "info",
 		BinDir:               defaultBinDir(),
 		CopyConcurrency:      getEnvInt(EnvCopyConcurrency, DefaultCopyConcurrency),
-		CaBundle:             envOr(EnvCaBundle, DefaultCaBundle),
-		CaCert:               envOr(EnvCaCert, DefaultCaCert),
-		SystemCaBundle:       envOr(EnvSystemCaBundle, DefaultSystemCaBundle),
 	}
 
 	flag.BoolVar(&cfg.IsLocalMigration, "local-migration", getEnvBool(EnvLocalMigration, true), "local migration mode")
@@ -48,14 +47,9 @@ func Load() (*Config, error) {
 	flag.BoolVar(&cfg.MultipleIPsPerNic, "multiple-ips-per-nic", getEnvBool(EnvMultipleIPsPerNic, false), "multiple IPs per NIC")
 	flag.StringVar(&cfg.Fingerprint, "fingerprint", os.Getenv(EnvFingerprint), "vCenter SSL thumbprint")
 	flag.IntVar(&cfg.CopyConcurrency, "copy-concurrency", cfg.CopyConcurrency, "max parallel disk copies")
-	flag.StringVar(&cfg.CaBundle, "ca-bundle", cfg.CaBundle, "dest path for CA symlink")
-	flag.StringVar(&cfg.CaCert, "ca-cert", cfg.CaCert, "preferred CA source file (provider secret)")
-	flag.StringVar(&cfg.SystemCaBundle, "system-ca-bundle", cfg.SystemCaBundle, "fallback system CA bundle path")
 	flag.BoolVar(&cfg.Offline, "offline", getEnvBool(EnvOffline, false), "pass --offline to converters (use local packages only)")
 	flag.BoolVar(&cfg.UseGuestfs, "guestfs", getEnvBool(EnvGuestfs, false), "use libguestfs appliance instead of privileged mount syscalls")
 	flag.Parse()
-
-	resolveCaPaths(cfg)
 
 	if err := ValidateCopyMode(cfg); err != nil {
 		return nil, err
@@ -64,19 +58,6 @@ func Load() (*Config, error) {
 		slog.Warn("V2V_extra_args ignored by kc-v2v", "args", cfg.ExtraArgs)
 	}
 	return cfg, nil
-}
-
-// resolveCaPaths fills empty CA path fields from env, then known Forklift defaults.
-func resolveCaPaths(cfg *Config) {
-	if cfg.CaBundle == "" {
-		cfg.CaBundle = envOr(EnvCaBundle, DefaultCaBundle)
-	}
-	if cfg.CaCert == "" {
-		cfg.CaCert = envOr(EnvCaCert, DefaultCaCert)
-	}
-	if cfg.SystemCaBundle == "" {
-		cfg.SystemCaBundle = envOr(EnvSystemCaBundle, DefaultSystemCaBundle)
-	}
 }
 
 func getExtraArgs() []string {
@@ -125,38 +106,34 @@ func defaultBinDir() string {
 	return "/usr/lib/kc-utils"
 }
 
-// LinkCertificates mirrors Forklift vSphere CA symlink behavior.
-// Idempotent: safe when both kc-v2v and kc-copy call it (shared /opt volume).
-// Paths come from cfg / env (V2V_caBundle, V2V_caCert, V2V_systemCaBundle), defaulting
-// to Forklift conversion-pod locations.
+// LinkCertificates mirrors Forklift virt-v2v entrypoint: when the provider CA
+// secret is mounted at /etc/secret/cacert, symlink /opt/ca-bundle.crt → secret.
 func LinkCertificates(cfg *Config) error {
 	if cfg.Source != "vSphere" {
 		return nil
 	}
-	resolveCaPaths(cfg)
-
-	src := cfg.SystemCaBundle
-	srcKind := "system"
-	if _, err := os.Stat(cfg.CaCert); err == nil {
-		src = cfg.CaCert
-		srcKind = "secret"
+	if _, err := os.Stat(config.DefaultCaCert); err != nil {
+		if os.IsNotExist(err) {
+			slog.Debug("no provider CA secret; using system trust store")
+			return nil
+		}
+		return err
 	}
 
 	replaced := false
-	if err := os.Remove(cfg.CaBundle); err != nil {
+	if err := os.Remove(config.DefaultCaBundle); err != nil {
 		if !os.IsNotExist(err) {
 			return err
 		}
 	} else {
 		replaced = true
 	}
-	if err := os.Symlink(src, cfg.CaBundle); err != nil {
+	if err := os.Symlink(config.DefaultCaCert, config.DefaultCaBundle); err != nil {
 		return err
 	}
 	slog.Info("linked vSphere CA bundle",
-		"src", src,
-		"srcKind", srcKind,
-		"dest", cfg.CaBundle,
+		"src", config.DefaultCaCert,
+		"dest", config.DefaultCaBundle,
 		"replaced", replaced,
 	)
 	return nil
@@ -165,4 +142,10 @@ func LinkCertificates(cfg *Config) error {
 // EnsureWorkdir creates the v2v working directory.
 func EnsureWorkdir(cfg *Config) error {
 	return os.MkdirAll(cfg.Workdir, 0o755)
+}
+
+// ProviderCACertMounted reports whether Forklift mounted a provider CA at /etc/secret/cacert.
+func ProviderCACertMounted() bool {
+	_, err := os.Stat(config.DefaultCaCert)
+	return err == nil
 }
