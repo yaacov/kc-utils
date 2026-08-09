@@ -1,10 +1,13 @@
 # Kvm Converter Utilities (kc-utils)
 
-Converts virtual machines disks from VMware, Xen, VirtualBox, Parallels, Hyper-V, EC2,
-Nutanix AHV, and other disk-based sources to run on KVM with virtio drivers.
+Pure Go utilities that convert virtual machines from external hypervisors into
+KVM-compatible guests. Guest adaptations include VirtIO driver injection,
+initramfs and kernel updates, bootloader fixes, and network driver adjustments
+for Linux and Windows.
+
 The core pipeline is four pure-Go binaries that inspect and mount guest disks,
-convert the guest OS (Linux or Windows), then unmount, validate filesystems, and
-emit JSON metadata for creating the target VM.
+convert the guest OS, then unmount, validate filesystems, and emit JSON metadata
+for creating the target VM.
 
 <p align="center">
   <br>
