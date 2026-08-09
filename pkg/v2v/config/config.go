@@ -23,15 +23,13 @@ const (
 	EnvCopyConcurrency              = "V2V_copyConcurrency"
 	EnvOffline                      = "V2V_offline"
 	EnvGuestfs                      = "V2V_guestfs"
-	EnvCaBundle                     = "V2V_caBundle"
-	EnvCaCert                       = "V2V_caCert"
-	EnvSystemCaBundle               = "V2V_systemCaBundle"
 
 	DefaultCopyConcurrency = 4
-	// Forklift conversion-pod CA symlink paths.
-	DefaultCaBundle       = "/opt/ca-bundle.crt"
-	DefaultCaCert         = "/etc/secret/cacert"
-	DefaultSystemCaBundle = "/etc/pki/tls/certs/ca-bundle.crt.bak"
+	// Forklift conversion-pod paths (not env-configurable).
+	// DefaultCaBundle is the virt-v2v symlink target used by LinkCertificates.
+	// DefaultCaCert is the mounted provider PEM path used for TLS and as the symlink source.
+	DefaultCaBundle = "/opt/ca-bundle.crt"
+	DefaultCaCert   = "/etc/secret/cacert"
 
 	DefaultWorkdir              = "/var/tmp/v2v"
 	DefaultInspectionOutputFile = DefaultWorkdir + "/inspection.xml"
@@ -65,9 +63,6 @@ type Config struct {
 	OverlayEnabled               bool
 	Fingerprint                  string
 	CopyConcurrency              int
-	CaBundle                     string // dest symlink for TLS
-	CaCert                       string // preferred CA source (provider secret)
-	SystemCaBundle               string // fallback system CA pool
 
 	Offline              bool
 	UseGuestfs           bool

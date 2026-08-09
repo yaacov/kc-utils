@@ -131,7 +131,16 @@ All disk access goes through `pkg/guest/`. Never leak backend-specific logic int
 No cross-stage imports under `pkg/`. Stages (binaries) talk via JSON files; blocks within a stage talk via explicit parameters and return values through the stage orchestrator.
 
 ### 6. Keep docs in sync
+
 When modifying a pipeline block, update the corresponding `docs/apps/kc-<stage>.md` file (e.g., `docs/apps/kc-convert-linux.md`, `docs/apps/kc-prepare.md`). CLI flags, block descriptions, plugin tables, and behavioral notes must reflect the current code. A code change without a matching docs update is incomplete.
+
+**Documentation layering** (see [docs/architecture/README.md](../docs/architecture/README.md#documentation-layering)) follows the same isolation as code:
+
+- **Stage app docs** (`docs/apps/kc-*.md`) document only that binary's CLI and JSON contract. Put orchestrator mapping (`V2V_*` → handoff JSON), Forklift wiring, and "when spawned by kc-v2v" notes in an **Integration** section at the end—or in `docs/apps/kc-v2v.md`—not in the opening paragraph or primary config tables.
+- **Orchestrator docs** (`kc-v2v.md`, `forklift-usage.md`, `build/kc-v2v/README.md`) own env translation, subprocess spawning, and deployment.
+- **Architecture docs** (`docs/architecture/`) own cross-cutting design (privilege model, conversion paths, shared listener contract). Link from stage docs instead of duplicating kc-v2v lifecycle in every stage file.
+
+Test: *If this binary were run standalone with only JSON input, would this sentence still belong here?*
 
 ## What NOT to Do
 

@@ -48,8 +48,9 @@ Two guest access modes are supported (see [docs/architecture/privilege-model.md]
 
 ## Forklift (MTV) Integration
 
-kc-v2v is a drop-in replacement for the virt-v2v conversion image in
-[Forklift](https://github.com/kubev2v/forklift). Configure it with:
+kc-v2v is a drop-in replacement for the virt-v2v **container image** in
+[Forklift](https://github.com/kubev2v/forklift). The MTV cluster setting is still
+`virt_v2v_image_fqin`; point it at your kc-v2v image FQIN:
 
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \

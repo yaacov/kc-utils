@@ -62,3 +62,17 @@ func FilterDiskURLs(lease []DiskURL, sources []string) ([]DiskURL, error) {
 	}
 	return selected, nil
 }
+
+// SplitDiskPath splits a comma-separated disk path string into individual paths.
+func SplitDiskPath(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var paths []string
+	for _, part := range strings.Split(raw, ",") {
+		if path := strings.TrimSpace(part); path != "" {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}

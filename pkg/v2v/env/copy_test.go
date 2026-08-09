@@ -185,17 +185,13 @@ func TestBuildCopyInputKeepsSourceDisks(t *testing.T) {
 	if in.Insecure {
 		t.Fatal("Insecure should be false for URL without no_verify")
 	}
-	if in.CaBundle != DefaultCaBundle {
-		t.Fatalf("CaBundle = %q, want %q", in.CaBundle, DefaultCaBundle)
-	}
 }
 
-func TestBuildCopyInputJSONIncludesTLSFields(t *testing.T) {
+func TestBuildCopyInputJSONInsecure(t *testing.T) {
 	cfg := &Config{
 		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi?no_verify=1",
 		VmName:      "my-vm",
 		Fingerprint: "aa:bb",
-		CaBundle:    DefaultCaBundle,
 	}
 	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
 	data, err := json.Marshal(in)
@@ -209,34 +205,32 @@ func TestBuildCopyInputJSONIncludesTLSFields(t *testing.T) {
 	if raw["insecure"] != true {
 		t.Fatalf("insecure = %v, want true in JSON", raw["insecure"])
 	}
-	if raw["ca_bundle"] != DefaultCaBundle {
-		t.Fatalf("ca_bundle = %v, want %q in JSON", raw["ca_bundle"], DefaultCaBundle)
+	if _, ok := raw["ca_bundle"]; ok {
+		t.Fatalf("ca_bundle should not appear in JSON: %v", raw)
+	}
+	if _, ok := raw["system_ca_bundle"]; ok {
+		t.Fatalf("system_ca_bundle should not appear in JSON: %v", raw)
+	}
+	if raw["fingerprint"] != "aa:bb" {
+		t.Fatalf("fingerprint = %v, want aa:bb in JSON", raw["fingerprint"])
 	}
 }
 
-func TestBuildCopyInputCaBundleFromURL(t *testing.T) {
-	cfg := &Config{
-		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi?cacert=/opt/ca-bundle.crt",
-		VmName:      "my-vm",
-		Fingerprint: "aa:bb",
-		CaBundle:    "/should/not/use",
+func TestBuildCopyInputWithMountedSecret(t *testing.T) {
+	if _, err := os.Stat(DefaultCaCert); err != nil {
+		t.Skip("provider CA secret not mounted")
 	}
-	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
-	if in.CaBundle != "/opt/ca-bundle.crt" {
-		t.Fatalf("CaBundle = %q, want from libvirt URL", in.CaBundle)
-	}
-}
-
-func TestBuildCopyInputCaBundleFromConfig(t *testing.T) {
 	cfg := &Config{
 		LibvirtURL:  "vpx://user@vcenter/dc/host/esxi",
 		VmName:      "my-vm",
-		Fingerprint: "aa:bb",
-		CaBundle:    "/custom/bundle.pem",
+		Fingerprint: "aa:bb:cc",
 	}
 	in := BuildCopyInput(cfg, []string{"[ds] vm/a.vmdk"})
-	if in.CaBundle != "/custom/bundle.pem" {
-		t.Fatalf("CaBundle = %q, want cfg default", in.CaBundle)
+	if in.CaCert != DefaultCaCert {
+		t.Fatalf("CaCert = %q, want %q", in.CaCert, DefaultCaCert)
+	}
+	if in.Fingerprint != "aa:bb:cc" {
+		t.Fatalf("Fingerprint = %q", in.Fingerprint)
 	}
 }
 
@@ -247,7 +241,6 @@ func TestParseLibvirtURL(t *testing.T) {
 		host       string
 		datacenter string
 		insecure   bool
-		caBundle   string
 	}{
 		{
 			name:       "standard vCenter URL",
@@ -262,15 +255,13 @@ func TestParseLibvirtURL(t *testing.T) {
 			host:       "vcenter",
 			datacenter: "dc",
 			insecure:   true,
-			caBundle:   "",
 		},
 		{
-			name:       "with cacert",
+			name:       "with cacert boilerplate",
 			url:        "vpx://user@vcenter/dc/host/esxi?cacert=/opt/ca-bundle.crt",
 			host:       "vcenter",
 			datacenter: "dc",
 			insecure:   false,
-			caBundle:   "/opt/ca-bundle.crt",
 		},
 		{
 			name:       "with port",
@@ -296,7 +287,7 @@ func TestParseLibvirtURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			host, datacenter, insecure, caBundle := parseLibvirtURL(tt.url)
+			host, datacenter, insecure := parseLibvirtURL(tt.url)
 			if host != tt.host {
 				t.Errorf("host = %q, want %q", host, tt.host)
 			}
@@ -305,9 +296,6 @@ func TestParseLibvirtURL(t *testing.T) {
 			}
 			if insecure != tt.insecure {
 				t.Errorf("insecure = %v, want %v", insecure, tt.insecure)
-			}
-			if caBundle != tt.caBundle {
-				t.Errorf("caBundle = %q, want %q", caBundle, tt.caBundle)
 			}
 		})
 	}

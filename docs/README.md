@@ -16,7 +16,7 @@ CLI reference, pipeline block tables, usage guides, and runnable examples:
 
 Design reference, OS classification, conversion-path matrices, and benchmarks:
 
-- [architecture/README.md](architecture/README.md) — architecture docs index
+- [architecture/README.md](architecture/README.md) — architecture docs index and **documentation layering**
 - [architecture/privilege-model.md](architecture/privilege-model.md) — host-mount vs guestfish
 - [architecture/guest-os-handlers.md](architecture/guest-os-handlers.md) — Linux distro and Windows version handlers
 - [architecture/conversion-paths.md](architecture/conversion-paths.md) — OS + hypervisor path reference

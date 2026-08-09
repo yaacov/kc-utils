@@ -28,14 +28,10 @@ const (
 	EnvCopyConcurrency              = config.EnvCopyConcurrency
 	EnvOffline                      = config.EnvOffline
 	EnvGuestfs                      = config.EnvGuestfs
-	EnvCaBundle                     = config.EnvCaBundle
-	EnvCaCert                       = config.EnvCaCert
-	EnvSystemCaBundle               = config.EnvSystemCaBundle
 
 	DefaultCopyConcurrency      = config.DefaultCopyConcurrency
 	DefaultCaBundle             = config.DefaultCaBundle
 	DefaultCaCert               = config.DefaultCaCert
-	DefaultSystemCaBundle       = config.DefaultSystemCaBundle
 	DefaultWorkdir              = config.DefaultWorkdir
 	DefaultInspectionOutputFile = config.DefaultInspectionOutputFile
 	DefaultDynamicScriptsDir    = config.DefaultDynamicScriptsDir

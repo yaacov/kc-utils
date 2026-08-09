@@ -19,6 +19,16 @@ func TestSDKURL(t *testing.T) {
 	}
 }
 
+func TestSDKURLSecure(t *testing.T) {
+	_, insecure, err := sdkURL("vpx://user@vcenter.example.com/Datacenter/Cluster/host?cacert=/opt/ca-bundle.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if insecure {
+		t.Fatal("expected secure mode")
+	}
+}
+
 func TestSDKURLWithPort(t *testing.T) {
 	sdk, _, err := sdkURL("vpx://user@vcenter.example.com:8443/path")
 	if err != nil {
@@ -47,7 +57,6 @@ func TestTrimDeltaSuffix(t *testing.T) {
 }
 
 func TestDisksFromDevicesOrder(t *testing.T) {
-	// Minimal device graph: SCSI ctrl key=1000, disk on unit 0; SATA ctrl key=15000, disk unit 0
 	scsiKey := int32(1000)
 	sataKey := int32(15000)
 	unit0 := int32(0)
@@ -95,7 +104,6 @@ func TestDisksFromDevicesOrder(t *testing.T) {
 	if len(paths) != 2 {
 		t.Fatalf("got %v", paths)
 	}
-	// libvirt order: SCSI before SATA
 	if paths[0] != "[ds] vm/scsi.vmdk" || paths[1] != "[ds] vm/sata.vmdk" {
 		t.Fatalf("order = %v", paths)
 	}

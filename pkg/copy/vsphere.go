@@ -4,19 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
-	"os"
 	"regexp"
 	"sort"
-	"strings"
 
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/nfc"
-	"github.com/vmware/govmomi/session"
-	"github.com/vmware/govmomi/vim25"
-	"github.com/vmware/govmomi/vim25/soap"
 	vimtypes "github.com/vmware/govmomi/vim25/types"
+	v2vtls "github.com/yaacov/kc-utils/pkg/v2v/tls"
+	"github.com/yaacov/kc-utils/pkg/v2v/vsphere"
 )
 
 // DiskURL pairs a download URL with its source VMDK path and size.
@@ -38,8 +34,8 @@ var diskTargetIDRE = regexp.MustCompile(`(?i)^disk-\d+\.vmdk$`)
 
 // ExportVM starts an NFC export of the named VM and returns a Lease with
 // per-disk HTTPS download URLs. The caller must call Complete or Abort.
-func ExportVM(ctx context.Context, host, datacenter string, insecure bool, caBundle, vmName string) (*Lease, error) {
-	client, err := vsphereConnect(ctx, host, insecure, caBundle)
+func ExportVM(ctx context.Context, host, datacenter string, policy v2vtls.Policy, fingerprint, vmName string) (*Lease, error) {
+	client, err := vsphere.ConnectHost(ctx, host, policy, fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -366,58 +362,4 @@ func copyBusRank(bus string) int {
 		}
 	}
 	return len(copyBusOrder)
-}
-
-// --- vSphere connection helpers (standalone, no pkg/v2v dependency) ---
-
-func vsphereConnect(ctx context.Context, host string, insecure bool, caBundle string) (*govmomi.Client, error) {
-	sdk := &url.URL{
-		Scheme: "https",
-		Host:   host,
-		Path:   "/sdk",
-	}
-	user, password, err := vsphereCredentials()
-	if err != nil {
-		return nil, err
-	}
-	sdk.User = url.UserPassword(user, password)
-
-	tlsCfg, err := tlsConfig(insecure, caBundle)
-	if err != nil {
-		return nil, err
-	}
-
-	soapClient := soap.NewClient(sdk, insecure)
-	soapClient.DefaultTransport().TLSClientConfig = tlsCfg
-
-	vimClient, err := vim25.NewClient(ctx, soapClient)
-	if err != nil {
-		return nil, fmt.Errorf("connect to vSphere: %w", err)
-	}
-
-	c := &govmomi.Client{
-		Client:         vimClient,
-		SessionManager: session.NewManager(vimClient),
-	}
-	if err = c.Login(ctx, sdk.User); err != nil {
-		return nil, fmt.Errorf("connect to vSphere: %w", err)
-	}
-	return c, nil
-}
-
-func vsphereCredentials() (user, password string, err error) {
-	userBytes, err := os.ReadFile("/etc/secret/accessKeyId")
-	if err != nil {
-		return "", "", fmt.Errorf("read vSphere username: %w", err)
-	}
-	passBytes, err := os.ReadFile("/etc/secret/secretKey")
-	if err != nil {
-		return "", "", fmt.Errorf("read vSphere password: %w", err)
-	}
-	user = strings.TrimSpace(string(userBytes))
-	password = strings.TrimSpace(string(passBytes))
-	if user == "" || password == "" {
-		return "", "", fmt.Errorf("vSphere credentials in /etc/secret are empty")
-	}
-	return user, password, nil
 }

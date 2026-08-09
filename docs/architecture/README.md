@@ -4,6 +4,40 @@ Design and reference documentation for kc-utils. For contributor coding rules
 (block isolation, backend transparency, plugin conventions), see
 [community/architecture.md](../../community/architecture.md).
 
+## Documentation layering
+
+Docs follow the same containment rules as code: **each binary or package doc
+describes only its own contract**; composition and deployment live elsewhere.
+
+| Layer | Where | Documents | Does not document |
+|-------|--------|-----------|-------------------|
+| **Stage / utility** | [../apps/kc-*.md](../apps/) | CLI flags, input/output JSON, in-process behavior | How the orchestrator builds JSON, Forklift env vars, sibling binaries |
+| **Orchestrator** | [../apps/kc-v2v.md](../apps/kc-v2v.md), [../apps/forklift-usage.md](../apps/forklift-usage.md) | `V2V_*` → JSON mapping, subprocess order, Forklift wiring | Block/plugin internals (link to architecture + stage docs) |
+| **Integration** | [../apps/README.md](../apps/README.md), [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) | Full pod flow, image contents, MTV setup | Per-flag reference (link to stage docs) |
+| **Design** | This directory | Cross-cutting behavior (privilege, OS paths, benchmarks) | CLI tables duplicated from app docs |
+
+**Rules (mirror [block isolation](../../community/architecture.md#block-isolation)):**
+
+1. **Contract first** — A stage doc leads with `PrepareInput`, `CopyInput`, etc.
+   Orchestrator-specific names (`V2V_*`, Forklift, `BuildCopyInput`) belong in
+   `kc-v2v.md` or an **Integration** section at the end of the stage doc, not
+   in the opening or config tables.
+2. **One direction of dependency** — Stage docs may link up to the orchestrator;
+   orchestrator docs link down to stage contracts. Avoid teaching Forklift TLS
+   inside `kc-copy.md` (orchestrator maps that into `copy-input.json`).
+3. **Shared contracts in architecture** — Cross-stage mechanisms (guestfish PID
+   env, `PipelineData` shape, plugin registries) are described once here or in
+   [community/architecture.md](../../community/architecture.md), with stage docs
+   linking to the shared section instead of repeating orchestrator lifecycle.
+4. **Image / MTV is not stage logic** — Container paths (`/usr/share/virtio-win/…`),
+   Forklift Plan fields, and benchmark numbers live in `build/kc-v2v/` or
+   `forklift-usage.md`, not in `kc-convert-*.md` or `guest-os-handlers.md`
+   except as a one-line link.
+
+When adding or editing docs, ask: *would this paragraph still be true if the
+binary were invoked by a shell script with only JSON files?* If not, move it to
+orchestrator or integration docs.
+
 ## Design docs
 
 - [privilege-model.md](privilege-model.md) — host-mount vs libguestfs appliance privilege trade-offs

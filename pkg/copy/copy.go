@@ -11,16 +11,20 @@ import (
 	"sync"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
+	v2vtls "github.com/yaacov/kc-utils/pkg/v2v/tls"
 )
 
 const DefaultCopyConcurrency = 4
+
+// DefaultWorkdir is the default working directory for copy progress files.
+const DefaultWorkdir = "/var/tmp/v2v"
 
 // CopyInput is the standalone input to Run.
 type CopyInput struct {
 	Host            string   `json:"host"`
 	Datacenter      string   `json:"datacenter,omitempty"`
 	Insecure        bool     `json:"insecure"`
-	CaBundle        string   `json:"ca_bundle"`
+	CaCert          string   `json:"ca_cert,omitempty"`
 	VMName          string   `json:"vm_name"`
 	Fingerprint     string   `json:"fingerprint"`
 	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
@@ -101,7 +105,12 @@ func Run(input *CopyInput) error {
 		outputPath = input.Workdir + "/copy-progress.json"
 	}
 
-	lease, err := ExportVM(ctx, input.Host, input.Datacenter, input.Insecure, input.CaBundle, input.VMName)
+	policy, err := v2vtls.CopyTLS(input.Insecure, input.CaCert)
+	if err != nil {
+		return err
+	}
+
+	lease, err := ExportVM(ctx, input.Host, input.Datacenter, policy, input.Fingerprint, input.VMName)
 	if err != nil {
 		return fmt.Errorf("NFC export: %w", err)
 	}
@@ -124,10 +133,6 @@ func Run(input *CopyInput) error {
 		"concurrency", concurrency,
 	)
 
-	httpClient, err := newHTTPClient(input.Insecure, input.CaBundle)
-	if err != nil {
-		return fmt.Errorf("TLS config: %w", err)
-	}
 	progress := Progress{}
 	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
@@ -160,7 +165,7 @@ func Run(input *CopyInput) error {
 				"target", target.Path,
 				"block", target.IsBlockDev,
 			)
-			if err := CopyDisk(ctx, httpClient, diskURL, target, func(pct int) {
+			if err := CopyDisk(ctx, lease, diskURL, target, func(pct int) {
 				slog.Info("disk copy progress",
 					"index", target.Index,
 					"source", diskURL.DiskPath,

@@ -3,7 +3,7 @@
 `kc-v2v` is a drop-in replacement for Forklift's `virt-v2v` image, running the kc-utils pipeline (`kc-prepare` → `kc-convert-*` → `kc-finalize`).
 
 The image is built with the official **golang** image for compilation and
-**Fedora** (`registry.fedoraproject.org/fedora:44`) for the runtime.
+**Fedora** (`quay.io/fedora/fedora:44`) for the runtime.
 
 Binary documentation: [docs/apps/kc-v2v.md](../../docs/apps/kc-v2v.md).
 
