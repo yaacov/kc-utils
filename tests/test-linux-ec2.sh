@@ -34,8 +34,11 @@ EOF
 
 # EC2 service symlinks
 mkdir -p "$d/etc/systemd/system/multi-user.target.wants"
+mkdir -p "$d/usr/lib/systemd/system/multi-user.target.wants"
 touch "$d/etc/systemd/system/multi-user.target.wants/amazon-ssm-agent.service"
 touch "$d/etc/systemd/system/multi-user.target.wants/amazon-cloudwatch-agent.service"
+touch "$d/usr/lib/systemd/system/multi-user.target.wants/amazon-ssm-agent.service"
+touch "$d/usr/lib/systemd/system/multi-user.target.wants/amazon-cloudwatch-agent.service"
 
 # Verify EC2 indicators exist before conversion
 test -f "$d/usr/bin/amazon-ssm-agent"
@@ -63,9 +66,11 @@ cleanup_fn rm -f "$output_json"
     --offline \
     --log-level debug
 
-# Verify EC2 service symlinks were removed
+# Verify EC2 services were disabled and masked
 test ! -f "$d/etc/systemd/system/multi-user.target.wants/amazon-ssm-agent.service"
 test ! -f "$d/etc/systemd/system/multi-user.target.wants/amazon-cloudwatch-agent.service"
+assert_systemd_unit_disabled "$d" "amazon-ssm-agent.service"
+assert_systemd_unit_disabled "$d" "amazon-cloudwatch-agent.service"
 
 # Verify cloud-init EC2 datasource was disabled
 test -f "$d/etc/cloud/cloud.cfg.d/99-kc-disable-ec2.cfg"

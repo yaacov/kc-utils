@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor/plugins/testassert"
 )
 
 func TestDetectPresent(t *testing.T) {
@@ -39,12 +41,23 @@ func TestCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	vendorLibWantsDir := filepath.Join(root, "usr", "lib", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(vendorLibWantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
 	vmtoolsd := filepath.Join(wantsDir, "vmtoolsd.service")
 	openvm := filepath.Join(wantsDir, "open-vm-tools.service")
 	if err := os.WriteFile(vmtoolsd, []byte("[Unit]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(openvm, []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vendorLibWantsDir, "vmtoolsd.service"), []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vendorLibWantsDir, "open-vm-tools.service"), []byte("[Unit]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -59,4 +72,6 @@ func TestCleanup(t *testing.T) {
 	if _, err := os.Stat(openvm); !os.IsNotExist(err) {
 		t.Errorf("open-vm-tools.service still exists after Cleanup")
 	}
+	testassert.UnitDisabled(t, root, "vmtoolsd.service")
+	testassert.UnitDisabled(t, root, "open-vm-tools.service")
 }

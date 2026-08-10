@@ -109,6 +109,22 @@ check_json_field() {
     fi
 }
 
+# assert_systemd_unit_disabled: verify a systemd unit is masked and vendor wants removed
+# Usage: assert_systemd_unit_disabled <guest_root> <unit.service>
+assert_systemd_unit_disabled() {
+    local root="$1" unit="$2"
+    local mask="$root/etc/systemd/system/$unit"
+    local vendor_wants="$root/usr/lib/systemd/system/multi-user.target.wants/$unit"
+    if [ -e "$vendor_wants" ] || [ -L "$vendor_wants" ]; then
+        echo "FAIL: vendor wants symlink still exists: $vendor_wants"
+        return 1
+    fi
+    if [ ! -L "$mask" ] || [ "$(readlink "$mask")" != "/dev/null" ]; then
+        echo "FAIL: unit not masked to /dev/null: $mask"
+        return 1
+    fi
+}
+
 # make_linux_prepare_json: generate a prepare section JSON for Linux tests
 # Usage: make_linux_prepare_json <root> <distro> <major> <minor> <arch> <product> <firmware> > file.json
 make_linux_prepare_json() {

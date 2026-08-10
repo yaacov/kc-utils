@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor/plugins/testassert"
 )
 
 func TestDetectSSMAgent(t *testing.T) {
@@ -52,19 +54,8 @@ func TestDetectAbsent(t *testing.T) {
 
 func TestCleanup(t *testing.T) {
 	guestRoot := t.TempDir()
+	setupEC2ServiceSymlinks(t, guestRoot)
 
-	// Create systemd symlinks.
-	wantsDir := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants")
-	if err := os.MkdirAll(wantsDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	for _, svc := range []string{"amazon-ssm-agent.service", "amazon-cloudwatch-agent.service"} {
-		if err := os.WriteFile(filepath.Join(wantsDir, svc), []byte("fake"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// Create cloud.cfg.d directory.
 	cloudCfgDir := filepath.Join(guestRoot, "etc", "cloud", "cloud.cfg.d")
 	if err := os.MkdirAll(cloudCfgDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -75,14 +66,8 @@ func TestCleanup(t *testing.T) {
 		t.Fatalf("Cleanup returned error: %v", err)
 	}
 
-	// Verify symlinks removed.
-	for _, svc := range []string{"amazon-ssm-agent.service", "amazon-cloudwatch-agent.service"} {
-		if _, err := os.Stat(filepath.Join(wantsDir, svc)); !os.IsNotExist(err) {
-			t.Errorf("service symlink %s still exists", svc)
-		}
-	}
+	assertEC2ServicesDisabled(t, guestRoot)
 
-	// Verify cloud-init disable config written.
 	disableCfg := filepath.Join(cloudCfgDir, "99-kc-disable-ec2.cfg")
 	data, err := os.ReadFile(disableCfg)
 	if err != nil {
@@ -90,5 +75,65 @@ func TestCleanup(t *testing.T) {
 	}
 	if string(data) != "datasource_list: [None]\n" {
 		t.Errorf("disable config content = %q, want datasource_list: [None]", data)
+	}
+}
+
+func TestCleanupCreatesCloudCfgDir(t *testing.T) {
+	guestRoot := t.TempDir()
+	setupEC2ServiceSymlinks(t, guestRoot)
+
+	u := &Cleanup{}
+	if err := u.Cleanup(guestRoot); err != nil {
+		t.Fatalf("Cleanup returned error: %v", err)
+	}
+
+	disableCfg := filepath.Join(guestRoot, "etc", "cloud", "cloud.cfg.d", "99-kc-disable-ec2.cfg")
+	if _, err := os.Stat(disableCfg); err != nil {
+		t.Fatalf("cloud-init disable config not created without pre-existing cloud.cfg.d: %v", err)
+	}
+}
+
+func setupEC2ServiceSymlinks(t *testing.T, guestRoot string) {
+	t.Helper()
+
+	wantsDir := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(wantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	vendorWantsDir := filepath.Join(guestRoot, "usr", "lib", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(vendorWantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, svc := range []string{
+		"amazon-ssm-agent.service",
+		"amazon-cloudwatch-agent.service",
+		"ec2-instance-connect.service",
+		"hibagent.service",
+		"hibinit-agent.service",
+	} {
+		if err := os.WriteFile(filepath.Join(wantsDir, svc), []byte("fake"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(vendorWantsDir, svc), []byte("fake"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func assertEC2ServicesDisabled(t *testing.T, guestRoot string) {
+	t.Helper()
+
+	wantsDir := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants")
+	for _, svc := range []string{
+		"amazon-ssm-agent.service",
+		"amazon-cloudwatch-agent.service",
+		"ec2-instance-connect.service",
+		"hibagent.service",
+		"hibinit-agent.service",
+	} {
+		if _, err := os.Stat(filepath.Join(wantsDir, svc)); !os.IsNotExist(err) {
+			t.Errorf("service symlink %s still exists", svc)
+		}
+		testassert.UnitDisabled(t, guestRoot, svc)
 	}
 }

@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor/plugins/testassert"
 )
 
 func TestDetectUsrBin(t *testing.T) {
@@ -58,6 +60,16 @@ func TestCleanup(t *testing.T) {
 	if err := os.WriteFile(svc2, []byte("[Unit]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	vendorWantsDir := filepath.Join(root, "usr", "lib", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(vendorWantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vendorWantsDir, "vboxadd-service.service"), []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vendorWantsDir, "vboxadd.service"), []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	u := &Cleanup{}
 	if err := u.Cleanup(root); err != nil {
@@ -69,4 +81,6 @@ func TestCleanup(t *testing.T) {
 	if _, err := os.Stat(svc2); !os.IsNotExist(err) {
 		t.Error("vboxadd.service should be removed")
 	}
+	testassert.UnitDisabled(t, root, "vboxadd-service.service")
+	testassert.UnitDisabled(t, root, "vboxadd.service")
 }

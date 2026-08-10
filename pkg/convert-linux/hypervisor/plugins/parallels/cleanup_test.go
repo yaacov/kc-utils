@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor/plugins/testassert"
 )
 
 func TestDetectPrlsrvctl(t *testing.T) {
@@ -50,8 +52,16 @@ func TestCleanup(t *testing.T) {
 	if err := os.MkdirAll(wantsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	svc := filepath.Join(wantsDir, "prltoolsd.service")
+	unit := "prltoolsd.service"
+	svc := filepath.Join(wantsDir, unit)
 	if err := os.WriteFile(svc, []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	vendorWantsDir := filepath.Join(root, "usr", "lib", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(vendorWantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(vendorWantsDir, unit), []byte("[Unit]\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -62,4 +72,6 @@ func TestCleanup(t *testing.T) {
 	if _, err := os.Stat(svc); !os.IsNotExist(err) {
 		t.Error("prltoolsd.service should be removed")
 	}
+	testassert.UnitDisabled(t, root, unit)
+	testassert.UnitDisabled(t, root, "prl-x11.service")
 }

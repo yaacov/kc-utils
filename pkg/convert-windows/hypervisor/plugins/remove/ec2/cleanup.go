@@ -3,7 +3,6 @@
 package ec2
 
 import (
-	"fmt"
 	"log/slog"
 	"path/filepath"
 	"strings"
@@ -25,7 +24,7 @@ func (c *Cleanup) Detect(mountRoot string, _, _ registry.Hive) bool {
 }
 
 func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
-	ccs := currentControlSet(systemHive)
+	ccs := hypervisor.CurrentControlSet(systemHive)
 	ec2Services := []string{
 		"AWSPVDrivers", "Xennet", "XenVbd", "XenVif", "AWSNVME",
 		"AmazonSSMAgent", "AmazonCloudWatchAgent", "Ec2Config", "EC2Launch",
@@ -59,11 +58,4 @@ func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
 
 	slog.Info("EC2 cleanup complete")
 	return nil
-}
-
-func currentControlSet(systemHive registry.Hive) string {
-	if n, err := systemHive.GetDWORD(`Select`, "Current"); err == nil && n > 0 {
-		return fmt.Sprintf("ControlSet%03d", n)
-	}
-	return "ControlSet001"
 }
