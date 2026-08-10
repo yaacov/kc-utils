@@ -101,27 +101,39 @@ removed offline. The remove plugin logs their presence; the services plugin
 disables them.
 
 **Services disabled (Start=4):**
-`vmicheartbeat`, `vmicshutdown`, `vmicexchange`, `vmicvss`, `vmictimesync`,
-`vmicrdv`, `vmicguestinterface`, `vmickvpexchange`
+`vmicheartbeat`, `vmicshutdown`, `vmicvss`, `vmictimesync`, `vmicrdv`,
+`vmicguestinterface`, `vmickvpexchange`, `vmicvmsession`, `storflt`
+
+**Extra registry:** `W32Time\TimeProviders\VMICTimeProvider` `Enabled=0`
 
 **Inbox drivers left in place:**
 `vmbus.sys`, `storvsc.sys`, `netvsc.sys`, `VMBusHID.sys`, `hypervideo.sys`
 
-### Citrix/XenServer -- Stub
+### Citrix/XenServer
 
 **Remove:** [`../../pkg/convert-windows/hypervisor/plugins/remove/citrix/remove.go`](../../pkg/convert-windows/hypervisor/plugins/remove/citrix/remove.go)
 
-Detects Citrix XenTools via `Program Files\Citrix\XenTools` directory or
-`Uninstall\Citrix XenTools` registry key.
-Logs a warning that removal is not yet implemented; no cleanup is performed.
+| Action | Details |
+|--------|---------|
+| UpperFilters cleaned | Remove `XENFILT` from System and HDC class GUIDs |
+| Services disabled (Start=4) | `XenSvc`, `xenagent`, `xenbus_monitor`, `xenlite` |
+| Directories removed | `Program Files\Citrix\XenTools` |
+| Registry keys removed | `Uninstall\Citrix XenTools` |
 
-### Parallels -- Stub
+Boot-critical filter cleanup only; full MSI/driver scrub is not implemented.
+
+### Parallels
 
 **Remove:** [`../../pkg/convert-windows/hypervisor/plugins/remove/parallels/remove.go`](../../pkg/convert-windows/hypervisor/plugins/remove/parallels/remove.go)
 
-Detects Parallels Tools via `Program Files\Parallels\Parallels Tools` directory
-or `Uninstall\Parallels Tools` registry key.
-Logs a warning that removal is not yet implemented; no cleanup is performed.
+| Action | Details |
+|--------|---------|
+| LowerFilters cleaned | Remove `prl_strg` from disk class GUID (prevents BSOD 0x7b) |
+| Services disabled (Start=4) | `prl_strg`, `prl_boot`, `prl_scsi`, `prl_eth5`, `Parallels Tools Service` |
+| Directories removed | `Program Files\Parallels\Parallels Tools`, `Program Files (x86)\Parallels\Parallels Tools` |
+| Registry keys removed | `Uninstall\Parallels Tools` |
+
+Boot-critical filter + core service disable; full virt-v2v-style driver list is not implemented.
 
 ### Cleanup summary
 
@@ -134,8 +146,8 @@ Logs a warning that removal is not yet implemented; no cleanup is performed.
 | Nutanix | Yes | Yes | Yes |
 | VirtualBox | Yes | Yes | Yes |
 | Hyper-V | Yes | Yes | Yes |
-| Citrix | **Stub** (detect + warn) | None | **Stub** |
-| Parallels | **Stub** (detect + warn) | None | **Stub** |
+| Citrix | Yes (filter + core services) | Inline in remove | Partial |
+| Parallels | Yes (filter + core services) | Inline in remove | Partial |
 
 ---
 
@@ -233,8 +245,8 @@ regardless of Windows version.
 | Nutanix | Full |
 | VirtualBox | Full |
 | Hyper-V | Full |
-| Citrix | Stub (detect + warn) |
-| Parallels | Stub (detect + warn) |
+| Citrix | Partial (XENFILT + core services) |
+| Parallels | Partial (prl_strg filter + core services) |
 
 ### Windows: Install status by version
 
@@ -256,19 +268,15 @@ regardless of the source hypervisor.
 
 ## Gaps and Notes
 
-1. **Windows Citrix/Parallels cleanup** -- Stub removal plugins exist
-   under [`pkg/convert-windows/hypervisor/plugins/remove/`](../../pkg/convert-windows/hypervisor/plugins/remove/)
-   that detect the hypervisor's presence and log a warning, but no actual
-   cleanup is performed. The Linux side fully handles both. Install is
-   unaffected (VirtIO drivers install normally regardless of source hypervisor).
+1. **Windows Citrix/Parallels cleanup** -- Boot-critical filter and core
+   service cleanup is implemented; full MSI/driver scrub matching virt-v2v
+   is still partial. Install is unaffected (VirtIO drivers install normally
+   regardless of source hypervisor).
 
 2. **Guest agent exclusions** -- `win2008`, `winvista`, `win2003`, and `winxp`
    do not receive the QEMU guest agent MSI (see
    [`pkg/convert-windows/version/guestagent.go`](../../pkg/convert-windows/version/guestagent.go)).
    VirtIO driver installation works normally for these versions.
-
-3. **No unlogged stubs** -- All stubs (ALT Linux distro, Windows Citrix/
-   Parallels removal) log warnings at runtime when detected.
 
 ---
 

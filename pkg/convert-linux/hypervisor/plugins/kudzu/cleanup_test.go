@@ -1,6 +1,6 @@
 //go:build linux
 
-package hyperv
+package kudzu
 
 import (
 	"os"
@@ -12,20 +12,23 @@ import (
 
 func TestDetectPresent(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "usr", "sbin"), 0o755); err != nil {
+	initScript := filepath.Join(root, "etc", "init.d", "kudzu")
+	if err := os.MkdirAll(filepath.Dir(initScript), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(root, "usr", "sbin", "hv_kvp_daemon"), nil, 0o755); err != nil {
+	if err := os.WriteFile(initScript, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	u := &Cleanup{}
 	if !u.Detect(root) {
-		t.Error("Detect = false, want true with hv_kvp_daemon")
+		t.Error("Detect = false, want true when kudzu init script exists")
 	}
 }
 
 func TestDetectAbsent(t *testing.T) {
 	root := t.TempDir()
+
 	u := &Cleanup{}
 	if u.Detect(root) {
 		t.Error("Detect = true, want false on empty dir")
@@ -34,11 +37,20 @@ func TestDetectAbsent(t *testing.T) {
 
 func TestCleanup(t *testing.T) {
 	root := t.TempDir()
+	unit := "kudzu.service"
+
+	rcLink := filepath.Join(root, "etc", "rc3.d", "S06kudzu")
+	if err := os.MkdirAll(filepath.Dir(rcLink), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(rcLink, []byte("fake"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	wantsDir := filepath.Join(root, "etc", "systemd", "system", "multi-user.target.wants")
 	if err := os.MkdirAll(wantsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	unit := "hv-kvp-daemon.service"
 	svc := filepath.Join(wantsDir, unit)
 	if err := os.WriteFile(svc, []byte("[Unit]\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -55,8 +67,12 @@ func TestCleanup(t *testing.T) {
 	if err := u.Cleanup(root); err != nil {
 		t.Fatalf("Cleanup error: %v", err)
 	}
+
+	if _, err := os.Stat(rcLink); !os.IsNotExist(err) {
+		t.Error("kudzu rc.d symlink still exists after Cleanup")
+	}
 	if _, err := os.Stat(svc); !os.IsNotExist(err) {
-		t.Error("hv-kvp-daemon.service should be removed")
+		t.Error("kudzu.service wants symlink still exists after Cleanup")
 	}
 	testassert.UnitDisabled(t, root, unit)
 }

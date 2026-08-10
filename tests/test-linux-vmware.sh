@@ -28,7 +28,9 @@ mkdir -p "$d/usr/lib/vmware-tools"
 
 # VMware service symlinks
 mkdir -p "$d/etc/systemd/system/multi-user.target.wants"
+mkdir -p "$d/usr/lib/systemd/system/multi-user.target.wants"
 touch "$d/etc/systemd/system/multi-user.target.wants/vmtoolsd.service"
+touch "$d/usr/lib/systemd/system/multi-user.target.wants/vmtoolsd.service"
 
 # Verify VMware indicators and service exist before conversion
 test -d "$d/etc/vmware-tools"
@@ -55,8 +57,9 @@ cleanup_fn rm -f "$output_json"
     --offline \
     --log-level debug
 
-# Verify vmtoolsd.service symlink was removed
+# Verify vmtoolsd.service was disabled and masked
 test ! -f "$d/etc/systemd/system/multi-user.target.wants/vmtoolsd.service"
+assert_systemd_unit_disabled "$d" "vmtoolsd.service"
 
 # Verify the converter ran successfully
 check_json_field "$output_json" '.convert.guestcaps.block_bus' 'virtio'

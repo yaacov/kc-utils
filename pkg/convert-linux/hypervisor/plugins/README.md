@@ -90,13 +90,13 @@ communicate with the Hyper-V host and are non-functional under KVM.
 artifacts.
 
 **How it works:** Detects EC2-specific cloud-init datasource configuration
-and agent packages. Removes EC2-specific settings that would cause the guest
-to attempt communication with the EC2 metadata service on boot.
+and agent packages. Masks EC2 agent systemd units, disables cloud-init EC2
+datasource configuration, and leaves agent binaries in place for offline conversion.
 
 ## nutanix
 
 **What it does:** Removes Nutanix AHV guest tools.
 
-**How it works:** Detects Nutanix guest tools packages and services. Disables
-Nutanix-specific systemd units and removes tool binaries from the guest
-filesystem.
+**How it works:** Detects Nutanix guest tools packages and services. Masks
+Nutanix-specific systemd units, removes the SysV init script, and deletes
+`/usr/local/nutanix/ngt`.

@@ -32,7 +32,7 @@ func TestCleanStaleAliases(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	staleConf := "alias scsi_hostadapter vmw_pvscsi\nalias eth0 vmxnet3\nalias other_thing some_module\n"
+	staleConf := "alias scsi_hostadapter vmw_pvscsi\nalias eth0 vmxnet3\nalias eth1 prl_eth\nalias other_thing some_module\n"
 	if err := os.WriteFile(filepath.Join(modprobeDir, "vmware.conf"), []byte(staleConf), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -49,6 +49,9 @@ func TestCleanStaleAliases(t *testing.T) {
 	}
 	if strings.Contains(content, "vmxnet3") {
 		t.Error("stale vmxnet3 alias was not removed")
+	}
+	if strings.Contains(content, "prl_eth") {
+		t.Error("stale prl_eth alias was not removed")
 	}
 	if !strings.Contains(content, "some_module") {
 		t.Error("non-stale alias was incorrectly removed")

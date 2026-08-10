@@ -34,6 +34,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 func (c *Cleanup) Cleanup(guestRoot string) error {
 	hypervisor.DisableSystemdUnit(guestRoot, "xe-daemon.service")
 	hypervisor.DisableSystemdUnit(guestRoot, "xapi.service")
+	hypervisor.DisableSystemdUnit(guestRoot, "xe-linux-distribution.service")
 
 	hypervisor.RemovePaths(
 		filepath.Join(guestRoot, "etc", "xensource-inventory"),

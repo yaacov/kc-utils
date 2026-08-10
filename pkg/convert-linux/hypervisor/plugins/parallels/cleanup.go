@@ -24,6 +24,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 func (c *Cleanup) Cleanup(guestRoot string) error {
 	hypervisor.DisableSystemdUnit(guestRoot, "prltoolsd.service")
 	hypervisor.DisableSystemdUnit(guestRoot, "prl-xorg-cleanup.service")
+	hypervisor.DisableSystemdUnit(guestRoot, "prl-x11.service")
 
 	hypervisor.RemovePaths(
 		filepath.Join(guestRoot, "usr", "lib", "parallels-tools"),

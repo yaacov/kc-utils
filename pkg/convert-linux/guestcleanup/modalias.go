@@ -14,17 +14,21 @@ import (
 // staleModules lists hypervisor kernel modules whose modprobe aliases
 // should be removed during conversion.
 var staleModules = map[string]bool{
-	"vmw_pvscsi":   true,
-	"vmxnet3":      true,
-	"vmxnet":       true,
-	"hv_vmbus":     true,
-	"hv_storvsc":   true,
-	"hv_netvsc":    true,
-	"xen_blkfront": true,
-	"xen_netfront": true,
-	"vboxguest":    true,
-	"vboxsf":       true,
-	"vboxvideo":    true,
+	"vmw_pvscsi":    true,
+	"vmxnet3":       true,
+	"vmxnet":        true,
+	"hv_vmbus":      true,
+	"hv_storvsc":    true,
+	"hv_netvsc":     true,
+	"xen_blkfront":  true,
+	"xen_netfront":  true,
+	"vboxguest":     true,
+	"vboxsf":        true,
+	"vboxvideo":     true,
+	"prl_tg":        true,
+	"prl_eth":       true,
+	"prl_fs":        true,
+	"prl_fs_freeze": true,
 }
 
 // Configure writes virtio module aliases to modprobe.d and removes

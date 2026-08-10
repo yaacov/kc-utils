@@ -29,6 +29,7 @@ Each plugin detects its own artifacts and cleans them up.
 |--------|---------|
 | Services disabled | `hv-kvp-daemon.service`, `hv-fcopy-daemon.service`, `hv-vss-daemon.service`, `hypervkvpd.service`, `hypervfcopyd.service`, `hypervvssd.service` |
 | Files removed | None |
+| Binaries left in place | Integration service daemons under `/usr/sbin/hv_*` are not removed offline |
 | Packages removed | None |
 
 ### Citrix/XenServer
@@ -37,7 +38,7 @@ Each plugin detects its own artifacts and cleans them up.
 
 | Action | Details |
 |--------|---------|
-| Services disabled | `xe-daemon.service`, `xapi.service` |
+| Services disabled | `xe-daemon.service`, `xapi.service`, `xe-linux-distribution.service` |
 | Files removed | `/etc/xensource-inventory`, `/usr/sbin/xe-daemon` |
 | Extra | Restores commented-out getty lines in `/etc/inittab` |
 
@@ -47,8 +48,9 @@ Each plugin detects its own artifacts and cleans them up.
 
 | Action | Details |
 |--------|---------|
-| Service symlinks removed | `amazon-ssm-agent.service`, `amazon-cloudwatch-agent.service`, `ec2-instance-connect.service` |
+| Services disabled and masked | `amazon-ssm-agent.service`, `amazon-cloudwatch-agent.service`, `ec2-instance-connect.service`, `hibagent.service`, `hibinit-agent.service` |
 | Cloud-init | Disabled via `99-kc-disable-ec2.cfg` (`datasource_list: [None]`) |
+| Binaries left in place | Agent binaries/config (e.g. `/usr/bin/amazon-ssm-agent`) are not removed offline |
 
 ### Nutanix AHV
 
@@ -56,8 +58,8 @@ Each plugin detects its own artifacts and cleans them up.
 
 | Action | Details |
 |--------|---------|
-| Service symlinks removed | `ngt_guest_agent.service` |
-| Files removed | `/etc/rc.d/init.d/ngt_guest_agent` |
+| Services disabled and masked | `ngt_guest_agent.service`, `ngt_self_service_restore.service`, `nutanix-guest-agent.service` |
+| Files removed | `/etc/rc.d/init.d/ngt_guest_agent`, `/etc/init.d/ngt_guest_agent`, `/usr/local/nutanix/ngt` |
 
 ### Parallels
 
@@ -65,7 +67,7 @@ Each plugin detects its own artifacts and cleans them up.
 
 | Action | Details |
 |--------|---------|
-| Services disabled | `prltoolsd.service`, `prl-xorg-cleanup.service` |
+| Services disabled | `prltoolsd.service`, `prl-xorg-cleanup.service`, `prl-x11.service` |
 | Directories removed | `/usr/lib/parallels-tools`, `/usr/lib64/parallels-tools` |
 
 ### VirtualBox
@@ -101,8 +103,8 @@ Each plugin detects its own artifacts and cleans them up.
 | VMware | Yes -- services, repos, dirs, packages |
 | Hyper-V | Yes -- services only |
 | Citrix/XenServer | Yes -- services, files, inittab |
-| AWS EC2 | Yes -- service symlinks, cloud-init |
-| Nutanix AHV | Yes -- service symlinks, files |
+| AWS EC2 | Yes -- services masked, cloud-init |
+| Nutanix AHV | Yes -- services masked, init script, NGT dir |
 | Parallels | Yes -- services, dirs |
 | VirtualBox | Yes -- services, dirs |
 | Xen | Yes -- kernel module refs |
@@ -152,7 +154,7 @@ guest is detected.
 
 | Component | Details |
 |-----------|---------|
-| Stale modprobe entries removed | `vmw_pvscsi`, `vmxnet3`, `vmxnet`, `hv_vmbus`, `hv_storvsc`, `hv_netvsc`, `xen_blkfront`, `xen_netfront`, `vboxguest`, `vboxsf`, `vboxvideo` |
+| Stale modprobe entries removed | `vmw_pvscsi`, `vmxnet3`, `vmxnet`, `hv_vmbus`, `hv_storvsc`, `hv_netvsc`, `xen_blkfront`, `xen_netfront`, `vboxguest`, `vboxsf`, `vboxvideo`, `prl_tg`, `prl_eth`, `prl_fs`, `prl_fs_freeze` |
 | SELinux relabeling | Offline `setfiles` (avoids boot-time full relabel) |
 | Cache cleanup | `/etc/blkid.tab`, LVM cache, RPM DB locks |
 

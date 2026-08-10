@@ -19,12 +19,14 @@ func init() {
 }
 
 func (r *Remove) Detect(_ string, systemHive registry.Hive, _ registry.Hive) bool {
+	ccs := hypervisor.CurrentControlSet(systemHive)
 	for _, svc := range []string{
-		"vmicheartbeat", "vmicshutdown", "vmicexchange",
+		"vmicheartbeat", "vmicshutdown",
 		"vmicvss", "vmictimesync", "vmicrdv",
 		"vmicguestinterface", "vmickvpexchange",
+		"vmicvmsession", "storflt",
 	} {
-		if systemHive.KeyExists(fmt.Sprintf("ControlSet001\\Services\\%s", svc)) {
+		if systemHive.KeyExists(fmt.Sprintf("%s\\Services\\%s", ccs, svc)) {
 			return true
 		}
 	}

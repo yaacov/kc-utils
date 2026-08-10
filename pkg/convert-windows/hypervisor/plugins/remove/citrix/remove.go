@@ -11,7 +11,11 @@ import (
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
-const uninstallKey = `Microsoft\Windows\CurrentVersion\Uninstall\Citrix XenTools`
+const (
+	uninstallKey    = `Microsoft\Windows\CurrentVersion\Uninstall\Citrix XenTools`
+	systemClassGUID = `{4d36e97d-e325-11ce-bfc1-08002be10318}`
+	hdcClassGUID    = `{4d36e96a-e325-11ce-bfc1-08002be10318}`
+)
 
 type Remove struct{}
 
@@ -26,7 +30,27 @@ func (r *Remove) Detect(guestRoot string, _ registry.Hive, softwareHive registry
 	return softwareHive.KeyExists(uninstallKey)
 }
 
-func (r *Remove) Remove(_ string, _ registry.Hive, _ registry.Hive) error {
-	slog.Warn("Citrix/XenServer guest software removal not yet implemented, skipping")
+func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive) error {
+	ccs := hypervisor.CurrentControlSet(systemHive)
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		hypervisor.RemoveFilter(systemHive, classPath, "UpperFilters", "XENFILT")
+	}
+
+	for _, svc := range []string{"XenSvc", "xenagent", "xenbus_monitor", "xenlite"} {
+		hypervisor.DisableService(systemHive, ccs, svc)
+	}
+
+	toolsDir := filepath.Join(guestRoot, "Program Files", "Citrix", "XenTools")
+	if guest.FileExists(toolsDir) {
+		_ = guest.FileRemoveAll(toolsDir)
+		slog.Info("removed Citrix XenTools directory", "path", toolsDir)
+	}
+
+	if softwareHive.KeyExists(uninstallKey) {
+		softwareHive.DeleteKey(uninstallKey)
+	}
+
+	slog.Info("Citrix cleanup complete")
 	return nil
 }

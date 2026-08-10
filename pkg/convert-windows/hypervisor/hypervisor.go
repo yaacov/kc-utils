@@ -1,6 +1,8 @@
 package hypervisor
 
 import (
+	"fmt"
+
 	"github.com/yaacov/kc-utils/pkg/common/plugin"
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 )
@@ -27,3 +29,11 @@ var (
 	WindowsRemoves          = plugin.NewRegistry[string, WindowsRemove]()
 	WindowsServiceDisablers = plugin.NewRegistry[string, WindowsServices]()
 )
+
+// CurrentControlSet returns the active control set name from the SYSTEM hive.
+func CurrentControlSet(systemHive registry.Hive) string {
+	if n, err := systemHive.GetDWORD(`Select`, "Current"); err == nil && n > 0 {
+		return fmt.Sprintf("ControlSet%03d", n)
+	}
+	return "ControlSet001"
+}

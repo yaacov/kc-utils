@@ -41,23 +41,20 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 }
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
-	services := []string{
+	for _, unit := range []string{
 		"amazon-ssm-agent.service",
 		"amazon-cloudwatch-agent.service",
 		"ec2-instance-connect.service",
-	}
-	symlinkDirs := []string{
-		filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants"),
-		filepath.Join(guestRoot, "etc", "systemd", "system", "default.target.wants"),
-	}
-	for _, dir := range symlinkDirs {
-		for _, svc := range services {
-			_ = guest.FileRemove(filepath.Join(dir, svc))
-		}
+		"hibagent.service",
+		"hibinit-agent.service",
+	} {
+		hypervisor.DisableSystemdUnit(guestRoot, unit)
 	}
 
 	cloudCfgDir := filepath.Join(guestRoot, "etc", "cloud", "cloud.cfg.d")
-	if guest.FileExists(cloudCfgDir) {
+	if err := guest.FileMkdirAll(cloudCfgDir, 0o755); err != nil {
+		slog.Warn("creating cloud-init config directory", "error", err)
+	} else {
 		disableCfg := filepath.Join(cloudCfgDir, "99-kc-disable-ec2.cfg")
 		content := "datasource_list: [None]\n"
 		if err := guest.FileWrite(disableCfg, []byte(content), 0o644); err != nil {
