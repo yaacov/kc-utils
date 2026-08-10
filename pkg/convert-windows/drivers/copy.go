@@ -5,7 +5,6 @@ package drivers
 import (
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -13,9 +12,9 @@ import (
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
-// Copy copies VirtIO driver files into the guest and returns copied driver names.
-// Boot-critical .sys files are also copied to system32\drivers for pre-PnP boot.
-// qemu-ga MSI packages are staged into the VirtIO directory for firstboot install.
+// Copy copies VirtIO driver package files into the guest and returns copied driver names.
+// Only files listed in each DriverFile.Files entry are staged. Boot-critical .sys files
+// are also copied to system32\drivers for pre-PnP boot.
 func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, error) {
 	virtioDir := filepath.Join(mountRoot, "Windows", "Drivers", "VirtIO")
 	sysDriversDir := filepath.Join(mountRoot, "Windows", "System32", "drivers")
@@ -30,39 +29,44 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 		return nil, fmt.Errorf("creating system32 drivers dir: %w", mkErr)
 	}
 	for _, df := range driverFiles {
-		entries, readErr := os.ReadDir(df.SrcPath)
-		if readErr != nil {
-			slog.Warn("reading driver dir failed", "path", df.SrcPath, "error", readErr)
+		if len(df.Files) == 0 {
+			slog.Warn("skipping driver with empty Files list", "name", df.Name)
 			continue
 		}
-		for _, entry := range entries {
-			if entry.IsDir() {
-				continue
+		pkgRoot := df.SrcPath
+		if pkgRoot == "" {
+			pkgRoot = filepath.Dir(df.InfPath)
+		}
+		copiedAny := false
+		for _, srcFile := range df.Files {
+			rel := filepath.Base(srcFile)
+			if pkgRoot != "" {
+				if r, relErr := filepath.Rel(pkgRoot, srcFile); relErr == nil &&
+					r != "." && !strings.HasPrefix(r, "..") {
+					rel = r
+				}
 			}
-			fname := entry.Name()
-			lower := strings.ToLower(fname)
-			if !strings.HasSuffix(lower, ".sys") &&
-				!strings.HasSuffix(lower, ".inf") &&
-				!strings.HasSuffix(lower, ".cat") &&
-				!strings.HasSuffix(lower, ".msi") {
-				continue
-			}
-			srcFile := filepath.Join(df.SrcPath, fname)
-			dstFile := filepath.Join(virtioDir, fname)
+			dstFile := filepath.Join(virtioDir, rel)
 			if wrErr := guest.FileUpload(srcFile, dstFile); wrErr != nil {
 				slog.Warn("writing driver file failed", "path", dstFile, "error", wrErr)
 				continue
 			}
-			// Boot storage drivers must also live under system32\drivers.
+			copiedAny = true
+			base := filepath.Base(srcFile)
+			lower := strings.ToLower(base)
 			if strings.HasSuffix(lower, ".sys") && bootCriticalDrivers[strings.TrimSuffix(lower, ".sys")] {
-				sysDst := filepath.Join(sysDriversDir, fname)
+				sysDst := filepath.Join(sysDriversDir, base)
 				if wrErr := guest.FileUpload(srcFile, sysDst); wrErr != nil {
 					slog.Warn("writing system32 driver failed", "path", sysDst, "error", wrErr)
 				}
 			}
 		}
+		if !copiedAny {
+			slog.Warn("no files copied for driver", "name", df.Name)
+			continue
+		}
 		copiedDriverNames = append(copiedDriverNames, df.Name)
-		slog.Info("copied driver", "name", df.Name)
+		slog.Info("copied driver", "name", df.Name, "files", len(df.Files))
 	}
 	return copiedDriverNames, nil
 }

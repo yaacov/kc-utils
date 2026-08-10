@@ -76,10 +76,10 @@ multi-string values into the interface registry key.
 host can communicate with the guest for graceful shutdown, filesystem freeze,
 and monitoring.
 
-**How it works:** Generates a PowerShell script that finds `qemu-ga*.msi` in
-the `Windows\Drivers\VirtIO\` directory and runs
-`msiexec /i ... /qn /norestart` for silent installation. Only runs when a
-guest agent MSI was staged during driver copy.
+**How it works:** Generates a PowerShell script that installs the exact
+`qemu-ga*.msi` basename from the filtered `DriverFiles` list
+(`C:\Windows\Drivers\VirtIO\<msi>`) via `msiexec /i ... /qn /norestart`.
+Only runs when a guest agent MSI was selected and passed completeness checks.
 
 ## diskonliner
 

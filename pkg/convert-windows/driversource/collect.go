@@ -25,7 +25,7 @@ func CollectDrivers(arch, osVersion, handlerName string, osPrefs, osFallbacks []
 	if !version.CollectGuestAgentMSI(handlerName) {
 		files = omitGuestAgentFiles(files)
 	}
-	return files, nil
+	return FilterComplete(files), nil
 }
 
 func omitGuestAgentFiles(files []DriverFile) []DriverFile {

@@ -77,8 +77,12 @@ func TestConfigureOfflineStillAddsQemuGAScript(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected qemu-ga script to exist: %v", err)
 	}
-	if len(data) == 0 {
-		t.Fatal("expected qemu-ga script to be non-empty")
+	content := string(data)
+	if !strings.Contains(content, `C:\Windows\Drivers\VirtIO\qemu-ga-x86_64.msi`) {
+		t.Fatalf("expected exact MSI path, got: %s", content)
+	}
+	if strings.Contains(content, "Get-ChildItem") {
+		t.Fatalf("script should not glob MSI files: %s", content)
 	}
 }
 

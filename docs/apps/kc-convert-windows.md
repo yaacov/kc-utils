@@ -29,11 +29,11 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 | # | Block | Type | Package | Description |
 |---|-------|------|---------|-------------|
 | 1 | Version | pluggable: `VersionHandler` | `pkg/convert-windows/version/` | Classify Windows era (win2008, win10, …) |
-| 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers from pre-extracted driver tree |
+| 2 | Driver Source | pluggable: `DriverSource` | `pkg/convert-windows/driversource/` | Find virtio-win drivers; keep only packages whose offline payload files are complete |
 | 2b | Antivirus Detection | strict | `pkg/convert-windows/inspect/` | Detect antivirus products (warnings) |
 | 3 | RTC Mode | strict | `pkg/convert-windows/inspect/` | Detect RTC UTC/local mode |
 | 4 | Hypervisor Remove | pluggable: `WindowsRemove` | `pkg/convert-windows/hypervisor/` | Remove hypervisor-specific software |
-| 5 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Copy virtio driver files into the guest |
+| 5 | Driver Copy | strict | `pkg/convert-windows/drivers/` | Stage each package's resolved payload files into the guest |
 | 6 | Driver Register | pluggable: `DriverRegistrar` | `pkg/convert-windows/drivers/` | Register drivers in Windows registry |
 | 7 | DevicePath | strict | `pkg/convert-windows/drivers/` | Update DevicePath registry key |
 | 8 | Hypervisor Services | pluggable: `WindowsServices` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
@@ -67,7 +67,7 @@ path or install the `virtio-win` package on Fedora/RHEL.
 
 | Plugin | Path | Notes |
 |--------|------|-------|
-| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista) |
+| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista). [`FilterComplete`](../../pkg/convert-windows/driversource/complete.go) keeps packages whose INF/`CatalogFile[.nt*]`/`SourceDisksFiles[.arch]` payloads (including package-relative companion subdirs) exist offline; other INF requirement forms are not resolved yet |
 
 ## Version classification
 
