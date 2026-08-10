@@ -228,10 +228,10 @@ source hypervisor.
 | 9100 | [vmwarecleanup](../../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | Remove residual VMware drivers/services |
 | 99999 | [signal](../../pkg/convert-windows/firstboot/plugins/signal/) | Signal conversion completion on COM1 (last script; launcher then cleans up and reboots) |
 
-After scripts finish, `firstboot.bat` removes `Guestfs\Firstboot` and runs
-`C:\Windows\System32\shutdown.exe /r /t 0 /f` so reboot-required installers
-can complete. With `WaitForGuestReboot`, COM1 `CONVERSION_DONE` is sent before
-that reboot (Forklift wait-for-reboot order).
+After scripts finish, `firstboot.bat` schedules
+`C:\Windows\System32\shutdown.exe /r /t 5 /f` then removes `Guestfs\Firstboot`
+so reboot-required installers can complete. With `WaitForGuestReboot`, COM1
+`CONVERSION_DONE` is sent before that reboot (Forklift wait-for-reboot order).
 
 ## Cross-Reference Matrices
 
