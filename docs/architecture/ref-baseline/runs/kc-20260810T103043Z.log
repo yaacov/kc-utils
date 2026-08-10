@@ -1,0 +1,308 @@
+==========================================
+MTV cold migration benchmark — kc
+==========================================
+Mode: compare
+Log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc.log
+Mem: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem
+NS=mtv-kc-v2v-bench SKIP_CLEANUP=true KEEP_BETWEEN_TESTS=true
+
+VDDK: quay.io/yaacov/vddk:8.0.0
+virt_v2v_image_fqin: quay.io/yaacov/kc-v2v:devel-amd64
+feature_windows_wait_for_reboot: false
+Default SC: ocs-storagecluster-ceph-rbd-virtualization
+Ceph: HEALTH_OK
+
+Creating providers...
+
+RHEL_VM=mtv-func-rhel9-4-uefi
+WIN_VM=mtv-func-win2019
+
+Running RHEL then Windows sequentially (one plan at a time).
+==========================================
+RUN rhel: VM=mtv-func-rhel9-4-uefi plan=plan-bench-rhel converter=kc
+==========================================
+Waiting for plan Ready...
+Migration started at 2026-08-10T10:31:38Z
+--- Monitoring plan plan-bench-rhel (rhel) ---
+  Memory/net monitor -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem/rhel-virt-v2v-memory.csv (every 10s)
+  [step-change] 0m01s phase=StorePowerState Initialize=Running DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [step-change] 0m14s phase=AllocateDisks Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [step-change] 0m27s phase=AllocateDisks Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [step-change] 0m40s phase=ConvertGuest Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending
+    [mon] +0m47s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=?Mi cgroup=?Mi cpu=?m rx=3241895 tx=71904 phase=Pending
+  [05/180] 0m54s  Status=Executing phase=ConvertGuest
+    [mon] +1m08s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=?Mi cgroup=35Mi cpu=?m rx=74916617 tx=309156 phase=Running
+  [06/180] 1m07s  Status=Executing phase=ConvertGuest
+  [07/180] 1m20s  Status=Executing phase=ConvertGuest
+    [mon] +1m27s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=32Mi cpu=80m rx=346511177 tx=1208242 phase=Running
+  [08/180] 1m33s  Status=Executing phase=ConvertGuest
+    [mon] +1m48s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=38Mi cpu=198m rx=349850577 tx=1235946 phase=Running
+  [09/180] 1m46s  Status=Executing phase=ConvertGuest
+  [10/180] 2m00s  Status=Executing phase=ConvertGuest
+    [mon] +2m08s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=38Mi cpu=97m rx=349860752 tx=1248398 phase=Running
+  [11/180] 2m13s  Status=Executing phase=ConvertGuest
+    [mon] +2m28s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=50Mi cpu=4m rx=422868815 tx=1499098 phase=Running
+  [12/180] 2m26s  Status=Executing phase=ConvertGuest
+  [13/180] 2m39s  Status=Executing phase=ConvertGuest
+    [mon] +2m48s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=54Mi cpu=87m rx=607330584 tx=2060495 phase=Running
+  [14/180] 2m53s  Status=Executing phase=ConvertGuest
+  [15/180] 3m06s  Status=Executing phase=ConvertGuest
+    [mon] +3m08s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=33Mi cpu=402m rx=859421454 tx=2778131 phase=Running
+  [16/180] 3m19s  Status=Executing phase=ConvertGuest
+    [mon] +3m29s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=44Mi cpu=475m rx=1002483251 tx=3244498 phase=Running
+  [17/180] 3m32s  Status=Executing phase=ConvertGuest
+  [18/180] 3m45s  Status=Executing phase=ConvertGuest
+    [mon] +3m49s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=44Mi cpu=84m rx=1002493207 tx=3256108 phase=Running
+  [19/180] 3m58s  Status=Executing phase=ConvertGuest
+    [mon] +4m09s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=44Mi cpu=3m rx=1002502852 tx=3267568 phase=Running
+  [20/180] 4m12s  Status=Executing phase=ConvertGuest
+  [21/180] 4m25s  Status=Executing phase=ConvertGuest
+    [mon] +4m29s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=36Mi cpu=27m rx=1207348138 tx=4000624 phase=Running
+  [22/180] 4m38s  Status=Executing phase=ConvertGuest
+    [mon] +4m49s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=26Mi cpu=27m rx=1388062538 tx=4654074 phase=Running
+  [23/180] 4m51s  Status=Executing phase=ConvertGuest
+  [24/180] 5m05s  Status=Executing phase=ConvertGuest
+    [mon] +5m09s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=24Mi cgroup=38Mi cpu=372m rx=1567051732 tx=5294788 phase=Running
+  [25/180] 5m18s  Status=Executing phase=ConvertGuest
+    [mon] +5m28s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=38Mi cpu=119m rx=1567061485 tx=5306290 phase=Running
+  [26/180] 5m31s  Status=Executing phase=ConvertGuest
+  [27/180] 5m44s  Status=Executing phase=ConvertGuest
+    [mon] +5m48s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=38Mi cpu=1m rx=1567071296 tx=5317924 phase=Running
+  [28/180] 5m58s  Status=Executing phase=ConvertGuest
+    [mon] +6m08s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=29Mi cpu=4m rx=1653274333 tx=5641978 phase=Running
+  [29/180] 6m11s  Status=Executing phase=ConvertGuest
+  [30/180] 6m24s  Status=Executing phase=ConvertGuest
+    [mon] +6m28s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=46Mi cpu=84m rx=1802484214 tx=6156706 phase=Running
+  [31/180] 6m37s  Status=Executing phase=ConvertGuest
+    [mon] +6m48s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=23Mi cgroup=49Mi cpu=363m rx=1966747991 tx=6748372 phase=Running
+  [32/180] 6m51s  Status=Executing phase=ConvertGuest
+  [33/180] 7m04s  Status=Executing phase=ConvertGuest
+    [mon] +7m11s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=52Mi cpu=392m rx=2145302459 tx=7322314 phase=Running
+  [34/180] 7m17s  Status=Executing phase=ConvertGuest
+    [mon] +7m31s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=50Mi cpu=380m rx=2201010551 tx=7517532 phase=Running
+  [35/180] 7m30s  Status=Executing phase=ConvertGuest
+  [36/180] 7m44s  Status=Executing phase=ConvertGuest
+    [mon] +7m51s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=50Mi cpu=66m rx=2201020280 tx=7529010 phase=Running
+  [37/180] 7m57s  Status=Executing phase=ConvertGuest
+    [mon] +8m11s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=31Mi cpu=2m rx=2394732363 tx=8171340 phase=Running
+  [38/180] 8m10s  Status=Executing phase=ConvertGuest
+  [39/180] 8m23s  Status=Executing phase=ConvertGuest
+    [mon] +8m31s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=56Mi cpu=214m rx=2560292181 tx=8741070 phase=Running
+  [40/180] 8m37s  Status=Executing phase=ConvertGuest
+    [mon] +8m51s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=52Mi cpu=407m rx=2744100836 tx=9360092 phase=Running
+  [41/180] 8m50s  Status=Executing phase=ConvertGuest
+  [42/180] 9m03s  Status=Executing phase=ConvertGuest
+    [mon] +9m11s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=45Mi cpu=369m rx=2920157127 tx=9905114 phase=Running
+  [43/180] 9m16s  Status=Executing phase=ConvertGuest
+    [mon] +9m31s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=45Mi cpu=428m rx=2926195314 tx=9936402 phase=Running
+  [44/180] 9m30s  Status=Executing phase=ConvertGuest
+  [45/180] 9m43s  Status=Executing phase=ConvertGuest
+    [mon] +9m51s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=45Mi cpu=116m rx=2926205059 tx=9948036 phase=Running
+  [46/180] 9m56s  Status=Executing phase=ConvertGuest
+    [mon] +10m11s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=316Mi cgroup=768Mi cpu=338m rx=2926220143 tx=9953598 phase=Running
+  [47/180] 10m09s  Status=Executing phase=ConvertGuest
+  [48/180] 10m22s  Status=Executing phase=ConvertGuest
+    [mon] +10m31s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=316Mi cgroup=1114Mi cpu=338m rx=2926221369 tx=9954280 phase=Running
+  [49/180] 10m36s  Status=Executing phase=ConvertGuest
+    [mon] +10m51s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=609Mi cgroup=1510Mi cpu=1075m rx=2926222637 tx=9955004 phase=Running
+  [50/180] 10m49s  Status=Executing phase=ConvertGuest
+  [51/180] 11m02s  Status=Executing phase=ConvertGuest
+    [mon] +11m11s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=836Mi cgroup=1842Mi cpu=1035m rx=2926223863 tx=9955686 phase=Running
+  [52/180] 11m15s  Status=Executing phase=ConvertGuest
+  [53/180] 11m29s  Status=Executing phase=ConvertGuest
+    [mon] +11m31s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=856Mi cgroup=1967Mi cpu=1080m rx=2926225089 tx=9956368 phase=Running
+  [54/180] 11m42s  Status=Executing phase=ConvertGuest
+    [mon] +11m51s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=856Mi cgroup=1976Mi cpu=1080m rx=2926226209 tx=9957012 phase=Running
+  [55/180] 11m55s  Status=Executing phase=ConvertGuest
+  [step-change] 12m09s phase=Completed Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed
+    [mon] +12m13s pod=plan-bench-rhel-vm-1051-988kv node=qemtvd-07-w56zg-worker-0-s5hmz top=?Mi cgroup=?Mi cpu=?m rx=? tx=? phase=Succeeded
+  Peak conversion memory: metrics-server=856Mi  cgroup=1976Mi
+  Network totals (cumulative at last sample): rx=2790Mi  tx=9Mi
+
+  Plan plan-bench-rhel finished: status=Succeeded duration=12m24s
+  Pipeline step timings (plan-bench-rhel):
+    Initialize: Completed  dur=0m10s  started=2026-08-10T10:31:39Z  completed=2026-08-10T10:31:49Z
+    DiskAllocation: Completed  dur=0m19s  started=2026-08-10T10:31:49Z  completed=2026-08-10T10:32:08Z
+    ImageConversion: Completed  dur=11m28s  started=2026-08-10T10:32:08Z  completed=2026-08-10T10:43:36Z
+    DiskTransferV2v: Completed  dur=0m2s  started=2026-08-10T10:43:36Z  completed=2026-08-10T10:43:38Z
+    VirtualMachineCreation: Completed  dur=0m2s  started=2026-08-10T10:43:38Z  completed=2026-08-10T10:43:40Z
+  VM details:
+
+=========================================================================================================
+MIGRATION PLAN
+Plan: plan-bench-rhel
+Migration: plan-bench-rhel-dkl6b
+
+=========================================================================================================
+VM: mtv-func-rhel9-4-uefi (vmID= vm-1051)
+Phase: Completed  Status: Succeeded
+OS: rhel9_64Guest
+Started: 2026-08-10T10:31:39Z  Completed: 2026-08-10T10:43:40Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-10T10:31:39Z  2026-08-10T10:31:49Z           100.0%  
+Completed  DiskAllocation          2026-08-10T10:31:49Z  2026-08-10T10:32:08Z           100.0%  
+Completed  ImageConversion         2026-08-10T10:32:08Z  2026-08-10T10:43:36Z           100.0%  
+Completed  DiskTransferV2v         2026-08-10T10:43:36Z  2026-08-10T10:43:38Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-10T10:43:38Z  2026-08-10T10:43:40Z           100.0%  
+
+  Saving conversion pod log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem/rhel-plan-bench-rhel-vm-1051-988kv.log
+RESULT rhel: status=Succeeded total=12m27s vm=mtv-func-rhel9-4-uefi converter=kc
+
+KEEP_BETWEEN_TESTS=true — leaving plan-bench-rhel + conversion pods for postmortem.
+Stopping migrated RHEL VM mtv-func-rhel9-4-uefi (plan/pods kept)...
+
+==========================================
+RUN win: VM=mtv-func-win2019 plan=plan-bench-win converter=kc
+==========================================
+Waiting for plan Ready...
+Migration started at 2026-08-10T10:44:28Z
+--- Monitoring plan plan-bench-win (win) ---
+  Memory/net monitor -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem/win-virt-v2v-memory.csv (every 10s)
+  [step-change] 0m01s phase=StorePowerState Initialize=Running DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [step-change] 0m14s phase=AllocateDisks Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [step-change] 0m27s phase=CreateGuestConversionPod Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending
+  [04/180] 0m40s  Status=Executing phase=ConvertGuest
+    [mon] +0m46s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=?Mi cgroup=18Mi cpu=?m rx=11695809 tx=104831 phase=Pending
+  [05/180] 0m54s  Status=Executing phase=ConvertGuest
+    [mon] +1m06s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=49Mi cpu=61m rx=15076634 tx=128533 phase=Running
+  [06/180] 1m07s  Status=Executing phase=ConvertGuest
+  [07/180] 1m20s  Status=Executing phase=ConvertGuest
+    [mon] +1m25s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=46Mi cpu=77m rx=219210941 tx=773979 phase=Running
+  [08/180] 1m34s  Status=Executing phase=ConvertGuest
+    [mon] +1m46s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=46Mi cpu=222m rx=412038913 tx=1365069 phase=Running
+  [09/180] 1m47s  Status=Executing phase=ConvertGuest
+  [10/180] 2m00s  Status=Executing phase=ConvertGuest
+    [mon] +2m06s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=18Mi cgroup=50Mi cpu=329m rx=623277352 tx=2054645 phase=Running
+  [11/180] 2m13s  Status=Executing phase=ConvertGuest
+    [mon] +2m26s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=36Mi cpu=361m rx=805660191 tx=2622916 phase=Running
+  [12/180] 2m27s  Status=Executing phase=ConvertGuest
+  [13/180] 2m40s  Status=Executing phase=ConvertGuest
+    [mon] +2m46s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=34Mi cpu=388m rx=980209771 tx=3184184 phase=Running
+  [14/180] 2m53s  Status=Executing phase=ConvertGuest
+    [mon] +3m06s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=41Mi cpu=455m rx=1169108688 tx=3796377 phase=Running
+  [15/180] 3m06s  Status=Executing phase=ConvertGuest
+  [16/180] 3m20s  Status=Executing phase=ConvertGuest
+    [mon] +3m26s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=30Mi cpu=424m rx=1354632896 tx=4402556 phase=Running
+  [17/180] 3m33s  Status=Executing phase=ConvertGuest
+    [mon] +3m46s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=52Mi cpu=409m rx=1559768208 tx=5014394 phase=Running
+  [18/180] 3m46s  Status=Executing phase=ConvertGuest
+  [19/180] 3m59s  Status=Executing phase=ConvertGuest
+    [mon] +4m06s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=40Mi cpu=446m rx=1731406595 tx=5601656 phase=Running
+  [20/180] 4m13s  Status=Executing phase=ConvertGuest
+    [mon] +4m27s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=39Mi cpu=371m rx=1929132383 tx=6313058 phase=Running
+  [21/180] 4m27s  Status=Executing phase=ConvertGuest
+  [22/180] 4m41s  Status=Executing phase=ConvertGuest
+    [mon] +4m47s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=21Mi cgroup=53Mi cpu=322m rx=2090791637 tx=6880256 phase=Running
+  [23/180] 4m54s  Status=Executing phase=ConvertGuest
+    [mon] +5m07s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=22Mi cgroup=42Mi cpu=408m rx=2356305113 tx=7846330 phase=Running
+  [24/180] 5m07s  Status=Executing phase=ConvertGuest
+  [25/180] 5m20s  Status=Executing phase=ConvertGuest
+    [mon] +5m27s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=30Mi cpu=246m rx=2646361155 tx=8855042 phase=Running
+  [26/180] 5m33s  Status=Executing phase=ConvertGuest
+    [mon] +5m47s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=38Mi cpu=214m rx=2944025720 tx=10034572 phase=Running
+  [27/180] 5m47s  Status=Executing phase=ConvertGuest
+  [28/180] 6m00s  Status=Executing phase=ConvertGuest
+    [mon] +6m07s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=55Mi cpu=194m rx=3268158389 tx=11274730 phase=Running
+  [29/180] 6m14s  Status=Executing phase=ConvertGuest
+    [mon] +6m28s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=53Mi cpu=159m rx=3498444687 tx=12111298 phase=Running
+  [30/180] 6m27s  Status=Executing phase=ConvertGuest
+  [31/180] 6m40s  Status=Executing phase=ConvertGuest
+    [mon] +6m47s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=47Mi cpu=284m rx=3696195848 tx=12798022 phase=Running
+  [32/180] 6m53s  Status=Executing phase=ConvertGuest
+    [mon] +7m07s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=41Mi cpu=402m rx=3871962521 tx=13392804 phase=Running
+  [33/180] 7m08s  Status=Executing phase=ConvertGuest
+  [34/180] 7m22s  Status=Executing phase=ConvertGuest
+    [mon] +7m27s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=19Mi cgroup=28Mi cpu=408m rx=4048483612 tx=13998282 phase=Running
+  [35/180] 7m35s  Status=Executing phase=ConvertGuest
+    [mon] +7m47s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=29Mi cpu=411m rx=4228428061 tx=14603892 phase=Running
+  [36/180] 7m48s  Status=Executing phase=ConvertGuest
+  [37/180] 8m01s  Status=Executing phase=ConvertGuest
+    [mon] +8m07s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=45Mi cpu=409m rx=4386514878 tx=15112936 phase=Running
+  [38/180] 8m14s  Status=Executing phase=ConvertGuest
+    [mon] +8m27s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=33Mi cpu=404m rx=4557420460 tx=15655238 phase=Running
+  [39/180] 8m28s  Status=Executing phase=ConvertGuest
+  [40/180] 8m41s  Status=Executing phase=ConvertGuest
+    [mon] +8m47s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=47Mi cpu=424m rx=4739283913 tx=16236098 phase=Running
+  [41/180] 8m54s  Status=Executing phase=ConvertGuest
+    [mon] +9m07s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=38Mi cpu=437m rx=4983238916 tx=17028404 phase=Running
+  [42/180] 9m07s  Status=Executing phase=ConvertGuest
+  [43/180] 9m21s  Status=Executing phase=ConvertGuest
+    [mon] +9m29s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=43Mi cpu=227m rx=5181359498 tx=17718746 phase=Running
+  [44/180] 9m35s  Status=Executing phase=ConvertGuest
+    [mon] +9m49s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=37Mi cpu=330m rx=5425941105 tx=18498266 phase=Running
+  [45/180] 9m48s  Status=Executing phase=ConvertGuest
+  [46/180] 10m01s  Status=Executing phase=ConvertGuest
+    [mon] +10m10s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=43Mi cpu=240m rx=5637500326 tx=19201118 phase=Running
+  [47/180] 10m14s  Status=Executing phase=ConvertGuest
+    [mon] +10m30s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=38Mi cpu=247m rx=5875031317 tx=19939388 phase=Running
+  [48/180] 10m28s  Status=Executing phase=ConvertGuest
+  [49/180] 10m41s  Status=Executing phase=ConvertGuest
+    [mon] +10m50s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=30Mi cpu=309m rx=6076423811 tx=20545394 phase=Running
+  [50/180] 10m54s  Status=Executing phase=ConvertGuest
+    [mon] +11m10s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=31Mi cpu=303m rx=6327109507 tx=21395936 phase=Running
+  [51/180] 11m07s  Status=Executing phase=ConvertGuest
+  [52/180] 11m20s  Status=Executing phase=ConvertGuest
+    [mon] +11m29s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=45Mi cpu=318m rx=6567884306 tx=22169328 phase=Running
+  [53/180] 11m34s  Status=Executing phase=ConvertGuest
+  [54/180] 11m47s  Status=Executing phase=ConvertGuest
+    [mon] +11m49s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=20Mi cgroup=37Mi cpu=247m rx=6794322517 tx=22873830 phase=Running
+  [55/180] 12m00s  Status=Executing phase=ConvertGuest
+    [mon] +12m09s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=250Mi cgroup=1255Mi cpu=443m rx=6813815809 tx=22931754 phase=Running
+  [56/180] 12m13s  Status=Executing phase=ConvertGuest
+  [57/180] 12m26s  Status=Executing phase=ConvertGuest
+    [mon] +12m29s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=533Mi cgroup=1378Mi cpu=1153m rx=6813817077 tx=22932478 phase=Running
+  [58/180] 12m39s  Status=Executing phase=ConvertGuest
+    [mon] +12m48s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=562Mi cgroup=1385Mi cpu=1207m rx=6813818261 tx=22933118 phase=Running
+  [59/180] 12m53s  Status=Executing phase=ConvertGuest
+  [60/180] 13m06s  Status=Executing phase=ConvertGuest
+    [mon] +13m08s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=578Mi cgroup=1434Mi cpu=1071m rx=6813819529 tx=22933842 phase=Running
+  [61/180] 13m19s  Status=Executing phase=ConvertGuest
+    [mon] +13m30s pod=plan-bench-win-vm-1021-5f5nf node=qemtvd-07-w56zg-worker-0-s5hmz top=584Mi cgroup=937Mi cpu=1070m rx=? tx=? phase=Running
+  [step-change] 13m32s phase=Completed Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed
+  Peak conversion memory: metrics-server=584Mi  cgroup=1434Mi
+  Network totals (cumulative at last sample): rx=6498Mi  tx=21Mi
+
+  Plan plan-bench-win finished: status=Succeeded duration=13m41s
+  Pipeline step timings (plan-bench-win):
+    Initialize: Completed  dur=0m11s  started=2026-08-10T10:44:28Z  completed=2026-08-10T10:44:39Z
+    DiskAllocation: Completed  dur=0m17s  started=2026-08-10T10:44:39Z  completed=2026-08-10T10:44:56Z
+    ImageConversion: Completed  dur=12m59s  started=2026-08-10T10:44:56Z  completed=2026-08-10T10:57:55Z
+    DiskTransferV2v: Completed  dur=0m3s  started=2026-08-10T10:57:55Z  completed=2026-08-10T10:57:58Z
+    VirtualMachineCreation: Completed  dur=0m1s  started=2026-08-10T10:57:58Z  completed=2026-08-10T10:57:59Z
+  VM details:
+
+=========================================================================================================
+MIGRATION PLAN
+Plan: plan-bench-win
+Migration: plan-bench-win-9l869
+
+=========================================================================================================
+VM: mtv-func-win2019 (vmID= vm-1021)
+Phase: Completed  Status: Succeeded
+OS: windows2019srv_64Guest
+Started: 2026-08-10T10:44:28Z  Completed: 2026-08-10T10:57:59Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-10T10:44:28Z  2026-08-10T10:44:39Z           100.0%  
+Completed  DiskAllocation          2026-08-10T10:44:39Z  2026-08-10T10:44:56Z           100.0%  
+Completed  ImageConversion         2026-08-10T10:44:56Z  2026-08-10T10:57:55Z           100.0%  
+Completed  DiskTransferV2v         2026-08-10T10:57:55Z  2026-08-10T10:57:58Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-10T10:57:58Z  2026-08-10T10:57:59Z           100.0%  
+
+  Saving conversion pod log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem/win-plan-bench-win-vm-1021-5f5nf.log
+RESULT win: status=Succeeded total=13m44s vm=mtv-func-win2019 converter=kc
+
+==========================================
+LEG SUMMARY (kc)
+==========================================
+Image: quay.io/yaacov/kc-v2v:devel-amd64
+RHEL (mtv-func-rhel9-4-uefi): exit=0
+WIN  (mtv-func-win2019): exit=0
+Full log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc.log
+Memory CSVs + pod logs: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260810T103043Z-kc-mem
+

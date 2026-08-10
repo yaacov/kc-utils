@@ -4,8 +4,8 @@ Cold migration comparison on OpenShift MTV, same source VMs and storage class, s
 
 | Converter | Image | Run id |
 |---|---|---|
-| **virt-v2v** (default Forklift) | operator default | `20260805T211538Z` (`runs/ref-20260805T211538Z*`) |
-| **kc-v2v** | kc-v2v image under test | `20260805T204233Z` (`runs/kc-20260805T204233Z*`) |
+| **virt-v2v** (default Forklift) | operator default | `20260810T103043Z` (`runs/ref-20260810T103043Z*`) |
+| **kc-v2v** | kc-v2v image under test | `20260810T103043Z` (`runs/kc-20260810T103043Z*`) |
 
 Default SC: `ocs-storagecluster-ceph-rbd-virtualization`  
 `feature_windows_wait_for_reboot=false` (fair conversion comparison)  
@@ -35,21 +35,21 @@ Plan wall = Initialize → VirtualMachineCreation. Conversion work for kc-v2v is
 
 | Metric | virt-v2v | kc-v2v | Delta (kc − ref) |
 |---|---:|---:|---:|
-| Plan wall | 15m 21s | 12m 31s | **−2m 50s** |
-| ImageConversion | 4m 43s | 11m 59s | +7m 16s |
-| DiskTransferV2v | 9m 56s | 4s | −9m 52s |
-| ImageConversion + DiskTransfer | 14m 39s | 12m 3s | **−2m 36s** |
+| Plan wall | 16m 08s | 12m 27s | **−3m 41s** |
+| ImageConversion | 5m 36s | 11m 28s | +5m 52s |
+| DiskTransferV2v | 9m 42s | 2s | −9m 40s |
+| ImageConversion + DiskTransfer | 15m 18s | 11m 30s | **−3m 48s** |
 
-### Windows Server 2008
+### Windows Server 2019
 
 | Metric | virt-v2v | kc-v2v | Delta (kc − ref) |
 |---|---:|---:|---:|
-| Plan wall | 14m 6s | 13m 32s | −34s |
-| ImageConversion | 3m 24s | 12m 47s | +9m 23s |
-| DiskTransferV2v | 9m 58s | 3s | −9m 55s |
-| ImageConversion + DiskTransfer | 13m 22s | 12m 50s | −32s |
+| Plan wall | 19m 37s | 13m 44s | **−5m 53s** |
+| ImageConversion | 5m 44s | 12m 59s | +7m 15s |
+| DiskTransferV2v | 13m 4s | 3s | −13m 1s |
+| ImageConversion + DiskTransfer | 18m 48s | 13m 2s | **−5m 46s** |
 
-**Takeaway:** On this archived baseline, RHEL is clearly faster end-to-end with kc-v2v. Windows is modestly faster. Pipeline shape differs: virt-v2v spends most time in `DiskTransferV2v` (VDDK); kc-v2v folds NFC copy + convert into `ImageConversion`.
+**Takeaway:** On this archived baseline, both RHEL and Windows are clearly faster end-to-end with kc-v2v. Pipeline shape differs: virt-v2v spends most time in `DiskTransferV2v` (VDDK); kc-v2v folds NFC copy + convert into `ImageConversion`.
 
 ---
 
@@ -59,8 +59,8 @@ Peak cgroup RSS during the conversion pod lifetime:
 
 | VM | virt-v2v peak | kc-v2v peak | Delta |
 |---|---:|---:|---:|
-| RHEL | 1894 Mi | **1804 Mi** | −90 Mi (−5%) |
-| Windows | 1526 Mi | **962 Mi** | **−564 Mi** (−37%) |
+| RHEL | 3497 Mi | **1976 Mi** | **−1521 Mi** (−43%) |
+| Windows | 2834 Mi | **1434 Mi** | **−1400 Mi** (−49%) |
 
 kc-v2v stays low through most of NFC copy, then rises for guestfish / guest customize. virt-v2v holds multi‑GiB for a larger fraction of the pod lifetime.
 
@@ -72,8 +72,8 @@ Peak CPU samples during conversion:
 
 | VM | virt-v2v peak | kc-v2v peak | Delta |
 |---|---:|---:|---:|
-| RHEL | 2851 m | **1029 m** | **−1822 m** |
-| Windows | 1343 m | **493 m** | **−850 m** |
+| RHEL | 3527 m | **1080 m** | **−2447 m** |
+| Windows | 1895 m | **1207 m** | **−688 m** |
 
 kc-v2v peaks later (guest convert / finalize); virt-v2v shows higher spikes, especially on RHEL.
 
@@ -85,9 +85,9 @@ kc-v2v peaks later (guest convert / finalize); virt-v2v shows higher spikes, esp
 |---|---|
 | Portability | **kc-v2v** — pure Go, multi-arch |
 | No proprietary VDDK | **kc-v2v** |
-| RHEL wall clock | **kc-v2v** (~3 min faster) |
-| Windows wall clock | **kc-v2v** (modestly faster) |
-| Peak memory | **kc-v2v** (lower, especially Windows) |
+| RHEL wall clock | **kc-v2v** (~3.5 min faster) |
+| Windows wall clock | **kc-v2v** (~6 min faster) |
+| Peak memory | **kc-v2v** (lower on both) |
 | Peak CPU | **kc-v2v** (lower) |
 
 Live charts: [docs/architecture/ref-baseline/dashboard.html](../../docs/architecture/ref-baseline/dashboard.html).

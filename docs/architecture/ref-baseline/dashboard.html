@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MTV Conversion Pod — ref vs kc-v2v</title>
 <script>
 /* chart.js 4.4.1 UMD (vendored) */
@@ -42,18 +42,22 @@ h2{font-size:16px;margin:32px 0 8px;border-bottom:1px solid #dee2e6;padding-bott
 table{border-collapse:collapse;width:100%;margin-bottom:16px;font-size:14px}
 th,td{text-align:left;padding:6px 12px;border-bottom:1px solid #dee2e6}
 th{background:#f1f3f5;font-weight:600}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-@media(max-width:700px){.grid2{grid-template-columns:1fr}}
 hr{border:none;border-top:1px solid #dee2e6;margin:24px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>Conversion pod — ref vs kc-v2v</h1>
+<h1>MTV Conversion Pod — ref vs kc-v2v</h1>
 <p class="meta">
   Memory = cgroup RSS (Mi) · CPU = metrics-server (millicores) · Net = cumulative /proc/net/dev (Mi)<br>
-  cold · qemtvd-07 · ref 20260805T211538Z · kc 20260805T204233Z · quay.io/yaacov/kc-v2v:devel-amd64
+  cold · qemtvd-07 · ref 20260810T103043Z · kc 20260810T103043Z · quay.io/yaacov/kc-v2v:devel-amd64
 </p>
+
+<h2>Duration</h2>
+<table>
+<tr><th>VM</th><th>ref (virt-v2v)</th><th>kc-v2v</th><th>Δ (kc − ref)</th></tr>
+<tr><td>RHEL</td><td>16m08s (Succeeded)</td><td>12m27s (Succeeded)</td><td>-3m41s (-22.8%)</td></tr><tr><td>Windows</td><td>19m37s (Succeeded)</td><td>13m44s (Succeeded)</td><td>-5m53s (-30.0%)</td></tr>
+</table>
 
 <h2>RHEL conversion pod — memory &amp; CPU over time</h2>
 <div class="chart-box"><canvas id="rhelMemCpu"></canvas></div>
@@ -66,9 +70,8 @@ hr{border:none;border-top:1px solid #dee2e6;margin:24px 0}
 
 <h2>Peak resource usage</h2>
 <table>
-<tr><th>VM</th><th>ref peak mem</th><th>kc peak mem</th><th>ref peak CPU</th><th>kc peak CPU</th></tr>
-<tr><td>RHEL</td><td>1894 Mi</td><td>1804 Mi</td><td>2851 m</td><td>1029 m</td></tr>
-<tr><td>Windows</td><td>1526 Mi</td><td>962 Mi</td><td>1343 m</td><td>493 m</td></tr>
+<tr><th>VM</th><th>ref (virt-v2v) peak mem</th><th>ref (virt-v2v) peak CPU</th><th>kc-v2v peak mem</th><th>kc-v2v peak CPU</th></tr>
+<tr><td>RHEL</td><td>3497 Mi</td><td>3527 m</td><td>1976 Mi</td><td>1080 m</td></tr><tr><td>Windows</td><td>2834 Mi</td><td>1895 m</td><td>1434 Mi</td><td>1207 m</td></tr>
 </table>
 
 <hr>
@@ -80,87 +83,70 @@ hr{border:none;border-top:1px solid #dee2e6;margin:24px 0}
 <h2>Windows conversion pod — network RX over time</h2>
 <div class="chart-box short"><canvas id="winNet"></canvas></div>
 
-<h2>Network totals</h2>
+<h2>Network totals (last sample RX)</h2>
 <table>
-<tr><th>VM</th><th>ref RX</th><th>kc RX</th><th>ref TX</th><th>kc TX</th></tr>
-<tr><td>RHEL</td><td>6343 Mi</td><td>2795 Mi</td><td>34 Mi</td><td>6 Mi</td></tr>
-<tr><td>Windows</td><td>11719 Mi</td><td>4257 Mi</td><td>49 Mi</td><td>9 Mi</td></tr>
+<tr><th>VM</th><th>ref (virt-v2v) RX</th><th>kc-v2v RX</th></tr>
+<tr><td>RHEL</td><td>6526 Mi</td><td>2790 Mi</td></tr><tr><td>Windows</td><td>10564 Mi</td><td>6498 Mi</td></tr>
 </table>
-
-<hr>
-
-<div class="grid2">
-<div>
-<h2>RHEL conversion duration</h2>
-<table>
-<tr><th>Block</th><th>ref</th><th>kc-v2v</th><th>Delta</th></tr>
-<tr><td>ImageConversion</td><td>4m 43s</td><td>11m 59s</td><td>+7m 16s</td></tr>
-<tr><td>DiskTransferV2v</td><td>9m 56s</td><td>4s</td><td>&#8722;9m 52s</td></tr>
-<tr><td>Combined</td><td>14m 39s</td><td>12m 3s</td><td>&#8722;2m 36s</td></tr>
-<tr><td>Plan wall (all steps)</td><td>15m 21s</td><td>12m 31s</td><td>&#8722;2m 50s</td></tr>
-</table>
-</div>
-<div>
-<h2>Windows conversion duration</h2>
-<table>
-<tr><th>Block</th><th>ref</th><th>kc-v2v</th><th>Delta</th></tr>
-<tr><td>ImageConversion</td><td>3m 24s</td><td>12m 47s</td><td>+9m 23s</td></tr>
-<tr><td>DiskTransferV2v</td><td>9m 58s</td><td>3s</td><td>&#8722;9m 55s</td></tr>
-<tr><td>Combined</td><td>13m 22s</td><td>12m 50s</td><td>&#8722;32s</td></tr>
-<tr><td>Plan wall (all steps)</td><td>14m 6s</td><td>13m 32s</td><td>&#8722;34s</td></tr>
-</table>
-</div>
-</div>
 
 </div>
 <script>
-const RHEL_REF=[{t:54,mem:78,cpu:null,rx:0},{t:74,mem:904,cpu:null,rx:3},{t:95,mem:1030,cpu:null,rx:29},{t:115,mem:1070,cpu:408,rx:63},{t:136,mem:1137,cpu:542,rx:79},{t:157,mem:1414,cpu:1398,rx:226},{t:177,mem:1639,cpu:807,rx:299},{t:199,mem:1678,cpu:752,rx:319},{t:220,mem:1822,cpu:1127,rx:382},{t:240,mem:1878,cpu:2836,rx:382},{t:261,mem:1880,cpu:1373,rx:386},{t:281,mem:1838,cpu:1779,rx:404},{t:302,mem:1894,cpu:2851,rx:429},{t:323,mem:634,cpu:2336,rx:477},{t:343,mem:1002,cpu:1155,rx:1011},{t:364,mem:1001,cpu:257,rx:1557},{t:384,mem:1002,cpu:173,rx:2101},{t:405,mem:1183,cpu:173,rx:2598},{t:425,mem:1524,cpu:227,rx:3095},{t:446,mem:1538,cpu:352,rx:3610},{t:474,mem:1683,cpu:342,rx:4296},{t:495,mem:1444,cpu:334,rx:4762},{t:523,mem:1558,cpu:319,rx:5424},{t:544,mem:1396,cpu:424,rx:5904},{t:565,mem:912,cpu:335,rx:6343},{t:586,mem:1109,cpu:332,rx:6343},{t:607,mem:1145,cpu:727,rx:6343},{t:628,mem:1067,cpu:727,rx:6343},{t:651,mem:1014,cpu:1006,rx:6343},{t:672,mem:1153,cpu:1189,rx:6343},{t:694,mem:1466,cpu:1189,rx:6343},{t:717,mem:1492,cpu:1977,rx:6343},{t:738,mem:1580,cpu:1577,rx:6343},{t:764,mem:1484,cpu:2476,rx:6343},{t:785,mem:1517,cpu:2667,rx:6343},{t:811,mem:813,cpu:2081,rx:6343},{t:832,mem:996,cpu:995,rx:6343},{t:852,mem:1117,cpu:888,rx:6343},{t:873,mem:1233,cpu:927,rx:6343},{t:893,mem:1352,cpu:948,rx:6343},{t:914,mem:1249,cpu:947,rx:6343}];
-const RHEL_KC=[{t:48,mem:22,cpu:null,rx:3},{t:69,mem:29,cpu:null,rx:141},{t:94,mem:19,cpu:25,rx:331},{t:114,mem:33,cpu:111,rx:333},{t:135,mem:33,cpu:14,rx:333},{t:156,mem:28,cpu:5,rx:507},{t:180,mem:40,cpu:316,rx:765},{t:200,mem:40,cpu:475,rx:957},{t:221,mem:39,cpu:259,rx:957},{t:242,mem:40,cpu:3,rx:957},{t:262,mem:44,cpu:4,rx:1119},{t:282,mem:31,cpu:184,rx:1304},{t:303,mem:34,cpu:184,rx:1498},{t:324,mem:34,cpu:296,rx:1498},{t:345,mem:34,cpu:5,rx:1498},{t:365,mem:32,cpu:4,rx:1585},{t:387,mem:46,cpu:215,rx:1743},{t:408,mem:48,cpu:417,rx:1916},{t:429,mem:42,cpu:401,rx:2063},{t:449,mem:46,cpu:396,rx:2104},{t:470,mem:46,cpu:24,rx:2104},{t:491,mem:50,cpu:71,rx:2310},{t:513,mem:28,cpu:348,rx:2493},{t:534,mem:54,cpu:411,rx:2677},{t:557,mem:41,cpu:437,rx:2795},{t:578,mem:41,cpu:86,rx:2795},{t:599,mem:482,cpu:4,rx:2795},{t:619,mem:792,cpu:672,rx:2795},{t:640,mem:1174,cpu:824,rx:2795},{t:660,mem:1460,cpu:658,rx:2795},{t:686,mem:1683,cpu:869,rx:2795},{t:707,mem:1804,cpu:1029,rx:2795},{t:728,mem:1804,cpu:991,rx:2795}];
-const WIN_REF=[{t:64,mem:49,cpu:null,rx:0},{t:85,mem:855,cpu:null,rx:2},{t:105,mem:837,cpu:null,rx:33},{t:126,mem:950,cpu:766,rx:73},{t:151,mem:948,cpu:1276,rx:73},{t:171,mem:897,cpu:1343,rx:73},{t:192,mem:1069,cpu:1157,rx:73},{t:213,mem:1060,cpu:1200,rx:73},{t:233,mem:1096,cpu:1123,rx:73},{t:254,mem:591,cpu:1181,rx:267},{t:275,mem:1033,cpu:1002,rx:843},{t:295,mem:1258,cpu:338,rx:1412},{t:316,mem:1129,cpu:343,rx:1978},{t:345,mem:993,cpu:362,rx:2734},{t:365,mem:810,cpu:362,rx:3284},{t:386,mem:736,cpu:344,rx:3845},{t:407,mem:889,cpu:336,rx:4398},{t:432,mem:925,cpu:352,rx:5091},{t:465,mem:720,cpu:338,rx:6001},{t:486,mem:713,cpu:341,rx:6557},{t:506,mem:830,cpu:357,rx:7132},{t:527,mem:999,cpu:362,rx:7702},{t:548,mem:1001,cpu:355,rx:8267},{t:568,mem:959,cpu:348,rx:8840},{t:589,mem:960,cpu:353,rx:9407},{t:609,mem:946,cpu:185,rx:9988},{t:630,mem:946,cpu:179,rx:10581},{t:651,mem:992,cpu:168,rx:11153},{t:672,mem:1263,cpu:321,rx:11713},{t:692,mem:1169,cpu:333,rx:11719},{t:713,mem:1526,cpu:1078,rx:11719},{t:734,mem:1468,cpu:1272,rx:11719},{t:768,mem:1419,cpu:1268,rx:11719},{t:789,mem:1325,cpu:1041,rx:11719},{t:810,mem:1181,cpu:968,rx:11719},{t:830,mem:652,cpu:1191,rx:11719}];
-const WIN_KC=[{t:59,mem:51,cpu:null,rx:35},{t:79,mem:46,cpu:null,rx:233},{t:100,mem:56,cpu:306,rx:433},{t:121,mem:49,cpu:454,rx:609},{t:141,mem:36,cpu:445,rx:816},{t:162,mem:54,cpu:467,rx:1028},{t:194,mem:41,cpu:429,rx:1333},{t:215,mem:54,cpu:421,rx:1519},{t:236,mem:47,cpu:421,rx:1631},{t:259,mem:49,cpu:354,rx:1806},{t:280,mem:53,cpu:468,rx:2000},{t:302,mem:55,cpu:465,rx:2194},{t:323,mem:42,cpu:437,rx:2351},{t:345,mem:47,cpu:375,rx:2555},{t:366,mem:47,cpu:439,rx:2754},{t:387,mem:49,cpu:438,rx:2880},{t:408,mem:48,cpu:406,rx:3053},{t:429,mem:36,cpu:441,rx:3241},{t:450,mem:38,cpu:421,rx:3410},{t:471,mem:39,cpu:280,rx:3524},{t:512,mem:30,cpu:280,rx:3743},{t:533,mem:42,cpu:2,rx:3743},{t:555,mem:42,cpu:5,rx:3743},{t:575,mem:42,cpu:4,rx:3743},{t:596,mem:42,cpu:5,rx:3743},{t:617,mem:51,cpu:3,rx:3902},{t:637,mem:56,cpu:250,rx:4124},{t:658,mem:35,cpu:312,rx:4257},{t:679,mem:26,cpu:164,rx:4257},{t:700,mem:26,cpu:4,rx:4257},{t:721,mem:26,cpu:2,rx:4257},{t:749,mem:26,cpu:5,rx:4257},{t:769,mem:612,cpu:6,rx:4257},{t:797,mem:962,cpu:493,rx:4257}];
+
+const SERIES_LABELS = ["ref (virt-v2v)", "kc-v2v"];
+const COLOR_MEM = ["#868e96", "#2b8a3e"];
+const COLOR_CPU = ["#1971c2", "#e67700"];
+const COLOR_RX = ["#868e96", "#2b8a3e"];
+
+const RHEL_REF=[{"t":44,"mem":84,"cpu":null,"rx":0},{"t":64,"mem":923,"cpu":null,"rx":7},{"t":84,"mem":995,"cpu":1413,"rx":41},{"t":104,"mem":1019,"cpu":477,"rx":73},{"t":124,"mem":1044,"cpu":473,"rx":99},{"t":144,"mem":1069,"cpu":424,"rx":122},{"t":163,"mem":1092,"cpu":623,"rx":144},{"t":183,"mem":1273,"cpu":451,"rx":229},{"t":203,"mem":1549,"cpu":1254,"rx":305},{"t":223,"mem":1727,"cpu":1004,"rx":373},{"t":243,"mem":1762,"cpu":598,"rx":391},{"t":266,"mem":1953,"cpu":1265,"rx":449},{"t":286,"mem":2116,"cpu":2077,"rx":454},{"t":307,"mem":2275,"cpu":1464,"rx":462},{"t":327,"mem":2401,"cpu":2062,"rx":480},{"t":347,"mem":2493,"cpu":2062,"rx":508},{"t":366,"mem":1418,"cpu":2733,"rx":586},{"t":386,"mem":1784,"cpu":480,"rx":1142},{"t":406,"mem":1784,"cpu":387,"rx":1705},{"t":426,"mem":1785,"cpu":236,"rx":2279},{"t":446,"mem":2094,"cpu":243,"rx":2816},{"t":466,"mem":2679,"cpu":397,"rx":3352},{"t":487,"mem":3214,"cpu":411,"rx":3922},{"t":508,"mem":3222,"cpu":428,"rx":4464},{"t":527,"mem":3497,"cpu":431,"rx":4950},{"t":548,"mem":3236,"cpu":430,"rx":5462},{"t":569,"mem":3142,"cpu":461,"rx":6011},{"t":589,"mem":3348,"cpu":449,"rx":6463},{"t":609,"mem":3136,"cpu":360,"rx":6526},{"t":629,"mem":3233,"cpu":971,"rx":6526},{"t":649,"mem":3243,"cpu":1118,"rx":6526},{"t":669,"mem":3350,"cpu":1118,"rx":6526},{"t":689,"mem":3217,"cpu":1265,"rx":6526},{"t":709,"mem":2744,"cpu":1196,"rx":6526},{"t":729,"mem":2686,"cpu":1371,"rx":6526},{"t":749,"mem":2810,"cpu":2486,"rx":6526},{"t":769,"mem":2890,"cpu":1603,"rx":6526},{"t":789,"mem":2796,"cpu":1603,"rx":6526},{"t":809,"mem":2697,"cpu":3527,"rx":6526},{"t":829,"mem":1795,"cpu":1327,"rx":6526},{"t":850,"mem":1916,"cpu":1228,"rx":6526},{"t":870,"mem":2031,"cpu":917,"rx":6526},{"t":890,"mem":2116,"cpu":968,"rx":6526},{"t":913,"mem":2205,"cpu":974,"rx":6526},{"t":933,"mem":2359,"cpu":987,"rx":6526},{"t":954,"mem":null,"cpu":null,"rx":null}];
+const WIN_REF=[{"t":48,"mem":null,"cpu":null,"rx":0},{"t":68,"mem":614,"cpu":null,"rx":2},{"t":88,"mem":988,"cpu":957,"rx":26},{"t":108,"mem":1017,"cpu":565,"rx":62},{"t":128,"mem":1049,"cpu":497,"rx":96},{"t":148,"mem":1084,"cpu":498,"rx":131},{"t":170,"mem":1243,"cpu":577,"rx":228},{"t":190,"mem":1633,"cpu":1455,"rx":230},{"t":209,"mem":1712,"cpu":1583,"rx":230},{"t":229,"mem":1713,"cpu":1352,"rx":230},{"t":249,"mem":1753,"cpu":1294,"rx":230},{"t":270,"mem":1602,"cpu":1336,"rx":230},{"t":289,"mem":1874,"cpu":1242,"rx":230},{"t":309,"mem":1932,"cpu":1322,"rx":230},{"t":329,"mem":1958,"cpu":1323,"rx":231},{"t":349,"mem":2033,"cpu":1281,"rx":231},{"t":369,"mem":1182,"cpu":1895,"rx":233},{"t":389,"mem":1393,"cpu":747,"rx":521},{"t":409,"mem":1880,"cpu":250,"rx":1004},{"t":432,"mem":2401,"cpu":387,"rx":1545},{"t":452,"mem":2320,"cpu":372,"rx":2012},{"t":474,"mem":2365,"cpu":372,"rx":2531},{"t":493,"mem":2340,"cpu":369,"rx":3006},{"t":513,"mem":2262,"cpu":375,"rx":3478},{"t":534,"mem":2156,"cpu":351,"rx":3967},{"t":554,"mem":2461,"cpu":379,"rx":4439},{"t":574,"mem":2486,"cpu":389,"rx":4924},{"t":594,"mem":2503,"cpu":383,"rx":5397},{"t":614,"mem":2476,"cpu":386,"rx":5884},{"t":634,"mem":2573,"cpu":385,"rx":6359},{"t":655,"mem":2557,"cpu":382,"rx":6838},{"t":674,"mem":2650,"cpu":377,"rx":7319},{"t":694,"mem":2605,"cpu":374,"rx":7786},{"t":714,"mem":2378,"cpu":370,"rx":8259},{"t":734,"mem":2617,"cpu":367,"rx":8731},{"t":756,"mem":2834,"cpu":366,"rx":9255},{"t":776,"mem":2343,"cpu":380,"rx":9712},{"t":796,"mem":2708,"cpu":398,"rx":10157},{"t":816,"mem":2587,"cpu":398,"rx":10512},{"t":836,"mem":2608,"cpu":278,"rx":10564},{"t":856,"mem":2604,"cpu":129,"rx":10564},{"t":876,"mem":2597,"cpu":1193,"rx":10564},{"t":896,"mem":2644,"cpu":932,"rx":10564},{"t":916,"mem":2775,"cpu":822,"rx":10564},{"t":936,"mem":2597,"cpu":1235,"rx":10564},{"t":956,"mem":2548,"cpu":1303,"rx":10564},{"t":976,"mem":2381,"cpu":1604,"rx":10564},{"t":996,"mem":2524,"cpu":1080,"rx":10564},{"t":1015,"mem":2374,"cpu":1259,"rx":10564},{"t":1035,"mem":2590,"cpu":1221,"rx":10564},{"t":1055,"mem":2605,"cpu":1197,"rx":10564},{"t":1075,"mem":2509,"cpu":1590,"rx":10564},{"t":1095,"mem":2476,"cpu":1225,"rx":10564},{"t":1115,"mem":2403,"cpu":1225,"rx":10564},{"t":1135,"mem":1592,"cpu":1423,"rx":10564},{"t":1155,"mem":1893,"cpu":1235,"rx":10564}];
+const RHEL_KC=[{"t":47,"mem":null,"cpu":null,"rx":3},{"t":68,"mem":35,"cpu":null,"rx":71},{"t":87,"mem":32,"cpu":80,"rx":330},{"t":108,"mem":38,"cpu":198,"rx":333},{"t":128,"mem":38,"cpu":97,"rx":333},{"t":148,"mem":50,"cpu":4,"rx":403},{"t":168,"mem":54,"cpu":87,"rx":579},{"t":188,"mem":33,"cpu":402,"rx":819},{"t":209,"mem":44,"cpu":475,"rx":956},{"t":229,"mem":44,"cpu":84,"rx":956},{"t":249,"mem":44,"cpu":3,"rx":956},{"t":269,"mem":36,"cpu":27,"rx":1151},{"t":289,"mem":26,"cpu":27,"rx":1323},{"t":309,"mem":38,"cpu":372,"rx":1494},{"t":328,"mem":38,"cpu":119,"rx":1494},{"t":348,"mem":38,"cpu":1,"rx":1494},{"t":368,"mem":29,"cpu":4,"rx":1576},{"t":388,"mem":46,"cpu":84,"rx":1718},{"t":408,"mem":49,"cpu":363,"rx":1875},{"t":431,"mem":52,"cpu":392,"rx":2045},{"t":451,"mem":50,"cpu":380,"rx":2099},{"t":471,"mem":50,"cpu":66,"rx":2099},{"t":491,"mem":31,"cpu":2,"rx":2283},{"t":511,"mem":56,"cpu":214,"rx":2441},{"t":531,"mem":52,"cpu":407,"rx":2616},{"t":551,"mem":45,"cpu":369,"rx":2784},{"t":571,"mem":45,"cpu":428,"rx":2790},{"t":591,"mem":45,"cpu":116,"rx":2790},{"t":611,"mem":768,"cpu":338,"rx":2790},{"t":631,"mem":1114,"cpu":338,"rx":2790},{"t":651,"mem":1510,"cpu":1075,"rx":2790},{"t":671,"mem":1842,"cpu":1035,"rx":2790},{"t":691,"mem":1967,"cpu":1080,"rx":2790},{"t":711,"mem":1976,"cpu":1080,"rx":2790},{"t":733,"mem":null,"cpu":null,"rx":null}];
+const WIN_KC=[{"t":46,"mem":18,"cpu":null,"rx":11},{"t":66,"mem":49,"cpu":61,"rx":14},{"t":85,"mem":46,"cpu":77,"rx":209},{"t":106,"mem":46,"cpu":222,"rx":392},{"t":126,"mem":50,"cpu":329,"rx":594},{"t":146,"mem":36,"cpu":361,"rx":768},{"t":166,"mem":34,"cpu":388,"rx":934},{"t":186,"mem":41,"cpu":455,"rx":1114},{"t":206,"mem":30,"cpu":424,"rx":1291},{"t":226,"mem":52,"cpu":409,"rx":1487},{"t":246,"mem":40,"cpu":446,"rx":1651},{"t":267,"mem":39,"cpu":371,"rx":1839},{"t":287,"mem":53,"cpu":322,"rx":1993},{"t":307,"mem":42,"cpu":408,"rx":2247},{"t":327,"mem":30,"cpu":246,"rx":2523},{"t":347,"mem":38,"cpu":214,"rx":2807},{"t":367,"mem":55,"cpu":194,"rx":3116},{"t":388,"mem":53,"cpu":159,"rx":3336},{"t":407,"mem":47,"cpu":284,"rx":3524},{"t":427,"mem":41,"cpu":402,"rx":3692},{"t":447,"mem":28,"cpu":408,"rx":3860},{"t":467,"mem":29,"cpu":411,"rx":4032},{"t":487,"mem":45,"cpu":409,"rx":4183},{"t":507,"mem":33,"cpu":404,"rx":4346},{"t":527,"mem":47,"cpu":424,"rx":4519},{"t":547,"mem":38,"cpu":437,"rx":4752},{"t":569,"mem":43,"cpu":227,"rx":4941},{"t":589,"mem":37,"cpu":330,"rx":5174},{"t":610,"mem":43,"cpu":240,"rx":5376},{"t":630,"mem":38,"cpu":247,"rx":5602},{"t":650,"mem":30,"cpu":309,"rx":5794},{"t":670,"mem":31,"cpu":303,"rx":6034},{"t":689,"mem":45,"cpu":318,"rx":6263},{"t":709,"mem":37,"cpu":247,"rx":6479},{"t":729,"mem":1255,"cpu":443,"rx":6498},{"t":749,"mem":1378,"cpu":1153,"rx":6498},{"t":768,"mem":1385,"cpu":1207,"rx":6498},{"t":788,"mem":1434,"cpu":1071,"rx":6498},{"t":810,"mem":937,"cpu":1070,"rx":null}];
 
 function nearest(samples,t,key,win=35){
+  if(!samples||!samples.length)return NaN;
   let best=null;
   for(const s of samples){const v=s[key];if(v==null)continue;const d=Math.abs(s.t-t);
     if(d<=win&&(best==null||d<best.d))best={d,v};}
   return best?best.v:NaN;
 }
-function overlay(ref,kc,key,maxPts=22){
-  const tmax=Math.max(ref[ref.length-1].t,kc[kc.length-1].t);
+function overlay(seriesList,key,maxPts=22){
+  const nonempty=seriesList.filter(s=>s&&s.length);
+  if(!nonempty.length)return{labels:[],data:seriesList.map(()=>[])};
+  const tmax=Math.max(...nonempty.map(s=>s[s.length-1].t));
   const step=Math.max(30,Math.ceil(tmax/maxPts));
-  const labels=[],refD=[],kcD=[];
+  const labels=[], data=seriesList.map(()=>[]);
   for(let t=0;t<=tmax;t+=step){
     const m=Math.floor(t/60),s=t%60;
     labels.push(s===0?m+'m':m+':'+String(s).padStart(2,'0'));
-    refD.push(nearest(ref,t,key));kcD.push(nearest(kc,t,key));
+    seriesList.forEach((samples,i)=>data[i].push(nearest(samples,t,key)));
   }
-  return{labels,refD,kcD};
+  return{labels,data};
 }
 
-function mkMemCpu(canvasId,ref,kc){
-  const mem=overlay(ref,kc,'mem');
-  const cpu=overlay(ref,kc,'cpu');
+function mkMemCpu(canvasId,...series){
+  const mem=overlay(series,'mem');
+  const cpu=overlay(series,'cpu');
+  const datasets=[];
+  series.forEach((_,i)=>{
+    datasets.push({label:SERIES_LABELS[i]+' mem (Mi)',data:mem.data[i],borderColor:COLOR_MEM[i],backgroundColor:COLOR_MEM[i]+'1a',tension:.3,pointRadius:1});
+    datasets.push({label:SERIES_LABELS[i]+' cpu (m)',data:cpu.data[i],borderColor:COLOR_CPU[i],backgroundColor:COLOR_CPU[i]+'1a',tension:.3,pointRadius:1,borderDash:[4,3]});
+  });
   new Chart(document.getElementById(canvasId),{type:'line',
-    data:{labels:mem.labels,datasets:[
-      {label:'ref mem (Mi)',data:mem.refD,borderColor:'#868e96',backgroundColor:'rgba(134,142,150,.1)',tension:.3,pointRadius:1},
-      {label:'kc mem (Mi)',data:mem.kcD,borderColor:'#2b8a3e',backgroundColor:'rgba(43,138,62,.1)',tension:.3,pointRadius:1},
-      {label:'ref cpu (m)',data:cpu.refD,borderColor:'#1971c2',backgroundColor:'rgba(25,113,194,.1)',tension:.3,pointRadius:1,borderDash:[4,3]},
-      {label:'kc cpu (m)',data:cpu.kcD,borderColor:'#e67700',backgroundColor:'rgba(230,119,0,.1)',tension:.3,pointRadius:1,borderDash:[4,3]},
-    ]},
+    data:{labels:mem.labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,
       scales:{y:{beginAtZero:true,title:{display:true,text:'Mi / millicores'}},
               x:{title:{display:true,text:'Elapsed'}}},
       plugins:{legend:{position:'bottom'}},interaction:{mode:'index',intersect:false}}
   });
 }
-
-function mkNet(canvasId,ref,kc){
-  const rx=overlay(ref,kc,'rx');
+function mkNet(canvasId,...series){
+  const rx=overlay(series,'rx');
+  const datasets=series.map((_,i)=>({
+    label:SERIES_LABELS[i]+' RX (Mi)',data:rx.data[i],borderColor:COLOR_RX[i],
+    backgroundColor:COLOR_RX[i]+'1a',tension:.3,pointRadius:1,fill:true
+  }));
   new Chart(document.getElementById(canvasId),{type:'line',
-    data:{labels:rx.labels,datasets:[
-      {label:'ref RX (Mi)',data:rx.refD,borderColor:'#868e96',backgroundColor:'rgba(134,142,150,.1)',tension:.3,pointRadius:1,fill:true},
-      {label:'kc RX (Mi)',data:rx.kcD,borderColor:'#2b8a3e',backgroundColor:'rgba(43,138,62,.1)',tension:.3,pointRadius:1,fill:true},
-    ]},
+    data:{labels:rx.labels,datasets},
     options:{responsive:true,maintainAspectRatio:false,
       scales:{y:{beginAtZero:true,title:{display:true,text:'Cumulative Mi'}},
               x:{title:{display:true,text:'Elapsed'}}},
@@ -168,10 +154,11 @@ function mkNet(canvasId,ref,kc){
   });
 }
 
-mkMemCpu('rhelMemCpu',RHEL_REF,RHEL_KC);
-mkMemCpu('winMemCpu',WIN_REF,WIN_KC);
-mkNet('rhelNet',RHEL_REF,RHEL_KC);
-mkNet('winNet',WIN_REF,WIN_KC);
+mkMemCpu('rhelMemCpu', RHEL_REF, RHEL_KC);
+mkMemCpu('winMemCpu', WIN_REF, WIN_KC);
+mkNet('rhelNet', RHEL_REF, RHEL_KC);
+mkNet('winNet', WIN_REF, WIN_KC);
+
 </script>
 </body>
 </html>

@@ -28,10 +28,11 @@ see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
   host root or `CAP_SYS_ADMIN` is required.
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
-On OpenShift MTV cold migrations, kc-v2v matches or beats virt-v2v wall time
-(about 3 minutes faster on RHEL, similar on Windows) while using less peak
-memory and far less peak CPU, and transferring roughly 56–64 % less network
-data by converting disks in-pod instead of a separate DiskTransferV2v stream.
+On OpenShift MTV cold migrations, kc-v2v beats virt-v2v wall time
+(about 3.5 minutes faster on RHEL, about 6 minutes faster on Windows) while
+using less peak memory and far less peak CPU, and transferring roughly
+57 % / 38 % less network data (RHEL / Windows) by converting disks in-pod
+instead of a separate DiskTransferV2v stream.
 
 **[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/architecture/ref-baseline/dashboard.html)**
 ([source](docs/architecture/ref-baseline/dashboard.html)):

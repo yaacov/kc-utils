@@ -79,10 +79,11 @@ Parse kc-v2v pod logs with
 
 | Run | Image | Timestamp | Directory |
 |---|---|---|---|
-| **ref** | operator default (virt-v2v) | 2026-08-05T21:15:38Z | `runs/ref-20260805T211538Z*` |
-| **kc-v2v** | kc-v2v image under test | 2026-08-05T20:42:33Z | `runs/kc-20260805T204233Z*` |
+| **ref** | operator default (virt-v2v) | 2026-08-10T10:30:43Z | `runs/ref-20260810T103043Z*` |
+| **kc-v2v** | kc-v2v image under test | 2026-08-10T10:30:43Z | `runs/kc-20260810T103043Z*` |
 
-Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK
+Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK  
+Compare session: `test-mtv-benchmark-20260810T103043Z` · VMs: `mtv-func-rhel9-4-uefi`, `mtv-func-win2019`
 
 ---
 
@@ -92,10 +93,10 @@ Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK
 
 | VM | Image | Status | Wall time | Peak mem (cgroup) | Peak CPU | Net RX | Net TX |
 |---|---|---|---|---|---|---|---|
-| RHEL | ref | Succeeded | 15m 21s | 1894 Mi | 2851 m | 6343 Mi | 34 Mi |
-| RHEL | kc-v2v | Succeeded | 12m 31s | 1804 Mi | 1029 m | 2795 Mi | 6 Mi |
-| Windows | ref | Succeeded | 14m 6s | 1526 Mi | 1343 m | 11719 Mi | 49 Mi |
-| Windows | kc-v2v | Succeeded | 13m 32s | 962 Mi | 493 m | 4257 Mi | 9 Mi |
+| RHEL | ref | Succeeded | 16m 08s | 3497 Mi | 3527 m | 6526 Mi | 38 Mi |
+| RHEL | kc-v2v | Succeeded | 12m 27s | 1976 Mi | 1080 m | 2790 Mi | 9 Mi |
+| Windows | ref | Succeeded | 19m 37s | 2834 Mi | 1895 m | 10564 Mi | 61 Mi |
+| Windows | kc-v2v | Succeeded | 13m 44s | 1434 Mi | 1207 m | 6498 Mi | 22 Mi |
 
 ### Pipeline block timings
 
@@ -103,35 +104,35 @@ Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK
 
 | Block | ref | kc-v2v | Delta |
 |---|---|---|---|
-| ImageConversion | 4m 43s | 11m 59s | +7m 16s |
-| DiskTransferV2v | 9m 56s | 4s | −9m 52s |
-| **Combined** | **14m 39s** | **12m 3s** | **−2m 36s** |
-| Plan wall (all steps) | 15m 21s | 12m 31s | −2m 50s |
+| ImageConversion | 5m 36s | 11m 28s | +5m 52s |
+| DiskTransferV2v | 9m 42s | 2s | −9m 40s |
+| **Combined** | **15m 18s** | **11m 30s** | **−3m 48s** |
+| Plan wall (all steps) | 16m 08s | 12m 27s | −3m 41s |
 
 #### Windows
 
 | Block | ref | kc-v2v | Delta |
 |---|---|---|---|
-| ImageConversion | 3m 24s | 12m 47s | +9m 23s |
-| DiskTransferV2v | 9m 58s | 3s | −9m 55s |
-| **Combined** | **13m 22s** | **12m 50s** | **−32s** |
-| Plan wall (all steps) | 14m 6s | 13m 32s | −34s |
+| ImageConversion | 5m 44s | 12m 59s | +7m 15s |
+| DiskTransferV2v | 13m 4s | 3s | −13m 1s |
+| **Combined** | **18m 48s** | **13m 2s** | **−5m 46s** |
+| Plan wall (all steps) | 19m 37s | 13m 44s | −5m 53s |
 
 ### Peak resource comparison
 
 | VM | ref peak mem | kc peak mem | ref peak CPU | kc peak CPU |
 |---|---|---|---|---|
-| RHEL | 1894 Mi | 1804 Mi | 2851 m | 1029 m |
-| Windows | 1526 Mi | 962 Mi | 1343 m | 493 m |
+| RHEL | 3497 Mi | 1976 Mi | 3527 m | 1080 m |
+| Windows | 2834 Mi | 1434 Mi | 1895 m | 1207 m |
 
 ### Network totals
 
 | VM | ref RX | kc RX | ref TX | kc TX |
 |---|---|---|---|---|
-| RHEL | 6343 Mi | 2795 Mi | 34 Mi | 6 Mi |
-| Windows | 11719 Mi | 4257 Mi | 49 Mi | 9 Mi |
+| RHEL | 6526 Mi | 2790 Mi | 38 Mi | 9 Mi |
+| Windows | 10564 Mi | 6498 Mi | 61 Mi | 22 Mi |
 
-kc-v2v transfers **56 % less data for RHEL** and **64 % less for Windows**
+kc-v2v transfers **57 % less data for RHEL** and **38 % less for Windows**
 because it performs disk conversion locally inside the pod (longer
 ImageConversion) instead of streaming raw disk data to a separate
 DiskTransferV2v step.
