@@ -49,5 +49,6 @@ grep -q 'fake-2k8-viostor' "$root/Windows/Drivers/VirtIO/viostor.inf"
 bat="$root/Program Files/Guestfs/Firstboot/firstboot.bat"
 test -f "$bat"
 grep -q 'ExecutionPolicy' "$bat"
+grep -Fq 'C:\Windows\System32\shutdown.exe /r /t 0 /f' "$bat"
 
 echo "PASS: test-windows-win2008"

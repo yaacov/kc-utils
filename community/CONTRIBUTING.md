@@ -222,9 +222,10 @@ firstboot handler's `Install()` appends new commands before the self-cleanup
 tail rather than overwriting the script. Callers should call `Install()` for
 each set of commands; they do not need to manage the script format directly.
 
-For Windows, `firstboot.bat` iterates `scripts/*.ps1` in sorted order and
-self-cleans the `Guestfs\Firstboot` directory when done. Add new `.ps1` files
-with an appropriate numeric prefix.
+For Windows, `firstboot.bat` iterates `scripts/*.ps1` in sorted order,
+self-cleans the `Guestfs\Firstboot` directory, then forces a guest reboot.
+Add new `.ps1` files with an appropriate numeric prefix (COM1
+`CONVERSION_DONE` stays at 99999 so it runs last before that reboot).
 
 ### Hypervisor cleanup uses shared helpers
 

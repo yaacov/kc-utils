@@ -57,6 +57,16 @@ func TestRebootSignalScript(t *testing.T) {
 	}
 }
 
+func TestRebootSignalBatScript(t *testing.T) {
+	script := RebootSignalBatScript()
+	if !strings.Contains(script, "CONVERSION_DONE") {
+		t.Errorf("missing CONVERSION_DONE: %q", script)
+	}
+	if !strings.HasPrefix(script, "@echo off") {
+		t.Errorf("expected batch script: %q", script)
+	}
+}
+
 func TestVMwareCleanupScript(t *testing.T) {
 	script := VMwareCleanupScript()
 	if !strings.Contains(script, "VMware") {

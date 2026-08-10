@@ -73,10 +73,18 @@ func RegistryScript(ips []types.StaticIP) string {
 	return b.String()
 }
 
-// RebootSignalScript returns the COM1 conversion-done signal script.
+// RebootSignalScript returns the PowerShell COM1 conversion-done signal script.
 func RebootSignalScript() string {
 	return "# Signal conversion completion on COM1\r\n" +
 		"cmd /c \"echo CONVERSION_DONE>\\\\.\\COM1\" 2>&1 | Out-Null\r\n"
+}
+
+// RebootSignalBatScript returns the batch COM1 conversion-done signal script
+// for guests without PowerShell (XP / Server 2003).
+func RebootSignalBatScript() string {
+	return "@echo off\r\n" +
+		"REM Signal conversion completion on COM1\r\n" +
+		"echo CONVERSION_DONE>\\\\.\\COM1\r\n"
 }
 
 // VMwareCleanupScript returns a PowerShell script for VMware driver and service removal.

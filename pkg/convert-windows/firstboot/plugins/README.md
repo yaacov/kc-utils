@@ -8,9 +8,11 @@ all contributors whose `ShouldRun` returns true, sorts them by `Priority`
 (lower runs first), writes each script to
 `Program Files\Guestfs\Firstboot\scripts\`, and registers a `RunOnce` registry
 entry that launches them via `firstboot.bat`. After all scripts complete, the
-launcher cleans up the Firstboot directory. Contributors declare whether they
-need PowerShell (`UsesBatch` returns false) or batch (`UsesBatch` returns true)
-to support older Windows versions that lack PowerShell.
+launcher cleans up the Firstboot directory and forces a guest reboot
+(`C:\Windows\System32\shutdown.exe /r /t 0 /f`) so installers that returned
+“reboot required” can finish. Contributors declare whether they need PowerShell (`UsesBatch` returns
+false) or batch (`UsesBatch` returns true) to support older Windows versions
+that lack PowerShell.
 
 | Key | Package | Priority | Contributor |
 |-----|---------|----------|-------------|
@@ -104,9 +106,14 @@ Supports a batch mode (`devcon.exe`) for older Windows versions.
 ## signal
 
 **What it does:** Signals the orchestrator that conversion is complete and the
-guest has successfully booted under KVM.
+guest has successfully booted under KVM (same COM1 marker Forklift injects for
+virt-v2v).
 
-**How it works:** Generates a reboot-signal script containing a
-`CONVERSION_DONE` marker. Runs last (priority 99999) so all other firstboot
-work is complete before signaling. Only active when
-`Options.WaitForGuestReboot` is true.
+**How it works:** Generates a script that writes `CONVERSION_DONE` to COM1.
+Modern guests get a PowerShell script (`cmd /c "echo CONVERSION_DONE>\\.\COM1"`);
+XP/Server 2003 (`UsesBatch` when PowerShell is unsupported) get a `.bat` that
+writes the same marker with `echo CONVERSION_DONE>\\.\COM1`. Runs last among
+scripts (priority 99999) so all other firstboot work is complete before
+signaling. Only active when `Options.WaitForGuestReboot` is true. The launcher
+then cleans up and reboots; Forklift's wait-for-reboot watcher expects that
+COM1-then-reboot order.

@@ -18,8 +18,13 @@ func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
 	return cfg.Options.WaitForGuestReboot
 }
 
-func (p *Plugin) Generate(_ *firstboot.ContributorConfig) (string, error) {
-	return staticip.RebootSignalScript(), nil
+func (p *Plugin) UsesBatch(cfg *firstboot.ContributorConfig) bool {
+	return cfg.Version != nil && !cfg.Version.SupportsPowerShell()
 }
 
-func (p *Plugin) UsesBatch(_ *firstboot.ContributorConfig) bool { return false }
+func (p *Plugin) Generate(cfg *firstboot.ContributorConfig) (string, error) {
+	if p.UsesBatch(cfg) {
+		return staticip.RebootSignalBatScript(), nil
+	}
+	return staticip.RebootSignalScript(), nil
+}

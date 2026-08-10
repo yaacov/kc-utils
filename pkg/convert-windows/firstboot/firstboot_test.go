@@ -117,9 +117,93 @@ func TestConfigureWin2008UsesPSV1Launcher(t *testing.T) {
 	if !strings.Contains(content, "ExecutionPolicy") {
 		t.Fatalf("expected PS 1.0 launcher, got: %s", content)
 	}
+	if !strings.Contains(content, `C:\Windows\System32\shutdown.exe /r /t 0 /f`) {
+		t.Fatalf("expected post-install reboot in launcher, got: %s", content)
+	}
 
 	diskScript := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "4000-disk-onliner.ps1")
 	if _, err := os.Stat(diskScript); err == nil {
 		t.Fatal("win2008 should skip disk-onliner contributor")
+	}
+}
+
+func TestConfigureModernLauncherRebootsAfterCleanup(t *testing.T) {
+	root := t.TempDir()
+	hive := regmock.NewMockHive()
+
+	h := version.Classify(&types.InspectData{
+		MajorVersion: 10,
+		ProductName:  "Windows Server 2022",
+	})
+
+	err := firstboot.Configure(&firstboot.Config{
+		MountRoot: root,
+		Offline:   true,
+		Version:   h,
+		Options:   types.PrepareOptions{WaitForGuestReboot: true},
+		DriverFiles: []driversource.DriverFile{{
+			Name:    "viostor",
+			InfPath: "viostor.inf",
+		}},
+	}, hive)
+	if err != nil {
+		t.Fatalf("Configure returned error: %v", err)
+	}
+
+	bat, err := os.ReadFile(filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "firstboot.bat"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(bat)
+	cleanupIdx := strings.Index(content, `rmdir /s /q "C:\Program Files\Guestfs\Firstboot"`)
+	rebootIdx := strings.Index(content, `C:\Windows\System32\shutdown.exe /r /t 0 /f`)
+	if cleanupIdx < 0 || rebootIdx < 0 {
+		t.Fatalf("expected cleanup then reboot in launcher, got: %s", content)
+	}
+	if rebootIdx < cleanupIdx {
+		t.Fatalf("reboot must run after cleanup: %s", content)
+	}
+
+	signalPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "99999-signal-conversion-done.ps1")
+	signal, err := os.ReadFile(signalPath)
+	if err != nil {
+		t.Fatalf("expected COM1 signal script before footer reboot: %v", err)
+	}
+	if !strings.Contains(string(signal), "CONVERSION_DONE") {
+		t.Fatalf("signal script missing CONVERSION_DONE: %s", signal)
+	}
+}
+
+func TestConfigureXPWritesBatchSignalScript(t *testing.T) {
+	root := t.TempDir()
+	hive := regmock.NewMockHive()
+
+	h := version.Classify(&types.InspectData{
+		MajorVersion: 5,
+		MinorVersion: 1,
+		ProductName:  "Windows XP Professional",
+	})
+
+	err := firstboot.Configure(&firstboot.Config{
+		MountRoot: root,
+		Offline:   true,
+		Version:   h,
+		Options:   types.PrepareOptions{WaitForGuestReboot: true},
+	}, hive)
+	if err != nil {
+		t.Fatalf("Configure returned error: %v", err)
+	}
+
+	signalPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "99999-signal-conversion-done.bat")
+	signal, err := os.ReadFile(signalPath)
+	if err != nil {
+		t.Fatalf("expected batch COM1 signal script for XP: %v", err)
+	}
+	if !strings.Contains(string(signal), "CONVERSION_DONE") {
+		t.Fatalf("signal script missing CONVERSION_DONE: %s", signal)
+	}
+	psPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "99999-signal-conversion-done.ps1")
+	if _, err := os.Stat(psPath); err == nil {
+		t.Fatal("XP must not write PowerShell signal script")
 	}
 }
