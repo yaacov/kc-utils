@@ -1,8 +1,18 @@
 # driversource -- DriverSource interface and driver collection
 
-Provides the abstraction for locating VirtIO driver files on the conversion host and selecting the correct driver set for a given guest architecture and Windows version. The primary entry point, `CollectDrivers`, queries the registered `DriverSource` (typically a directory-based source backed by the virtio-win RPM tree at `/usr/share/virtio-win/drivers/by-os`) and returns a list of `DriverFile` entries ready for copying into the guest.
+Provides the abstraction for locating VirtIO driver files on the conversion host and selecting the correct driver set for a given guest architecture and Windows version. The primary entry point, `CollectDrivers`, queries the registered `DriverSource` (typically a directory-based source backed by the virtio-win RPM tree at `/usr/share/virtio-win/drivers/by-os`) and returns a list of installable `DriverFile` entries ready for copying into the guest.
 
 Architecture names are normalized between guest inspection output and virtio-win directory conventions (e.g. `x86_64` maps to `amd64`). OS version matching uses a canonical alias system that maps Windows product names and shorthand tokens (e.g. "Windows Server 2022" to "2k22") so the correct by-os subdirectory is found. When multiple directories match, handler-specified preferences and fallbacks guide selection. The qemu-ga MSI is conditionally excluded for legacy Windows versions that do not support the guest agent.
+
+Before returning, `CollectDrivers` runs `FilterComplete`. For INF packages it
+requires the INF plus catalogs from `CatalogFile` / `CatalogFile.nt*` and
+companions from undecorated and arch-matching `[SourceDisksFiles]` /
+`[SourceDisksFiles.<arch>]` sections (including declared companion
+subdirectories under the package root). MSI packages must exist at `InfPath`.
+Incomplete packages are skipped with a warning; kept packages populate `Files`
+for staging/firstboot. Completeness is still limited: it does not resolve
+`CopyFiles`-only payloads, `SourceDisksNames` media roots outside the package
+dir, or other INF forms beyond those SourceDisksFiles/CatalogFile directives.
 
 ## File layout
 
@@ -11,6 +21,9 @@ Architecture names are normalized between guest inspection output and virtio-win
 | `driversource.go` | Declares the `DriverSource` interface, `DriverFile` struct, and the plugin registry |
 | `arch.go` | Architecture normalization and matching helpers |
 | `collect.go` | `CollectDrivers` entry point that queries the directory source and filters results |
+| `complete.go` | `FilterComplete` and per-package required-file resolution |
+| `inf.go` | INF `CatalogFile` / `SourceDisksFiles` parsing (including arch decorations) |
+| `pkgpath.go` | Package-relative path sanitization and root-bounded resolve |
 | `osdir.go` | `FindBestOSDir` / `FindBestOSDirWithPrefs` for selecting the best virtio-win OS subdirectory |
 | `osversion.go` | `MatchOSVersion` and `CanonicalOSVersions` alias mapping for Windows version strings |
 
@@ -19,9 +32,10 @@ Architecture names are normalized between guest inspection output and virtio-win
 | Symbol | Role |
 |--------|------|
 | `DriverSource` | Interface with `Available()` and `FindDrivers()` for locating driver files |
-| `DriverFile` | Struct holding a driver's name, source path, INF path, and architecture |
+| `DriverFile` | Struct holding a driver's name, source path, INF/MSI path, architecture, and resolved `Files` |
 | `Sources` | Plugin registry of `DriverSource` implementations keyed by name |
-| `CollectDrivers` | Queries the "directory" source, applies guest-agent filtering, and returns driver files |
+| `CollectDrivers` | Queries the "directory" source, applies guest-agent + completeness filtering, and returns driver files |
+| `FilterComplete` | Drops incomplete packages and sets `Files` for packages that can be staged/installed |
 | `NormalizeArch` | Maps guest arch names (x86_64, i386, aarch64) to virtio-win directory names (amd64, x86, arm64) |
 | `ArchMatches` | Reports whether a directory arch string matches a guest arch after normalization |
 | `ArchSearchNames` | Returns all directory name variants to try for a given guest architecture |

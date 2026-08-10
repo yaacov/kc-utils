@@ -161,12 +161,32 @@ setup_fake_virtio_drivers_tree() {
         exit 77
     fi
     cleanup_fn rm -rf /usr/share/virtio-win
-    local drv osver ext
+    local drv osdir="$iso_dir/drivers/by-os/amd64/2k22"
     for drv in viostor vioscsi netkvm viorng balloon vioserial; do
-        for ext in inf sys cat; do
-            echo "fake-$drv" > "$iso_dir/drivers/by-os/amd64/2k22/$drv.$ext"
-        done
+        echo "fake-$drv" > "$osdir/$drv.sys"
+        echo "fake-$drv" > "$osdir/$drv.cat"
+        # INF must declare catalog + SourceDisksFiles so FilterComplete stages
+        # the full package (not only the .inf).
+        cat > "$osdir/$drv.inf" <<EOF
+[Version]
+Signature="\$WINDOWS NT\$"
+CatalogFile=$drv.cat
+
+[SourceDisksFiles]
+$drv.sys = 1,,
+EOF
     done
+    # netkvm also ships a companion exe in real virtio-win trees.
+    echo "fake-netkvmp" > "$osdir/netkvmp.exe"
+    cat > "$osdir/netkvm.inf" <<'EOF'
+[Version]
+Signature="$WINDOWS NT$"
+CatalogFile=netkvm.cat
+
+[SourceDisksFiles]
+netkvm.sys = 1,,
+netkvmp.exe = 1,,
+EOF
     mkdir -p "$iso_dir/guest-agent"
     echo "fake-ga" > "$iso_dir/guest-agent/qemu-ga-x86_64.msi"
 }

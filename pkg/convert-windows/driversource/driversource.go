@@ -12,6 +12,9 @@ type DriverFile struct {
 	SrcPath string
 	InfPath string
 	Arch    string
+	// Files are host paths that must be staged for this package (INF/MSI,
+	// catalog, and SourceDisksFiles companions). Populated by FilterComplete.
+	Files []string
 }
 
 var Sources = plugin.NewRegistry[string, DriverSource]()

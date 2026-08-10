@@ -48,7 +48,7 @@ extract a virtio-win ISO into the same path.
 [`CollectDrivers`](../../collect.go) reads guest-agent MSIs from the directory
 plugin, then omits `qemu-ga` entries when
 [`CollectGuestAgentMSI`](../../version/guestagent.go) is false for the
-classified handler (XP, 2003, Server 2008, Vista). Guest agent MSIs that
-remain in `DriverFiles` are staged into the guest's `Windows\Drivers\VirtIO\`
-during driver copy; the `qemuga` firstboot contributor installs them via
-`qemu-ga*.msi`.
+classified handler (XP, 2003, Server 2008, Vista). It then runs
+[`FilterComplete`](../../complete.go) so only packages with all offline
+payload files are kept. Kept packages have `Files` set for staging; the
+`qemuga` firstboot contributor installs the exact selected MSI basename.

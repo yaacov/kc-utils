@@ -8,7 +8,8 @@ Driver registration in the SYSTEM hive is delegated to pluggable `DriverRegistra
 
 | File | Purpose |
 |------|---------|
-| `copy.go` | Copies `.sys`, `.inf`, `.cat`, and `.msi` files from the host driver tree into the guest |
+| `copy.go` | Copies each package's resolved `DriverFile.Files` into the guest (INF/MSI plus companions) |
+| `copy_test.go` | Unit tests for per-file staging and boot-critical `.sys` mirroring |
 | `devicepath.go` | Appends the VirtIO directory to the SOFTWARE hive `DevicePath` value |
 | `pciids.go` | Defines `PCIIDPair` and `StoragePCIIDs` constants for viostor/vioscsi PCI device matching |
 | `registrar.go` | Declares the `DriverRegistrar` interface and its plugin registry |
@@ -17,7 +18,7 @@ Driver registration in the SYSTEM hive is delegated to pluggable `DriverRegistra
 
 | Symbol | Role |
 |--------|------|
-| `Copy` | Copies driver files into `Windows\Drivers\VirtIO` and boot-critical `.sys` files into `system32\drivers` |
+| `Copy` | Stages only `DriverFile.Files` into `Windows\Drivers\VirtIO` and mirrors boot-critical `.sys` into `system32\drivers` |
 | `Update` | Appends `%SystemRoot%\Drivers\VirtIO` to the SOFTWARE hive `DevicePath` if not already present |
 | `SCSIClassGUID` | Windows SCSI adapter class GUID constant used in CriticalDeviceDatabase entries |
 | `PCIIDPair` | Struct holding legacy and modern VirtIO PCI IDs for a storage driver |
