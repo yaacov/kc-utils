@@ -141,6 +141,10 @@ DiskTransferV2v step.
 
 ## Dashboard
 
-Open `dashboard.html` in a browser for interactive charts comparing memory,
-CPU, and network I/O over time. Chart.js is inlined in the HTML so GitHub
-HTML preview works without external script loads.
+Interactive charts comparing memory, CPU, and network I/O over time:
+
+**[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/architecture/ref-baseline/dashboard.html)**
+([source](dashboard.html))
+
+Chart.js is inlined in the HTML so GitHub HTML preview works without
+external script loads.
