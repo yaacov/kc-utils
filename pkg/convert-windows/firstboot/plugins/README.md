@@ -8,9 +8,9 @@ all contributors whose `ShouldRun` returns true, sorts them by `Priority`
 (lower runs first), writes each script to
 `Program Files\Guestfs\Firstboot\scripts\`, and registers a `RunOnce` registry
 entry that launches them via `firstboot.bat`. After all scripts complete, the
-launcher cleans up the Firstboot directory and forces a guest reboot
-(`C:\Windows\System32\shutdown.exe /r /t 0 /f`) so installers that returned
-“reboot required” can finish. Contributors declare whether they need PowerShell (`UsesBatch` returns
+launcher schedules a guest reboot
+(`C:\Windows\System32\shutdown.exe /r /t 5 /f`) then cleans up the Firstboot
+directory so installers that returned “reboot required” can finish. Contributors declare whether they need PowerShell (`UsesBatch` returns
 false) or batch (`UsesBatch` returns true) to support older Windows versions
 that lack PowerShell.
 

@@ -157,11 +157,11 @@ running `.ps1` scripts. Batch-only guests (XP/2003) run `.bat` contributors only
 | `99999-signal-conversion-done` | Write `CONVERSION_DONE` to COM1 (conditional; last script before footer) |
 
 After all scripts complete (including COM1 `CONVERSION_DONE` when
-`WaitForGuestReboot` is set), `firstboot.bat` removes the
-`C:\Program Files\Guestfs\Firstboot` directory and forces a guest reboot
-(`C:\Windows\System32\shutdown.exe /r /t 0 /f`) so MSI/driver installs that
-require a reboot can finish. That matches Forklift's wait-for-reboot expectation: signal, then
-reboot.
+`WaitForGuestReboot` is set), `firstboot.bat` schedules a guest reboot
+(`C:\Windows\System32\shutdown.exe /r /t 5 /f`) then removes the
+`C:\Program Files\Guestfs\Firstboot` directory. Reboot is scheduled before
+cleanup so cmd.exe still reaches `shutdown` (deleting a running `.bat` aborts
+it). That matches Forklift's wait-for-reboot expectation: signal, then reboot.
 
 ## See also
 

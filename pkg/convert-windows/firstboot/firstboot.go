@@ -179,8 +179,10 @@ func batOnlyLauncher() string {
 }
 
 func cleanupFooter() string {
-	return "cd /d \"%TEMP%\"\r\n" +
+	// Schedule reboot before deleting Firstboot: cmd.exe stops executing a
+	// .bat once its own file is removed, even after cd'ing away.
+	return "C:\\Windows\\System32\\shutdown.exe /r /t 5 /f\r\n" +
+		"cd /d \"%TEMP%\"\r\n" +
 		"rmdir /s /q \"C:\\Program Files\\Guestfs\\Firstboot\" 2>nul\r\n" +
-		"rmdir \"C:\\Program Files\\Guestfs\" 2>nul\r\n" +
-		"C:\\Windows\\System32\\shutdown.exe /r /t 0 /f\r\n"
+		"rmdir \"C:\\Program Files\\Guestfs\" 2>nul\r\n"
 }

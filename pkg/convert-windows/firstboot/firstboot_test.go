@@ -117,7 +117,7 @@ func TestConfigureWin2008UsesPSV1Launcher(t *testing.T) {
 	if !strings.Contains(content, "ExecutionPolicy") {
 		t.Fatalf("expected PS 1.0 launcher, got: %s", content)
 	}
-	if !strings.Contains(content, `C:\Windows\System32\shutdown.exe /r /t 0 /f`) {
+	if !strings.Contains(content, `C:\Windows\System32\shutdown.exe /r /t 5 /f`) {
 		t.Fatalf("expected post-install reboot in launcher, got: %s", content)
 	}
 
@@ -156,12 +156,12 @@ func TestConfigureModernLauncherRebootsAfterCleanup(t *testing.T) {
 	}
 	content := string(bat)
 	cleanupIdx := strings.Index(content, `rmdir /s /q "C:\Program Files\Guestfs\Firstboot"`)
-	rebootIdx := strings.Index(content, `C:\Windows\System32\shutdown.exe /r /t 0 /f`)
+	rebootIdx := strings.Index(content, `C:\Windows\System32\shutdown.exe /r /t 5 /f`)
 	if cleanupIdx < 0 || rebootIdx < 0 {
-		t.Fatalf("expected cleanup then reboot in launcher, got: %s", content)
+		t.Fatalf("expected reboot then cleanup in launcher, got: %s", content)
 	}
-	if rebootIdx < cleanupIdx {
-		t.Fatalf("reboot must run after cleanup: %s", content)
+	if rebootIdx > cleanupIdx {
+		t.Fatalf("reboot must be scheduled before deleting Firstboot: %s", content)
 	}
 
 	signalPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "99999-signal-conversion-done.ps1")
