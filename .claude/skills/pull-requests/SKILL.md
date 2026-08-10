@@ -4,18 +4,29 @@ description: >-
   Name PR branches and draft PR titles or bodies for kc-utils using
   community/pull-requests.md: type/short-description branches, PR title and
   What/How/Testing body. Use when the user asks for a branch name, PR title,
-  or PR description. Read-only git in the working tree; do not create
-  branches or PRs. Commit messages belong to the commits skill.
+  or PR description. Read-only git only; never run mutating git or GitHub
+  commands. Commit messages belong to the commits skill.
 ---
 
 # kc-utils Pull Requests & Branches
 
-Draft names and PR text only. Do not create branches or PRs in the user's
-working tree.
+Draft names and PR text only. **Never** create branches, push, or open PRs.
+The user runs those steps manually.
 
-**Git under this skill:** read-only inspect commands only (`status`, `diff`,
-`log`, `show`, `branch` list, `rev-parse`). Do not mutate the working tree,
-index, or refs.
+## Git policy
+
+**Allowed (run these):** read-only inspect commands — `status`, `diff`, `log`,
+`show`, `branch` (list only), `rev-parse`, `describe`, `ls-files`, and similar.
+
+**Forbidden (never run; suggest for the user instead):** `checkout`, `switch`,
+`branch` (create/delete/rename), `push`, `pull`, `add`, `commit`, `merge`,
+`rebase`, `reset`, and `gh pr create` / other GitHub actions that create or
+mutate branches or pull requests.
+
+When the user needs a branch or PR, suggest exact commands such as
+`git checkout -b feat/…`, `git push -u origin HEAD`, and `gh pr create …` for
+them to run. Full policy:
+[community/CONTRIBUTING.md](../../../community/CONTRIBUTING.md#ai-agents-and-git).
 
 When naming a branch or writing a PR title/body:
 

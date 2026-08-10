@@ -2,6 +2,17 @@
 
 Guidelines for writing git commit messages in kc-utils.
 
+## AI agents
+
+AI agents **draft** commit messages only. They must **not** run `git add`,
+`git commit`, or any other command that mutates the working tree, index, or
+refs. The user stages and commits manually.
+
+Agents may inspect changes with read-only git (`status`, `diff`, `log`, `show`,
+`branch` list, `rev-parse`, and similar). They may suggest commands such as
+`git add …` and `git commit -m "…"` for the user to run. See
+[CONTRIBUTING.md](CONTRIBUTING.md#ai-agents-and-git) for the full git policy.
+
 ## Commits vs pull requests
 
 A **commit** is the git history unit: care about the **subject** and **message

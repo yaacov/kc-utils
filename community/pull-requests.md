@@ -2,6 +2,17 @@
 
 Guidelines for creating branches and writing pull requests in kc-utils.
 
+## AI agents
+
+AI agents **draft** branch names and PR titles or bodies only. They must
+**not** create branches, push, or open pull requests (`git checkout -b`, `git
+push`, `gh pr create`, and similar mutating git or GitHub commands).
+
+Agents may inspect changes with read-only git (`status`, `diff`, `log`, `show`,
+`branch` list, `rev-parse`, and similar). They may suggest commands for the
+user to run. Commit message drafting belongs in [commits.md](commits.md). See
+[CONTRIBUTING.md](CONTRIBUTING.md#ai-agents-and-git) for the full git policy.
+
 ## Commits vs pull requests
 
 A **pull request** is the review unit: care about the **branch name**, **PR
