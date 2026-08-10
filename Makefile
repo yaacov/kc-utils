@@ -5,6 +5,7 @@ MODULE  := github.com/yaacov/kc-utils
 #   REGISTRY=quay.io            Container image registry
 #   REGISTRY_ORG=kubev2v        Registry organization / namespace
 #   REGISTRY_TAG=devel          Image tag for builds and pushes
+#   GIT_TAGS=                   Extra image tags to push (auto-detected from git when empty)
 #   PLATFORM=linux/amd64        Container build platform (linux/amd64 or linux/arm64)
 #   CONTAINER_RUNTIME=          Force docker or podman (auto-detected if empty)
 
@@ -54,7 +55,13 @@ REGISTRY ?= quay.io
 REGISTRY_ORG ?= kubev2v
 REGISTRY_TAG ?= devel
 
-KC_V2V_IMAGE ?= $(REGISTRY)/$(REGISTRY_ORG)/kc-v2v:$(REGISTRY_TAG)
+# Optional override; empty = auto-detect tags pointing at HEAD
+GIT_TAGS ?=
+GIT_TAGS := $(if $(GIT_TAGS),$(GIT_TAGS),$(shell git tag --points-at HEAD 2>/dev/null))
+
+KC_V2V_IMAGE_BASE := $(REGISTRY)/$(REGISTRY_ORG)/kc-v2v
+KC_V2V_IMAGE ?= $(KC_V2V_IMAGE_BASE):$(REGISTRY_TAG)
+KC_V2V_IMAGE_LOCAL := $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
 TEST_IMAGE   := kc-utils-test
 
 .PHONY: all build $(BINS) test test-race test-coverage lint lint-install \
@@ -73,9 +80,11 @@ help:
 	@printf "  \033[36m%-28s\033[0m %s\n" "REGISTRY=quay.io"            "Container image registry"
 	@printf "  \033[36m%-28s\033[0m %s\n" "REGISTRY_ORG=kubev2v"        "Registry organization / namespace"
 	@printf "  \033[36m%-28s\033[0m %s\n" "REGISTRY_TAG=devel"          "Image tag for builds and pushes"
+	@printf "  \033[36m%-28s\033[0m %s\n" "GIT_TAGS="                  "Extra image tags to push (auto-detected from git when empty)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "PLATFORM=linux/amd64"        "Container build platform (linux/amd64 or linux/arm64)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "CONTAINER_RUNTIME="          "Force docker or podman (auto-detected if empty)"
-	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n\n"
+	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n"
+	@printf "\033[1mRelease:\033[0m     git tag v0.1.0 && make push-kc-v2v-image  # pushes devel-amd64 + v0.1.0-amd64\n\n"
 	@awk '/^## /{desc=substr($$0,4)} /^[a-zA-Z0-9_-]+:/ && desc{sub(/:.*/, "", $$1); printf "  \033[36m%-24s\033[0m %s\n", $$1, desc; desc=""}' $(MAKEFILE_LIST)
 
 ## Build all binaries (linux)
@@ -249,19 +258,28 @@ cache-virtio-win:
 
 ## Build kc-v2v container image
 build-kc-v2v-image: check_container_runtime build
-	$(CONTAINER_CMD) build $(PLATFORM_FLAG) -t $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) -f build/kc-v2v/Containerfile .
+	$(CONTAINER_CMD) build $(PLATFORM_FLAG) -t $(KC_V2V_IMAGE_LOCAL) -f build/kc-v2v/Containerfile .
 
 ## Push kc-v2v container image
 push-kc-v2v-image: build-kc-v2v-image
-	$(CONTAINER_CMD) push $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
+	@set -e; \
+	img="$(KC_V2V_IMAGE_LOCAL)"; \
+	echo "Pushing $$img"; \
+	$(CONTAINER_CMD) push "$$img"; \
+	for tag in $(GIT_TAGS); do \
+	  extra="$(KC_V2V_IMAGE_BASE):$$tag$(PLATFORM_SUFFIX)"; \
+	  echo "Tagging and pushing $$extra"; \
+	  $(CONTAINER_CMD) tag "$$img" "$$extra"; \
+	  $(CONTAINER_CMD) push "$$extra"; \
+	done
 
 ## Smoke-test the built kc-v2v image (RPMs, NTFS, guestfish ext4/xfs/btrfs/ntfs)
-## Uses $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX). Pass REQUIRE_GUESTFS=1 to require /dev/kvm + FS mounts.
+## Uses $(KC_V2V_IMAGE_LOCAL). Pass REQUIRE_GUESTFS=1 to require /dev/kvm + FS mounts.
 ## REQUIRE_CLEVIS defaults to 1 (guestfish clevisluks must be yes).
 REQUIRE_CLEVIS ?= 1
 test-kc-v2v-image: check_container_runtime
-	@if ! $(CONTAINER_CMD) image inspect $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) >/dev/null 2>&1; then \
-		echo "Image $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) not found — build with: make build-kc-v2v-image"; \
+	@if ! $(CONTAINER_CMD) image inspect $(KC_V2V_IMAGE_LOCAL) >/dev/null 2>&1; then \
+		echo "Image $(KC_V2V_IMAGE_LOCAL) not found — build with: make build-kc-v2v-image"; \
 		exit 1; \
 	fi
 	$(CONTAINER_CMD) run --rm \
@@ -273,7 +291,7 @@ test-kc-v2v-image: check_container_runtime
 	    -e REQUIRE_NTFS=$(REQUIRE_NTFS) \
 	    -e REQUIRE_CLEVIS=$(REQUIRE_CLEVIS) \
 	    -v $(CURDIR)/tests/test-kc-v2v-image.sh:/tmp/test-kc-v2v-image.sh:ro,Z \
-	    $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX) \
+	    $(KC_V2V_IMAGE_LOCAL) \
 	    /tmp/test-kc-v2v-image.sh
 
 check_container_runtime:

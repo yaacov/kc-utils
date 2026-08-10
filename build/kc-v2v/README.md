@@ -39,6 +39,20 @@ make build-kc-v2v
 make build-kc-copy   # copy stage binary (also used standalone)
 ```
 
+### Push / release tags
+
+`make push-kc-v2v-image` always pushes the primary tag (`REGISTRY_TAG`, default
+`devel-amd64`). When HEAD is exactly on a git tag, it also tags and pushes that
+version (e.g. `v0.1.0-amd64`):
+
+```bash
+git tag v0.1.0
+make push-kc-v2v-image   # quay.io/you/kc-v2v:devel-amd64 + :v0.1.0-amd64
+```
+
+Point MTV at the versioned FQIN for a release:
+`quay.io/you/kc-v2v:v0.1.0-amd64`.
+
 ## Image contents (guest conversion assets)
 
 Besides kc-utils binaries and host tools (`qemu-img`, `cryptsetup`, `hivex`/`perl-hivex`, …), the image bakes:
