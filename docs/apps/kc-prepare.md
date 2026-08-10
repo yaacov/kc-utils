@@ -38,12 +38,21 @@ Order matches [`pkg/cmd/prepare/pipeline.go`](../../pkg/cmd/prepare/pipeline.go)
 | 1 | Validate | strict | `pkg/prepare/validate/` | Validate disks and create mount root |
 | 2 | Guest | strict | `pkg/prepare/guest/` | Open disks, scan partitions, activate LVM (`luks/`, `overlay/`, `resolve/` subdirs) |
 | 3 | Decrypt | inline | `pkg/guest/` | Open encrypted partitions via `Guest.Decrypt()` and `Guest.UnlockClevis()` |
-| 4 | Pre-Fsck | inline | `pkg/guest/` | Read-only filesystem check via `Guest.FSCheck()` |
+| 4 | Pre-Fsck | inline | `pkg/guest/` | Pre-conversion filesystem check/repair via `Guest.FSCheck()` on unmounted partitions |
 | 5 | Firmware | pluggable: `FirmwareDetector` | `pkg/prepare/firmware/` | Determine BIOS vs UEFI (also refreshed after mount) |
 | 6 | Root | strict + pluggable selector | `pkg/prepare/root/` | Discover OS roots and apply `options.root` policy |
 | 7 | Mount | strict + pluggable planner | `pkg/prepare/mount/` | Plan and execute guest filesystem mounts |
 | 8 | Inspect | strict | `pkg/prepare/inspect/` | OS inspection, boot device, free space |
 | 9 | Converter | pluggable: `ConverterSelector` | `pkg/prepare/converter/` | Choose converter binary |
+
+## Filesystem checks
+
+After LUKS decrypt and before root discovery or mount, prepare runs
+`Guest.FSCheck()` on every partition on every disk while devices are still
+unmounted. Supported filesystem types, check-vs-repair behavior per backend,
+and failure handling are documented in
+[../architecture/filesystem-checks.md](../architecture/filesystem-checks.md).
+Fsck failures are non-fatal: prepare logs a warning and continues.
 
 ## Input
 

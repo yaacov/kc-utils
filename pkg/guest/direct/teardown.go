@@ -13,7 +13,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/guest/direct/mount"
 )
 
-func (b *Backend) teardownResources() error {
+func (b *Backend) UnmountFilesystems() error {
 	var firstErr error
 	if b.probeMounts != nil {
 		if err := b.probeMounts.UnmountAll(); err != nil && firstErr == nil {
@@ -26,7 +26,11 @@ func (b *Backend) teardownResources() error {
 		}
 	}
 	unmountUnder(b.mountRoot)
+	return firstErr
+}
 
+func (b *Backend) ReleaseDevices() error {
+	var firstErr error
 	for i := len(b.cryptMaps) - 1; i >= 0; i-- {
 		if err := luks.Close(b.cryptMaps[i]); err != nil && firstErr == nil {
 			firstErr = err
@@ -45,6 +49,17 @@ func (b *Backend) teardownResources() error {
 	b.disks = nil
 	for _, path := range b.diskPaths {
 		detachLoopsFor(path)
+	}
+	return firstErr
+}
+
+func (b *Backend) teardownResources() error {
+	var firstErr error
+	if err := b.UnmountFilesystems(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	if err := b.ReleaseDevices(); err != nil && firstErr == nil {
+		firstErr = err
 	}
 	return firstErr
 }

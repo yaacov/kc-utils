@@ -39,12 +39,17 @@ VirtIO drivers are located from the pre-extracted virtio-win tree via the
 | 8 | Hypervisor Services | pluggable: `WindowsServices` | `pkg/convert-windows/hypervisor/` | Disable hypervisor services via registry |
 | 9 | Crash Control | strict | `pkg/convert-windows/crashcontrol/` | Disable auto-reboot on BSOD |
 | 10-12 | Firstboot | strict | `pkg/convert-windows/firstboot/` | Generate version-appropriate firstboot scripts |
-| 13 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot sector for pre-Vista Windows |
+| 13 | NTFS Fix | strict | `pkg/convert-windows/ntfsfix/` | Patch NTFS boot-sector `$NumberOfHeads` for pre-Vista Windows (not `Guest.FSCheck()` / `ntfsfix`) |
 | 14 | UEFI | pluggable: `UEFIEditor` | `pkg/common/uefi/` | Update UEFI boot entries on ESP partitions |
 | 15 | Output | strict | `pkg/convert-windows/output/` | Build GuestCaps and fix permissions |
 | 17 | Post-Convert | strict | `pkg/convert-windows/output/` | Post-convert permission fixup |
 
 Block numbers match the pipeline comments in `pkg/cmd/convert-windows/pipeline.go`.
+
+Block 13 (**NTFS Fix**) patches the NTFS boot sector for pre-Vista Windows guests
+while the guest is mounted — it is separate from prepare/finalize
+`Guest.FSCheck()` / `ntfsfix`, which run on unmounted devices before and after
+conversion. See [Windows NTFS operations](../architecture/filesystem-checks.md#windows-ntfs-operations).
 
 ## Input
 

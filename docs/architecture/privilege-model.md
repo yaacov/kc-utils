@@ -21,7 +21,7 @@ The following operations all require `CAP_SYS_ADMIN` or equivalent:
 | LUKS decrypt / close | `cryptsetup open` / `close` | kc-prepare / kc-finalize |
 | Clevis LUKS unlock (direct) | `clevis luks unlock` | kc-prepare |
 | Clevis LUKS unlock (guestfs) | guestfish `clevis-luks-unlock` + appliance network (appliance-root inside the VM; not host `CAP_SYS_ADMIN`) | kc-prepare |
-| Filesystem check | Direct: `e2fsck`, `xfs_repair`, `btrfs`, `ntfsfix`; Guestfs: guestfish `e2fsck-f`, `xfs-repair`, `ntfsfix` (in appliance, on unmounted devices) | kc-prepare, kc-finalize |
+| Filesystem check | see [filesystem-checks.md](filesystem-checks.md) | kc-prepare, kc-finalize |
 | Filesystem trim | `fstrim` | kc-finalize |
 | Chroot into guest | `chroot` (grub-mkconfig, dynamic scripts) | kc-convert-linux, kc-finalize |
 
@@ -179,8 +179,10 @@ listener and exit it on `Release` / `Teardown`.
 Discovery, probe, Guest FS RPC, trim, and fsck reuse the session via
 `--remote` instead of launching QEMU for every call. Guest filesystems stay
 mounted inside the appliance during convert; finalize unmounts before fsck.
-NTFS checks use guestfish `ntfsfix` on the block device (requires `ntfs3g=yes`
-in the appliance — same as NTFS mount). Stage code reads and writes through `pkg/guest`
+NTFS FSCheck uses guestfish `ntfsfix` on the block device (requires
+`ntfs3g=yes` in the appliance — same as NTFS mount); see
+[filesystem-checks.md](filesystem-checks.md) for the full matrix. Stage code
+reads and writes through `pkg/guest`
 (`ReadFile`, `WriteFile`, `Exists`, …) over guestfish RPC. Tools that need a
 real host path (for example hivex on Windows registry hives) use
 `Guest.Checkout` / `Checkin` to download a single file to a temp path and

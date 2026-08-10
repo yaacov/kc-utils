@@ -254,6 +254,18 @@ func (g *Guest) Release() error {
 	return g.backend.Release()
 }
 
+// UnmountFilesystems unmounts guest filesystems but keeps block/LUKS/LVM
+// devices open (finalize path, before post-fsck).
+func (g *Guest) UnmountFilesystems() error {
+	return g.backend.UnmountFilesystems()
+}
+
+// ReleaseDevices closes LUKS, deactivates LVM, and detaches loop devices
+// (finalize path, after post-fsck).
+func (g *Guest) ReleaseDevices() error {
+	return g.backend.ReleaseDevices()
+}
+
 // Teardown fully cleans up mounts and devices (finalize).
 func (g *Guest) Teardown() error {
 	return g.backend.Teardown()

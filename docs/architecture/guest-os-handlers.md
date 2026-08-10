@@ -171,7 +171,7 @@ collected for that handler.
 | Static IP scripts | [`staticip`](../../pkg/convert-windows/staticip/staticip.go) + [`staticipfb`](../../pkg/convert-windows/firstboot/plugins/staticipfb/) | `StaticIPNetCmdlet`, `StaticIPRegistry`, or `StaticIPWMINetsh` |
 | VMware cleanup | [`vmwarecleanup`](../../pkg/convert-windows/firstboot/plugins/vmwarecleanup/) | PS PnP vs [`DevconVMwareCleanupBat`](../../pkg/convert-windows/staticip/staticip.go) |
 | Driver registration | [`pkg/cmd/convert-windows/pipeline.go`](../../pkg/cmd/convert-windows/pipeline.go) `registerDrivers` | `DriverRegistrarName()` selects `criticaldb` (pre-Win8) or `driverdb` (Win8+) for boot-time viostor/vioscsi loading |
-| NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only) |
+| NTFS boot sector fix | [`pkg/convert-windows/ntfsfix/ntfsfix.go`](../../pkg/convert-windows/ntfsfix/ntfsfix.go) | `NeedsNTFSHeadsFix()` gates `$NumberOfHeads` patching (pre-Vista only; convert-time only — fsck `ntfsfix` is prepare/finalize, see [filesystem-checks.md](filesystem-checks.md#windows-ntfs-operations)) |
 
 ### Pre–Win 8 virtio-win drivers
 
