@@ -3,6 +3,9 @@
 Direct backend for guest disk operations using host kernel mounts (losetup,
 LVM, cryptsetup, mount/umount). Requires CAP_SYS_ADMIN or a privileged pod.
 
+See also: [docs/architecture/filesystem-checks.md](../../../docs/architecture/filesystem-checks.md)
+for `FSCheck` command mapping and check-vs-repair semantics.
+
 ## Exports
 
 | Symbol | Role |

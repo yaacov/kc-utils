@@ -82,6 +82,13 @@ type Backend interface {
 	// must survive for convert (prepare exit path).
 	Release() error
 
+	// UnmountFilesystems unmounts guest filesystems but keeps LUKS mappers,
+	// LVM volumes, and loop devices open (for post-fsck in finalize).
+	UnmountFilesystems() error
+
+	// ReleaseDevices closes LUKS, deactivates LVM, and detaches loop devices.
+	ReleaseDevices() error
+
 	// Teardown fully unmounts and releases devices (finalize path).
 	Teardown() error
 

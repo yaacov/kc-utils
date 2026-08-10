@@ -538,20 +538,30 @@ func (b *Backend) TeardownDiscard() error {
 	return b.Teardown()
 }
 
-func (b *Backend) teardown() error {
+func (b *Backend) UnmountFilesystems() error {
 	var firstErr error
 	if b.probeActive != "" {
-		if err := b.ProbeUnmount(b.probeActive); err != nil {
+		if err := b.ProbeUnmount(b.probeActive); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
 	if b.session != nil {
 		if _, err := b.session.remoteScript("-umount-all\n"); err != nil && firstErr == nil {
-			slog.Debug("guestfs umount-all on teardown", "error", err)
+			slog.Debug("guestfs umount-all", "error", err)
 		}
+	}
+	b.mounted = false
+	b.mountsActive = false
+	b.mountSpecs = nil
+	return firstErr
+}
+
+func (b *Backend) ReleaseDevices() error {
+	var firstErr error
+	if b.session != nil {
 		for i := len(b.cryptMaps) - 1; i >= 0; i-- {
 			if err := b.CloseCrypt(b.cryptMaps[i]); err != nil {
-				slog.Debug("guestfs cryptsetup-close on teardown", "mapper", b.cryptMaps[i], "error", err)
+				slog.Debug("guestfs cryptsetup-close", "mapper", b.cryptMaps[i], "error", err)
 				if firstErr == nil {
 					firstErr = err
 				}
@@ -563,9 +573,17 @@ func (b *Backend) teardown() error {
 		}
 		b.session = nil
 	}
-	b.mounted = false
-	b.mountsActive = false
-	b.mountSpecs = nil
+	return firstErr
+}
+
+func (b *Backend) teardown() error {
+	var firstErr error
+	if err := b.UnmountFilesystems(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	if err := b.ReleaseDevices(); err != nil && firstErr == nil {
+		firstErr = err
+	}
 	return firstErr
 }
 

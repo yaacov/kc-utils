@@ -64,6 +64,22 @@ Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under
 `KC_BIN_DIR` (default `/usr/lib/kc-utils`). See [kc-copy.md](kc-copy.md) and
 [pkg/v2v/README.md](../../pkg/v2v/README.md).
 
+## Filesystem checks
+
+kc-v2v does not run fsck itself. The prepare and finalize subprocesses call
+`Guest.FSCheck()` twice per conversion: pre-fsck in `kc-prepare` (before mount)
+and post-fsck in `kc-finalize` (after unmount). With the image default
+`V2V_guestfs=true`, checks run inside the libguestfs appliance using the guestfs
+backend matrix (ext*, xfs, ntfs/ntfs3; btrfs is not fsck'd).
+
+On pipeline failure after prepare may have set up guest state, kc-v2v runs
+`kc-finalize --teardown-only`, which reclaims mounts/LUKS/loops but **does not**
+run fsck.
+
+Full timeline, supported filesystem types, check-vs-repair semantics, and
+Windows NTFS distinctions:
+[../architecture/filesystem-checks.md](../architecture/filesystem-checks.md).
+
 ## Configuration
 
 Configuration is loaded from `V2V_*` environment variables with CLI flag

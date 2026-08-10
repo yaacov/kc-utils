@@ -4,6 +4,9 @@ Guestfs backend for guest disk operations using a libguestfs appliance.
 Guest filesystems stay inside the appliance VM; all I/O uses guestfish RPC.
 Suitable for unprivileged pods with /dev/kvm access.
 
+See also: [docs/architecture/filesystem-checks.md](../../../docs/architecture/filesystem-checks.md)
+for `FSCheck` command mapping and check-vs-repair semantics.
+
 ## Exports
 
 | Symbol | Role |

@@ -14,7 +14,7 @@ semantic name describes what the block does (block numbers live in READMEs, not 
 kc-utils/
   cmd/                  Thin CLI entry points (one per binary)
   pkg/
-    common/             Cross-utility helpers (types, plugin, configedit, registry, fschecker, ...)
+    common/             Cross-utility helpers (types, plugin, configedit, registry, ...)
     prepare/            kc-prepare blocks (strict + pluggable with plugins/ subdirs)
     convert-linux/      kc-convert-linux blocks
     convert-windows/    kc-convert-windows blocks
@@ -47,13 +47,16 @@ These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 | `e2fsck` | e2fsprogs | ext2/3/4 filesystem check |
 | `xfs_repair` | xfsprogs | XFS filesystem check |
 | `btrfs` | btrfs-progs | Btrfs filesystem check |
-| `ntfsfix` | ntfs-3g | NTFS filesystem check |
+| `ntfsfix` | ntfs-3g | NTFS filesystem check (direct backend; guestfs uses guestfish `ntfsfix`) |
 | `fstrim` | util-linux | Filesystem trim (discard unused blocks) |
 | `losetup`, `partx` | util-linux | Loop device setup for disk images |
 | `lsblk` | util-linux | Partition layout inspection |
 | `lvm`, `vgscan`, `pvscan`, `lvscan` | lvm2 | LVM volume activation |
 | `cryptsetup` | cryptsetup | LUKS partition decryption |
 | `virtio-win` | virtio-win (or ISO extract) | Windows VirtIO drivers on conversion host (see below) |
+
+Fsck timing, per-filesystem check-vs-repair behavior, and backend differences:
+[docs/architecture/filesystem-checks.md](../docs/architecture/filesystem-checks.md).
 
 ### Optional
 

@@ -7,7 +7,7 @@
                           |
                           v
                   +---------------+
-                  |  kc-prepare   |
+                  |  kc-prepare   |  pre-fsck, mount guest FS
                   +---------------+
                           |
                   PipelineData JSON
@@ -28,7 +28,7 @@
                           |
                           v
                   +---------------+
-                  |  kc-finalize  |
+                  |  kc-finalize  |  post-fsck, target metadata
                   +---------------+
                           |
                   PipelineData JSON
@@ -181,7 +181,7 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 - [kc-prepare.md](kc-prepare.md) — 9 blocks
 - [kc-convert-linux.md](kc-convert-linux.md) — 11 blocks
 - [kc-convert-windows.md](kc-convert-windows.md) — 9 blocks
-- [kc-finalize.md](kc-finalize.md) — 6 blocks
+- [kc-finalize.md](kc-finalize.md) — 7 blocks
 
 ### V2V orchestration
 
@@ -194,3 +194,5 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 
 See [../architecture/README.md](../architecture/README.md) for privilege model,
 guest OS handlers, conversion-path matrices, and benchmark data.
+
+- [../architecture/filesystem-checks.md](../architecture/filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair

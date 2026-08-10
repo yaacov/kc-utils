@@ -4,6 +4,9 @@ Sole boundary for privileged host and libguestfs operations on guest disks.
 Callers must not invoke guestfish, mount/umount, losetup, LVM, cryptsetup,
 chroot, fsck, or fstrim for guest disks outside this package.
 
+See also: [docs/architecture/filesystem-checks.md](../../docs/architecture/filesystem-checks.md)
+for fsck timing, supported filesystem types, and check-vs-repair behavior.
+
 ## Backends
 
 | Mode | Subpackage | Mechanism | Requirements |
@@ -30,6 +33,10 @@ of the codebase is unaware of which backend is in use.
 | `StartSharedListener()` | Launches the shared listener (re-exported from `guestfs/`) |
 | `AttachFromPrepare()` | Convenience wrapper: derives mode, orders disks, attaches, sets active handle |
 | `SetActive()` / `ClearActive()` | Global guest handle for `File*` convenience helpers |
+| `FSCheck()` | Filesystem check/repair on unmounted block devices (see architecture doc) |
+| `FSTrim()` | Trim mounted guest filesystems (finalize) |
+| `UnmountFilesystems()` | Unmount guest FS; keep LUKS/LVM open (finalize, before post-fsck) |
+| `ReleaseDevices()` | Close LUKS, deactivate LVM, detach loops (finalize, after post-fsck) |
 
 ## File layout
 

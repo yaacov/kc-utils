@@ -42,8 +42,8 @@ func Run(cfg *Config) error {
 	}
 	defer guest.ClearActive()
 
-	// Ensure resources are reclaimed if we return before the explicit Teardown
-	// (which must stay before FSCheck so devices are unmounted).
+	// Ensure resources are reclaimed if we return before explicit release
+	// (unmount → fsck → release devices).
 	tornDown := false
 	defer func() {
 		if tornDown {
@@ -88,11 +88,10 @@ func Run(cfg *Config) error {
 		}
 	}
 
-	slog.Info("tearing down guest", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
-	if err := g.Teardown(); err != nil {
-		slog.Warn("guest teardown failed", "error", err)
+	slog.Info("unmounting guest filesystems", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
+	if err := g.UnmountFilesystems(); err != nil {
+		slog.Warn("guest unmount failed", "error", err)
 	}
-	tornDown = true
 
 	slog.Info("checking filesystems", "backend", g.Mode().String())
 	for _, d := range cfg.Pipeline.Prepare.Disks {
@@ -104,6 +103,12 @@ func Run(cfg *Config) error {
 			}
 		}
 	}
+
+	slog.Info("releasing guest devices", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
+	if err := g.ReleaseDevices(); err != nil {
+		slog.Warn("guest release failed", "error", err)
+	}
+	tornDown = true
 
 	slog.Debug("resolving firmware")
 	meta.TargetFirmware = target.Target(meta.TargetFirmware)
