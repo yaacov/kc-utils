@@ -64,8 +64,9 @@ See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage in
 - **Pure Go core pipeline** - builds with standard `go build`, no C toolchain
   required. All binaries target Linux (`GOOS=linux`).
 - **Initramfs rebuild via guest tools** - virtio drivers are injected by running
-  the guest's own `dracut` (or `update-initramfs`/`mkinitramfs` on Debian) via
-  `chroot` into the mounted guest root, with automatic fallback between methods.
+  the guest's own tooling via `chroot` into the mounted guest root (host-mount)
+  or an in-appliance chroot (guestfs): `dracut` first, then `update-initramfs`,
+  then `mkinitramfs` as fallbacks.
 - **Windows offline driver injection** - virtio drivers are registered in the
   Windows registry (`CriticalDeviceDatabase` / `DriverDatabase`) offline, making
   the guest bootable on KVM. Firstboot PowerShell scripts then complete driver
