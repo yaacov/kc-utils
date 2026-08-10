@@ -60,14 +60,14 @@ CA are files under `/etc/secret`, not env.
 | `LOCAL_MIGRATION` | Serve Forklift HTTP API on `:8080` | Respected |
 | `V2V_extra_args` | From `virt_v2v_extra_args` | Read, ignored (warning) |
 | `V2V_inspector_extra_args` | Inspector args | Not read |
-| `V2V_preserveStaticIPs` | From Plan `preserveStaticIPs` | Not read |
+| `V2V_preserveStaticIPs` | From Plan `preserveStaticIPs` (controller sets; unused by pod, same as upstream virt-v2v) | Not read; feature via `V2V_staticIPs` |
 
 Optional Plan / feature env Forklift may also set:
 
 | Variable | Purpose | `kc-v2v` |
 |----------|---------|---------|
 | `V2V_inPlace` | Skip disk copy (pre-filled PVCs) | Respected |
-| `V2V_staticIPs` | Static IP mapping | Respected |
+| `V2V_staticIPs` | Static IP mapping (set when Plan `preserveStaticIPs` yields MAC→IP data) | Respected |
 | `V2V_HOSTNAME` | Guest hostname | Respected |
 | `V2V_NBDE_CLEVIS` | Clevis LUKS unlock | Respected |
 | `V2V_NewName` | Destination VM name | Respected |
