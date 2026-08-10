@@ -12,6 +12,7 @@ Each generator takes a slice of `StaticIP` entries (MAC, IP, netmask, gateway, D
 | `RegistryScript` | Generates a PowerShell script that writes static IP settings via registry keys |
 | `WMIScript` | Generates a PowerShell script using WMI and netsh for legacy Windows |
 | `RegistryBatScript` | Generates a batch script using `reg.exe` for guests without PowerShell |
-| `RebootSignalScript` | Returns a script that signals conversion completion on COM1 |
+| `RebootSignalScript` | Returns a PowerShell script that signals conversion completion on COM1 |
+| `RebootSignalBatScript` | Returns a batch script that signals conversion completion on COM1 (XP/2003) |
 | `VMwareCleanupScript` | Returns a PowerShell script to remove VMware drivers and services |
 | `DevconVMwareCleanupBat` | Returns a batch script to remove VMware devices and services via `sc` |

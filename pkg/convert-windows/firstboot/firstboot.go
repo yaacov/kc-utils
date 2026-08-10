@@ -181,5 +181,6 @@ func batOnlyLauncher() string {
 func cleanupFooter() string {
 	return "cd /d \"%TEMP%\"\r\n" +
 		"rmdir /s /q \"C:\\Program Files\\Guestfs\\Firstboot\" 2>nul\r\n" +
-		"rmdir \"C:\\Program Files\\Guestfs\" 2>nul\r\n"
+		"rmdir \"C:\\Program Files\\Guestfs\" 2>nul\r\n" +
+		"C:\\Windows\\System32\\shutdown.exe /r /t 0 /f\r\n"
 }

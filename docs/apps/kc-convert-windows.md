@@ -154,10 +154,14 @@ running `.ps1` scripts. Batch-only guests (XP/2003) run `.bat` contributors only
 | `3000-install-qemu-ga` | Install QEMU guest agent MSI when `qemu-ga` was collected into `DriverFiles` and copied to the guest (skipped when MSI not collected, e.g. XP/2003/2008/Vista handlers) |
 | `4000-disk-onliner` | Bring offline VirtIO disks online |
 | `9100-cleanup-vmware` | Disable VMware PnP devices (conditional on VMware source) |
-| `99999-signal-conversion-done` | Write `CONVERSION_DONE` to COM1 (conditional) |
+| `99999-signal-conversion-done` | Write `CONVERSION_DONE` to COM1 (conditional; last script before footer) |
 
-After all scripts complete, `firstboot.bat` removes the
-`C:\Program Files\Guestfs\Firstboot` directory and its contents.
+After all scripts complete (including COM1 `CONVERSION_DONE` when
+`WaitForGuestReboot` is set), `firstboot.bat` removes the
+`C:\Program Files\Guestfs\Firstboot` directory and forces a guest reboot
+(`C:\Windows\System32\shutdown.exe /r /t 0 /f`) so MSI/driver installs that
+require a reboot can finish. That matches Forklift's wait-for-reboot expectation: signal, then
+reboot.
 
 ## See also
 
