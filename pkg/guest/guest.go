@@ -146,6 +146,10 @@ func (g *Guest) Symlink(target, link string) error {
 	return g.backend.Symlink(target, normalizeGuestPath(link))
 }
 
+func (g *Guest) Readlink(guestPath string) (string, error) {
+	return g.backend.Readlink(normalizeGuestPath(guestPath))
+}
+
 func (g *Guest) Chmod(guestPath string, mode os.FileMode) error {
 	return g.backend.Chmod(normalizeGuestPath(guestPath), mode)
 }

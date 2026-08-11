@@ -12,7 +12,11 @@ import (
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
-const uninstallKey = `Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`
+const (
+	uninstallKey    = `Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`
+	systemClassGUID = `{4d36e97d-e325-11ce-bfc1-08002be10318}`
+	hdcClassGUID    = `{4d36e96a-e325-11ce-bfc1-08002be10318}`
+)
 
 type Remove struct{}
 
@@ -38,8 +42,20 @@ func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 	return false
 }
 
-func (r *Remove) Remove(guestRoot string, _, softwareHive registry.Hive) error {
+func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive) error {
 	softwareHive.DeleteKey(uninstallKey)
+
+	if systemHive != nil {
+		ccs := hypervisor.CurrentControlSet(systemHive)
+		// AWS PV installs XENFILT as an UpperFilter on System/HDC classes.
+		// Deleting xenfilt.sys without clearing these entries leaves Windows
+		// unable to attach the boot disk (INACCESSIBLE_BOOT_DEVICE).
+		for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+			classPath := ccs + `\Control\Class\` + guid
+			hypervisor.RemoveFilter(systemHive, classPath, "UpperFilters", "XENFILT")
+		}
+		hypervisor.DisableService(systemHive, ccs, "xenfilt")
+	}
 
 	driversDir := filepath.Join(guestRoot, "Windows", "System32", "drivers")
 	entries, err := guest.FileReadDir(driversDir)

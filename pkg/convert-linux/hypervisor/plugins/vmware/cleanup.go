@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -36,12 +37,12 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
 	for _, unit := range []string{"vmtoolsd.service", "open-vm-tools.service", "vgauthd.service"} {
-		hypervisor.DisableSystemdUnit(guestRoot, unit)
+		systemd.DisableSystemdUnit(guestRoot, unit)
 	}
 
 	disableVMwareRepos(guestRoot)
 
-	hypervisor.RemovePaths(
+	systemd.RemovePaths(
 		filepath.Join(guestRoot, "etc", "vmware-tools"),
 		filepath.Join(guestRoot, "usr", "lib", "vmware-tools"),
 		filepath.Join(guestRoot, "usr", "lib64", "vmware-tools"),

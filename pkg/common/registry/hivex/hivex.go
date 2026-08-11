@@ -99,7 +99,26 @@ func (h *HivexHive) GetMultiString(path, name string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(vd.String, "\x00"), nil
+	return multiStringFromValueData(vd), nil
+}
+
+// multiStringFromValueData prefers regparser's MultiSz field. REG_MULTI_SZ leaves
+// ValueData.String empty; splitting String on NUL wrongly yields [""] and makes
+// filter cleanup look like a no-op.
+func multiStringFromValueData(vd *regparser.ValueData) []string {
+	if len(vd.MultiSz) > 0 {
+		return append([]string(nil), vd.MultiSz...)
+	}
+	if vd.String == "" {
+		return nil
+	}
+	var out []string
+	for _, p := range strings.Split(vd.String, "\x00") {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func (h *HivexHive) GetValue(path, name string) ([]byte, int, error) {

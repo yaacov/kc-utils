@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -38,7 +39,7 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 		"hypervfcopyd.service",
 		"hypervvssd.service",
 	} {
-		hypervisor.DisableSystemdUnit(guestRoot, unit)
+		systemd.DisableSystemdUnit(guestRoot, unit)
 	}
 	return nil
 }

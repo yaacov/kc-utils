@@ -44,7 +44,30 @@ writes a firstboot PowerShell script that runs `msiexec /x {GUID} /qn` for
 each found MSI product, queries `Win32_Product` for remaining VMware entries,
 and stops/deletes residual VMware services.
 
-### nutanix / awspv / ec2launch / ec2 / virtualbox / citrix / hyperv / parallels
+### nutanix
+
+**What they do:** Each removes its respective hypervisor's guest tools,
+following the same `Detect` → `Remove` pattern — checking for known
+directories and registry keys, deleting files, and cleaning up uninstall
+entries.
+
+### awspv
+
+**What it does:** Removes AWS PV driver uninstall key, `xen*.sys` files, and
+boot-critical `XENFILT` `UpperFilters` entries on System and HDC class GUIDs.
+Also disables the `xenfilt` service (`Start=4`).
+
+**How it works:** Uses the SYSTEM hive to clear `UpperFilters` via
+[`RemoveFilter`](../../hypervisor/filters.go) and disables `xenfilt` before
+deleting driver files — leaving `XENFILT` registered causes
+`INACCESSIBLE_BOOT_DEVICE` on next boot.
+
+### ec2
+
+**What it does:** Disables EC2 Xen services, removes `xen*.sys`, clears
+`XENFILT` `UpperFilters` (same trap as AWS PV), and disables `xenfilt`.
+
+### ec2launch / virtualbox / citrix / hyperv / parallels
 
 **What they do:** Each removes its respective hypervisor's guest tools,
 following the same `Detect` → `Remove` pattern — checking for known

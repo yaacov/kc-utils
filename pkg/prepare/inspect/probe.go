@@ -30,11 +30,7 @@ func ProbeRoot(mountPath string) (*types.InspectData, bool) {
 }
 
 func isLinuxRoot(root string) bool {
-	for _, rel := range []string{
-		"etc/os-release",
-		"etc/redhat-release",
-		"etc/debian_version",
-	} {
+	for _, rel := range LinuxRootMarkerPaths {
 		if guest.FileExists(filepath.Join(root, rel)) {
 			return true
 		}

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -33,11 +34,11 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 }
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
-	hypervisor.DisableSystemdUnit(guestRoot, "xe-daemon.service")
-	hypervisor.DisableSystemdUnit(guestRoot, "xapi.service")
-	hypervisor.DisableSystemdUnit(guestRoot, "xe-linux-distribution.service")
+	systemd.DisableSystemdUnit(guestRoot, "xe-daemon.service")
+	systemd.DisableSystemdUnit(guestRoot, "xapi.service")
+	systemd.DisableSystemdUnit(guestRoot, "xe-linux-distribution.service")
 
-	hypervisor.RemovePaths(
+	systemd.RemovePaths(
 		filepath.Join(guestRoot, "etc", "xensource-inventory"),
 		filepath.Join(guestRoot, "usr", "sbin", "xe-daemon"),
 	)

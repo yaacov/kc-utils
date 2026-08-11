@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -22,11 +23,11 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 }
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
-	hypervisor.DisableSystemdUnit(guestRoot, "prltoolsd.service")
-	hypervisor.DisableSystemdUnit(guestRoot, "prl-xorg-cleanup.service")
-	hypervisor.DisableSystemdUnit(guestRoot, "prl-x11.service")
+	systemd.DisableSystemdUnit(guestRoot, "prltoolsd.service")
+	systemd.DisableSystemdUnit(guestRoot, "prl-xorg-cleanup.service")
+	systemd.DisableSystemdUnit(guestRoot, "prl-x11.service")
 
-	hypervisor.RemovePaths(
+	systemd.RemovePaths(
 		filepath.Join(guestRoot, "usr", "lib", "parallels-tools"),
 		filepath.Join(guestRoot, "usr", "lib64", "parallels-tools"),
 	)

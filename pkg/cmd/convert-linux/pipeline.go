@@ -20,6 +20,8 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/initramfs"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/kernel"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/network/networkd"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/network/staticip"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/remap"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/selinux"
@@ -144,6 +146,9 @@ func Run(cfg *Config) error {
 		}
 	}
 
+	networkdPrimary := networkd.Detect(cfg.MountRoot)
+	output.Errors = append(output.Errors, applyKubeVirtNetworking(cfg.MountRoot, networkdPrimary)...)
+
 	// Block 12: Guest agent installation
 	slog.Debug("installing guest agent")
 	guestagent.Install(
@@ -174,7 +179,7 @@ func Run(cfg *Config) error {
 
 	// Block 15: Static IP configuration + NIC naming preservation
 	if len(cfg.PrepareData.Options.StaticIPs) > 0 {
-		output.Errors = append(output.Errors, configureStaticIPs(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs)...)
+		output.Errors = append(output.Errors, configureStaticIPs(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs, networkdPrimary)...)
 	}
 
 	// Block 16: Offline SELinux relabel — run setfiles against the guest
@@ -253,8 +258,34 @@ func selectKernelAndSetDefault(mountRoot string, allKernels []types.KernelInfo, 
 	return selected
 }
 
-func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP) []types.BlockError {
+func applyKubeVirtNetworking(mountRoot string, networkdPrimary bool) []types.BlockError {
+	if !networkdPrimary {
+		return nil
+	}
+	slog.Info("configuring systemd-networkd for KubeVirt")
 	var errs []types.BlockError
+	if err := networkd.InstallKubeVirtNetworking(mountRoot); err != nil {
+		slog.Warn("systemd-networkd KubeVirt networking failed", "error", err)
+		errs = append(errs, types.BlockError{
+			Block: "networkd/kubevirt", Message: err.Error(),
+		})
+	}
+	return errs
+}
+
+func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP, networkdPrimary bool) []types.BlockError {
+	var errs []types.BlockError
+
+	if networkdPrimary {
+		slog.Debug("configuring static IPs via systemd-networkd")
+		if err := networkd.WriteStaticNetworks(mountRoot, staticIPs); err != nil {
+			slog.Warn("writing systemd-networkd static config failed", "error", err)
+			errs = append(errs, types.BlockError{
+				Block: "static-ip/networkd", Message: err.Error(),
+			})
+		}
+		return errs
+	}
 
 	slog.Debug("preserving NIC naming")
 	if err := nicnaming.Apply(mountRoot, staticIPs); err != nil {
@@ -265,7 +296,7 @@ func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP) []types.Bl
 	}
 
 	slog.Debug("configuring static IPs")
-	if err := guestagent.WriteMacToIP(mountRoot, staticIPs); err != nil {
+	if err := staticip.WriteMacToIP(mountRoot, staticIPs); err != nil {
 		slog.Warn("writing macToIP failed", "error", err)
 		errs = append(errs, types.BlockError{
 			Block: "static-ip", Message: err.Error(),
@@ -274,7 +305,7 @@ func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP) []types.Bl
 	}
 
 	if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
-		if err := fbHandler.Install(mountRoot, guestagent.FirstbootCommands()); err != nil {
+		if err := fbHandler.Install(mountRoot, staticip.FirstbootCommands()); err != nil {
 			slog.Warn("static IP firstboot install failed", "error", err)
 			errs = append(errs, types.BlockError{
 				Block: "static-ip/firstboot", Message: err.Error(),

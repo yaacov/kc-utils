@@ -17,10 +17,12 @@ func inspectLinux(root string) (*types.InspectData, error) {
 		Type: "linux",
 	}
 
-	osRelease := filepath.Join(root, "etc", "os-release")
-	if guest.FileExists(osRelease) {
-		if err := parseOSRelease(osRelease, data); err == nil {
-			return data, nil
+	for _, rel := range LinuxOSReleasePaths {
+		osRelease := filepath.Join(root, rel)
+		if guest.FileExists(osRelease) {
+			if err := parseOSRelease(osRelease, data); err == nil {
+				return data, nil
+			}
 		}
 	}
 

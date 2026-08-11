@@ -23,14 +23,24 @@ func Install(guestRoot string, pkgFormat, pkgManager, arch, distro string, major
 		return
 	}
 
-	var firstbootCmds []string
+	// networkAvailable reports whether a firstboot network package-manager
+	// install can ever succeed for this guest. Amazon Linux 2023 does not
+	// ship qemu-guest-agent in its guest repos at all, so network install
+	// is never an option there, regardless of the offline flag.
+	networkAvailable := !offline
+	if distro == "amzn" && majorVersion >= 2023 {
+		networkAvailable = false
+	}
+
 	localPkgs := findLocalPackages(FindRequest{
 		Name:         "qemu-guest-agent",
 		Format:       pkgFormat,
 		Arch:         arch,
 		Distro:       distro,
-		MajorVersion: majorVersion,
+		MajorVersion: localPackageMajorVersion(distro, majorVersion),
 	})
+
+	var firstbootCmds []string
 	switch {
 	case len(localPkgs) > 0:
 		slog.Info("found local qemu-guest-agent package",
@@ -38,17 +48,17 @@ func Install(guestRoot string, pkgFormat, pkgManager, arch, distro string, major
 		cmds, err := copyAndInstallLocal(guestRoot, localPkgs, pkgFormat)
 		if err != nil {
 			slog.Warn("local package prep failed", "error", err)
-			if !offline {
+			if networkAvailable {
 				firstbootCmds = networkInstallCommands(pkgManager)
 			}
 		} else {
 			firstbootCmds = cmds
 		}
-	case offline:
-		slog.Warn("offline mode, no local qemu-guest-agent packages found, skipping agent install")
-	default:
+	case networkAvailable:
 		slog.Warn("no local packages found, firstboot will attempt network install")
 		firstbootCmds = networkInstallCommands(pkgManager)
+	default:
+		slog.Warn("no local qemu-guest-agent package found and network install unavailable, skipping agent install")
 	}
 	if len(firstbootCmds) > 0 {
 		if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {

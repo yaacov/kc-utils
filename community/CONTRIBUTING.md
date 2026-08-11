@@ -234,7 +234,7 @@ Add new `.ps1` files with an appropriate numeric prefix (COM1
 
 ### Hypervisor cleanup uses shared helpers
 
-Linux hypervisor plugins must use `hypervisor.DisableSystemdUnit()` to disable
+Linux hypervisor plugins must use `systemd.DisableSystemdUnit()` ([`pkg/convert-linux/systemd/`](../../pkg/convert-linux/systemd/)) to disable
 and mask services consistently across all three directories (`multi-user.target.wants`,
 `sockets.target.wants`, `graphical.target.wants`). Do not remove symlinks
 manually.

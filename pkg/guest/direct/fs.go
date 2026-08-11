@@ -70,6 +70,10 @@ func (b *Backend) Symlink(target, link string) error {
 	return os.Symlink(target, b.host(link))
 }
 
+func (b *Backend) Readlink(guestPath string) (string, error) {
+	return os.Readlink(b.host(guestPath))
+}
+
 func (b *Backend) Chmod(guestPath string, mode os.FileMode) error {
 	return os.Chmod(b.host(guestPath), mode)
 }
