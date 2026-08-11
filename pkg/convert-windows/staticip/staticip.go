@@ -26,7 +26,7 @@ func PowerShellScript(ips []types.StaticIP) string {
 
 		newIPCmd := fmt.Sprintf(`    New-NetIPAddress -InterfaceIndex $%s.InterfaceIndex -IPAddress %q`, adapterVar, sip.IP)
 		if sip.Netmask != "" {
-			newIPCmd += fmt.Sprintf(" -PrefixLength %s", netmaskToPrefixLength(sip.Netmask))
+			newIPCmd += fmt.Sprintf(" -PrefixLength %s", NetmaskToPrefixLength(sip.Netmask))
 		}
 		if sip.Gateway != "" {
 			newIPCmd += fmt.Sprintf(` -DefaultGateway %q`, sip.Gateway)
@@ -166,7 +166,9 @@ func quoteList(values []string) string {
 	return strings.Join(quoted, ",")
 }
 
-func netmaskToPrefixLength(mask string) string {
+// NetmaskToPrefixLength converts a dotted IPv4 netmask to a CIDR prefix length string.
+// Invalid masks default to "24".
+func NetmaskToPrefixLength(mask string) string {
 	ip := net.ParseIP(mask)
 	if ip == nil {
 		return "24"

@@ -14,7 +14,7 @@ kc-prepare → kc-convert-linux / kc-convert-windows → kc-finalize
   (stage)              (stage)                              (stage)
      │                     │                                    │
   blocks                blocks                               blocks
-(pkg/prepare/)   (pkg/convert/linux|windows/)            (pkg/finalize/)
+(pkg/prepare/)   (pkg/convert-linux|convert-windows/)    (pkg/finalize/)
 ```
 
 ## Block Isolation
@@ -66,8 +66,8 @@ Cross-stage shared code lives in:
 
 | Mode | Implementation | Requires |
 |------|---------------|----------|
-| **Direct** (default) | `direct_backend.go` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
-| **Guestfs** (`--guestfs`) | `guestfs_backend.go` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | `/dev/kvm` only |
+| **Direct** (default) | `pkg/guest/direct/backend.go` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
+| **Guestfs** (`--guestfs`) | `pkg/guest/guestfs/backend.go` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | `/dev/kvm` only |
 
 ### Backend Transparency
 

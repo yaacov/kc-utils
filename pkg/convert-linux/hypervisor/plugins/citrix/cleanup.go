@@ -4,6 +4,7 @@ package citrix
 
 import (
 	"bufio"
+	"log/slog"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -71,6 +72,8 @@ func restoreInittabGettys(guestRoot string) {
 		lines = append(lines, line)
 	}
 	if changed {
-		_ = guest.FileWrite(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+		if err := guest.FileWrite(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+			slog.Warn("writing cleaned citrix inittab failed", "path", path, "error", err)
+		}
 	}
 }

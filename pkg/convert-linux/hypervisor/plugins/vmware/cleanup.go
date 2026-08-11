@@ -4,6 +4,8 @@ package vmware
 
 import (
 	"bufio"
+	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,13 +88,17 @@ func disableVMwareRepos(guestRoot string) {
 			out.WriteString(line)
 			out.WriteByte('\n')
 		}
-		_ = guest.FileWrite(path, []byte(out.String()), 0o644)
+		if err := guest.FileWrite(path, []byte(out.String()), 0o644); err != nil {
+			slog.Warn("disabling VMware yum repo failed", "path", path, "error", err)
+		}
 	}
 }
 
 func schedulePkgRemove(guestRoot string, pkgs []string) {
 	scriptDir := filepath.Join(guestRoot, "var", "lib", "kc-firstboot")
-	_ = guest.FileMkdirAll(scriptDir, 0o755)
+	if err := guest.FileMkdirAll(scriptDir, 0o755); err != nil {
+		slog.Warn("creating VMware pkg-remove script dir failed", "path", scriptDir, "error", err)
+	}
 	script := filepath.Join(scriptDir, "remove-vmware-pkgs.sh")
 	var b strings.Builder
 	b.WriteString("#!/bin/bash\n")
@@ -100,7 +106,9 @@ func schedulePkgRemove(guestRoot string, pkgs []string) {
 	for _, p := range pkgs {
 		b.WriteString("rpm -e --nodeps " + p + " 2>/dev/null || dpkg -r " + p + " 2>/dev/null || true\n")
 	}
-	_ = guest.FileWrite(script, []byte(b.String()), 0o755)
+	if err := guest.FileWrite(script, []byte(b.String()), 0o755); err != nil {
+		slog.Warn("writing VMware pkg-remove script failed", "path", script, "error", err)
+	}
 
 	unitPath := filepath.Join(guestRoot, "etc", "systemd", "system", "kc-remove-vmware.service")
 	unit := `[Unit]
@@ -116,10 +124,20 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 `
-	_ = guest.FileMkdirAll(filepath.Dir(unitPath), 0o755)
-	_ = guest.FileWrite(unitPath, []byte(unit), 0o644)
+	if err := guest.FileMkdirAll(filepath.Dir(unitPath), 0o755); err != nil {
+		slog.Warn("creating VMware pkg-remove unit dir failed", "path", filepath.Dir(unitPath), "error", err)
+	}
+	if err := guest.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
+		slog.Warn("writing VMware pkg-remove unit failed", "path", unitPath, "error", err)
+	}
 	wants := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants", "kc-remove-vmware.service")
-	_ = guest.FileMkdirAll(filepath.Dir(wants), 0o755)
-	_ = guest.FileRemove(wants)
-	_ = guest.FileSymlink("/etc/systemd/system/kc-remove-vmware.service", wants)
+	if err := guest.FileMkdirAll(filepath.Dir(wants), 0o755); err != nil {
+		slog.Warn("creating VMware pkg-remove wants dir failed", "path", filepath.Dir(wants), "error", err)
+	}
+	if err := guest.FileRemove(wants); err != nil && !os.IsNotExist(err) {
+		slog.Warn("removing stale VMware pkg-remove wants link failed", "path", wants, "error", err)
+	}
+	if err := guest.FileSymlink("/etc/systemd/system/kc-remove-vmware.service", wants); err != nil {
+		slog.Warn("enabling VMware pkg-remove unit failed", "path", wants, "error", err)
+	}
 }

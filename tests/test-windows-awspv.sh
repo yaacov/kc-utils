@@ -12,7 +12,6 @@ skip_if_skipped
 requires_linux  # binaries are Linux ELF; cannot execute on other platforms
 requires command -v hivexregedit
 requires_jq
-requires_jq
 ensure_built
 requires test -f "$UPSTREAM_TESTDATA/minimal-hive"
 

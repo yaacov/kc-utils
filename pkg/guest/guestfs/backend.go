@@ -541,13 +541,16 @@ func (b *Backend) TeardownDiscard() error {
 func (b *Backend) UnmountFilesystems() error {
 	var firstErr error
 	if b.probeActive != "" {
-		if err := b.ProbeUnmount(b.probeActive); err != nil && firstErr == nil {
+		if err := b.ProbeUnmount(b.probeActive); err != nil {
 			firstErr = err
 		}
 	}
 	if b.session != nil {
-		if _, err := b.session.remoteScript("-umount-all\n"); err != nil && firstErr == nil {
+		if _, err := b.session.remoteScript("-umount-all\n"); err != nil {
 			slog.Debug("guestfs umount-all", "error", err)
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 	b.mounted = false
@@ -577,10 +580,7 @@ func (b *Backend) ReleaseDevices() error {
 }
 
 func (b *Backend) teardown() error {
-	var firstErr error
-	if err := b.UnmountFilesystems(); err != nil && firstErr == nil {
-		firstErr = err
-	}
+	firstErr := b.UnmountFilesystems()
 	if err := b.ReleaseDevices(); err != nil && firstErr == nil {
 		firstErr = err
 	}

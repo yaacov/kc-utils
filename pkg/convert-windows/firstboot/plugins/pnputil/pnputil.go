@@ -18,7 +18,15 @@ func (p *Plugin) Priority() int { return 2000 }
 func (p *Plugin) Name() string  { return "install-virtio-drivers" }
 
 func (p *Plugin) ShouldRun(cfg *firstboot.ContributorConfig) bool {
-	return len(cfg.DriverFiles) > 0
+	if len(cfg.DriverFiles) == 0 {
+		return false
+	}
+	// pnputil is unavailable on pre-Vista guests (XP/2003). Boot-critical
+	// drivers are registered offline via criticaldb; skip firstboot install.
+	if cfg.Version != nil && !cfg.Version.SupportsPowerShell() {
+		return false
+	}
+	return true
 }
 
 func (p *Plugin) UsesBatch(cfg *firstboot.ContributorConfig) bool {
@@ -26,6 +34,9 @@ func (p *Plugin) UsesBatch(cfg *firstboot.ContributorConfig) bool {
 }
 
 func (p *Plugin) Generate(cfg *firstboot.ContributorConfig) (string, error) {
+	if !p.ShouldRun(cfg) {
+		return "", nil
+	}
 	if p.UsesBatch(cfg) {
 		return p.generateBat(cfg)
 	}

@@ -130,19 +130,9 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	var pipelineErr error
 	guestSetupStarted := false
 
-	var sharedListener *guest.SharedListener
-	var stageEnv []string
-	if cfg.UseGuestfs {
-		listener, err := guest.StartSharedListener()
-		if err != nil {
-			return nil, fmt.Errorf("guestfish shared listener: %w", err)
-		}
-		sharedListener = listener
-		stageEnv = listener.Env()
-		if cfg.NbdeClevis {
-			stageEnv = append(stageEnv, guest.EnvGuestfsNetwork+"=1")
-			slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
-		}
+	sharedListener, stageEnv, err := setupSharedListener(cfg)
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if sharedListener != nil {
@@ -163,50 +153,93 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		return nil, err
 	}
 
-	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
-	prepareArgs := []string{
+	guestSetupStarted = true
+	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, sharedListener, &stageEnv)
+	if err != nil {
+		return fail(err)
+	}
+	if err := runConvertStage(cfg, pipeline, pipelinePath, sharedListener, &stageEnv); err != nil {
+		return fail(err)
+	}
+	if err := runFinalizeStage(cfg, pipelinePath, stageEnv, pipeline); err != nil {
+		return fail(err)
+	}
+	return pipeline, nil
+}
+
+// setupSharedListener starts a guestfish --listen session when guestfs mode is on.
+// The caller owns closing the returned listener.
+func setupSharedListener(cfg *env.Config) (*guest.SharedListener, []string, error) {
+	if !cfg.UseGuestfs {
+		return nil, nil, nil
+	}
+	listener, err := startSharedListener()
+	if err != nil {
+		return nil, nil, fmt.Errorf("guestfish shared listener: %w", err)
+	}
+	stageEnv := listener.Env()
+	if cfg.NbdeClevis {
+		stageEnv = append(stageEnv, guest.EnvGuestfsNetwork+"=1")
+		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+	}
+	return listener, stageEnv, nil
+}
+
+// stageCommonArgs builds shared CLI flags for kc-prepare / convert / finalize.
+func stageCommonArgs(cfg *env.Config, inputPath, outputPath string) []string {
+	args := []string{
 		"--input", inputPath,
-		"--output", pipelinePath,
+		"--output", outputPath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
 	}
 	if cfg.UseGuestfs {
-		prepareArgs = append(prepareArgs, "--guestfs")
+		args = append(args, "--guestfs")
 	}
+	return args
+}
 
-	guestSetupStarted = true
-	if err := runSubprocess(prepareBin, prepareArgs, stageEnv); err != nil {
-		return fail(fmt.Errorf("kc-prepare: %w", err))
+func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) (*pipelineResult, error) {
+	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
+	prepareArgs := stageCommonArgs(cfg, inputPath, pipelinePath)
+
+	if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
+		return nil, fmt.Errorf("kc-prepare: %w", err)
 	}
-
-	if err := ensureSharedListener(sharedListener, &stageEnv, "prepare"); err != nil {
-		return fail(err)
+	if err := ensureSharedListener(sharedListener, stageEnv, "prepare"); err != nil {
+		return nil, err
 	}
 
 	var pipeline pipelineResult
 	if err := readJSON(pipelinePath, &pipeline); err != nil {
-		return fail(err)
+		return nil, err
 	}
 	if pipeline.Prepare == nil {
-		return fail(fmt.Errorf("kc-prepare produced no prepare output"))
+		return nil, fmt.Errorf("kc-prepare produced no prepare output")
 	}
 	if pipeline.Prepare.Status == "error" && len(pipeline.Prepare.RootCandidates) > 0 && cfg.RootDisk != "" {
 		input.Options.Root = cfg.RootDisk
 		if err := types.WriteJSON(inputPath, input); err != nil {
-			return fail(err)
+			return nil, err
 		}
 		slog.Info("retrying kc-prepare with root selector", "root", cfg.RootDisk)
-		if err := runSubprocess(prepareBin, prepareArgs, stageEnv); err != nil {
-			return fail(fmt.Errorf("kc-prepare retry: %w", err))
+		if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
+			return nil, fmt.Errorf("kc-prepare retry: %w", err)
+		}
+		if err := ensureSharedListener(sharedListener, stageEnv, "prepare-retry"); err != nil {
+			return nil, err
 		}
 		if err := readJSON(pipelinePath, &pipeline); err != nil {
-			return fail(err)
+			return nil, err
 		}
 	}
 	if pipeline.Prepare.Status == "error" {
-		return fail(fmt.Errorf("kc-prepare failed: %s", pipeline.Prepare.Error))
+		return nil, fmt.Errorf("kc-prepare failed: %s", pipeline.Prepare.Error)
 	}
+	return &pipeline, nil
+}
 
+func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) error {
 	converter := pipeline.Prepare.Converter
 	if converter == "" {
 		if pipeline.Prepare.Inspect.Type == "windows" {
@@ -216,44 +249,23 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 		}
 	}
 	convertBin := filepath.Join(cfg.BinDir, converter)
-	convertArgs := []string{
-		"--input", pipelinePath,
-		"--output", pipelinePath,
-		"--mount-root", cfg.MountRoot,
-		"--log-level", cfg.LogLevel,
-	}
+	convertArgs := stageCommonArgs(cfg, pipelinePath, pipelinePath)
 	if cfg.Offline {
 		convertArgs = append(convertArgs, "--offline")
 	}
-	if cfg.UseGuestfs {
-		convertArgs = append(convertArgs, "--guestfs")
+	if err := runSubprocess(convertBin, convertArgs, *stageEnv); err != nil {
+		return fmt.Errorf("%s: %w", converter, err)
 	}
-	if err := runSubprocess(convertBin, convertArgs, stageEnv); err != nil {
-		return fail(fmt.Errorf("%s: %w", converter, err))
-	}
+	return ensureSharedListener(sharedListener, stageEnv, "conversion")
+}
 
-	if err := ensureSharedListener(sharedListener, &stageEnv, "conversion"); err != nil {
-		return fail(err)
-	}
-
+func runFinalizeStage(cfg *env.Config, pipelinePath string, stageEnv []string, pipeline *pipelineResult) error {
 	finalizeBin := filepath.Join(cfg.BinDir, "kc-finalize")
-	finalizeArgs := []string{
-		"--input", pipelinePath,
-		"--output", pipelinePath,
-		"--mount-root", cfg.MountRoot,
-		"--log-level", cfg.LogLevel,
-	}
-	if cfg.UseGuestfs {
-		finalizeArgs = append(finalizeArgs, "--guestfs")
-	}
+	finalizeArgs := stageCommonArgs(cfg, pipelinePath, pipelinePath)
 	if err := runSubprocess(finalizeBin, finalizeArgs, stageEnv); err != nil {
-		return fail(fmt.Errorf("kc-finalize: %w", err))
+		return fmt.Errorf("kc-finalize: %w", err)
 	}
-
-	if err := readJSON(pipelinePath, &pipeline); err != nil {
-		return fail(err)
-	}
-	return &pipeline, nil
+	return readJSON(pipelinePath, pipeline)
 }
 
 // teardownOnlyArgs builds kc-finalize --teardown-only arguments.

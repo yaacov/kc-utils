@@ -64,11 +64,11 @@ KC_V2V_IMAGE ?= $(KC_V2V_IMAGE_BASE):$(REGISTRY_TAG)
 KC_V2V_IMAGE_LOCAL := $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
 TEST_IMAGE   := kc-utils-test
 
-.PHONY: all build $(BINS) test test-race test-coverage lint lint-install \
-        fmt vet clean cross-linux-amd64 cross-linux-arm64 cross-linux-ppc64le \
-        cross-linux-s390x cross-all mod-tidy mod-verify check test-e2e \
-        test-e2e-container test-e2e-disk test-e2e-disk-guestfs test-image \
-        test-image-rebuild test-build check-all help build-kc-v2v \
+.PHONY: all build $(BINS) test test-race test-coverage test-container \
+        lint lint-install fmt vet clean cross-linux-amd64 cross-linux-arm64 \
+        cross-linux-ppc64le cross-linux-s390x cross-all mod-tidy mod-verify \
+        check test-e2e test-e2e-container test-e2e-disk test-e2e-disk-guestfs \
+        test-image test-image-rebuild test-build check-all help build-kc-v2v \
         build-kc-copy cache-virtio-win build-kc-v2v-image \
         push-kc-v2v-image test-kc-v2v-image check_container_runtime
 
@@ -93,7 +93,7 @@ build: $(BINS)
 $(BINS):
 	CGO_ENABLED=0 GOOS=linux $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
 
-## Run unit tests locally
+## Run unit tests locally (macOS skips //go:build linux packages; use test-container)
 test:
 	$(GO) test ./...
 
@@ -194,6 +194,12 @@ test-image: check_container_runtime
 ## Force-rebuild the test container image
 test-image-rebuild: check_container_runtime
 	$(CONTAINER_CMD) build --no-cache -t $(TEST_IMAGE) -f tests/Containerfile .
+
+## [container] Run unit tests in Linux (covers //go:build linux packages)
+test-container: test-image
+	$(CONTAINER_CMD) run --rm \
+	    $(KC_UTILS_WORKSPACE_MOUNT) \
+	    $(TEST_IMAGE) make test
 
 ## [container] Run e2e tests in a Fedora container (all tests, incl. Windows)
 test-e2e-container: test-image

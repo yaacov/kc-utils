@@ -169,7 +169,7 @@ make build-kc-v2v-image push-kc-v2v-image
 cp tests/scenarios/.env.example tests/scenarios/.env   # set KC_V2V_IMAGE, GOVC_*, etc.
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh          # independent kc-v2v
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # kc then operator default
-./tests/scenarios/test-mtv-benchmark-cleanup.sh          # delete NS + reset MTV settings
+./tests/scenarios/clean-env.sh          # delete NS + reset MTV settings
 ```
 
 See [tests/scenarios/test-mtv-benchmark.md](../../tests/scenarios/test-mtv-benchmark.md)

@@ -1,6 +1,10 @@
 package driversource
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
+)
 
 // MatchOSVersion reports whether a virtio-win by-os directory matches the guest OS.
 func MatchOSVersion(dirVer, requested string) bool {
@@ -18,23 +22,14 @@ func MatchOSVersion(dirVer, requested string) bool {
 
 // NormalizeOSProductName cleans registry product names for substring matching.
 func NormalizeOSProductName(requested string) string {
-	return normalizeOSProductName(requested)
-}
-
-// normalizeOSProductName cleans registry product names for substring matching.
-func normalizeOSProductName(requested string) string {
-	s := strings.ReplaceAll(requested, "\x00", "")
-	s = strings.ToLower(strings.TrimSpace(s))
-	s = strings.ReplaceAll(s, "(r)", "")
-	s = strings.ReplaceAll(s, "(tm)", "")
-	return strings.Join(strings.Fields(s), " ")
+	return version.NormalizeProductName(requested)
 }
 
 // CanonicalOSVersions maps a guest product name or by-os directory token to the
 // virtio-win driver directory name for that version only. There is no shared
 // alias bucket (Server 2008 does not match Vista, Win7 does not match 2k8R2, …).
 func CanonicalOSVersions(requested string) []string {
-	normalized := normalizeOSProductName(requested)
+	normalized := version.NormalizeProductName(requested)
 	if normalized == "" {
 		return nil
 	}

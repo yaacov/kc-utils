@@ -15,16 +15,10 @@ func init() {
 	drivers.Registrars.Register("driverdb", &DriverDBRegistrar{})
 }
 
-// bootCriticalDrivers lists drivers that must start at boot (Start=0).
-var bootCriticalDrivers = map[string]bool{
-	"viostor": true,
-	"vioscsi": true,
-}
-
 func (d *DriverDBRegistrar) Register(hive registry.Hive, ccs string, driverName, driverPath, group, arch string) error {
 	svcPath := fmt.Sprintf("%s\\Services\\%s", ccs, driverName)
 	start := uint32(3)
-	if bootCriticalDrivers[driverName] {
+	if drivers.BootCriticalDrivers[driverName] {
 		start = 0
 	}
 	if !hive.KeyExists(svcPath) {
@@ -34,7 +28,7 @@ func (d *DriverDBRegistrar) Register(hive registry.Hive, ccs string, driverName,
 		hive.SetDWORD(svcPath, "ErrorControl", 1)
 		hive.SetString(svcPath, "Group", group)
 		hive.SetExpandString(svcPath, "ImagePath", driverPath)
-	} else if bootCriticalDrivers[driverName] {
+	} else if drivers.BootCriticalDrivers[driverName] {
 		hive.SetDWORD(svcPath, "Start", 0)
 	}
 
@@ -86,7 +80,7 @@ func ddbArch(arch string) string {
 	}
 }
 
-// ddbVersionBlob matches virt-v2v's DriverPackages Version REG_BINARY for guestor.
+// ddbVersionBlob matches virt-v2v's DriverPackages Version REG_BINARY for viostor.
 func ddbVersionBlob() []byte {
 	// \x00\xff\x09\x00\x00\x00\x00\x00 + SCSI class GUID bytes + 24 zero bytes
 	guid := []byte{

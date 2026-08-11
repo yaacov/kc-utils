@@ -3,6 +3,13 @@ package drivers
 // SCSIClassGUID is the Windows SCSI adapter class GUID.
 const SCSIClassGUID = "{4D36E97B-E325-11CE-BFC1-08002BE10318}"
 
+// BootCriticalDrivers lists storage drivers that must start at boot (Start=0)
+// and be copied into system32\drivers for early load.
+var BootCriticalDrivers = map[string]bool{
+	"viostor": true,
+	"vioscsi": true,
+}
+
 // PCIIDPair holds legacy and modern VirtIO PCI IDs for a storage driver.
 type PCIIDPair struct {
 	Legacy string
