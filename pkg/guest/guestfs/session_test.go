@@ -293,15 +293,17 @@ func TestOpenGuestfishSessionFailsDeadSharedPID(t *testing.T) {
 	}
 }
 
-func TestReleaseExitsLocalSession(t *testing.T) {
+func TestReleaseDevicesClearsLocalSession(t *testing.T) {
+	// Session close/clear is ReleaseDevices; Release also umount-all and
+	// needs a live guestfish PID (covered separately below).
 	b := &Backend{
 		session: &guestfishSession{pid: 0, ownedExternally: false},
 	}
-	if err := b.Release(); err != nil {
+	if err := b.ReleaseDevices(); err != nil {
 		t.Fatal(err)
 	}
 	if b.session != nil {
-		t.Fatal("Release should clear session")
+		t.Fatal("ReleaseDevices should clear session")
 	}
 }
 
@@ -330,14 +332,30 @@ func TestCheckAliveDeadPID(t *testing.T) {
 	}
 }
 
-func TestReleaseKeepsExternalSemantics(t *testing.T) {
+func TestReleaseDevicesKeepsExternalSemantics(t *testing.T) {
 	b := &Backend{
 		session: &guestfishSession{pid: 4242, ownedExternally: true},
 	}
-	if err := b.Release(); err != nil {
+	if err := b.ReleaseDevices(); err != nil {
 		t.Fatal(err)
 	}
 	if b.session != nil {
-		t.Fatal("Release should clear backend session pointer")
+		t.Fatal("ReleaseDevices should clear backend session pointer")
+	}
+}
+
+func TestReleaseClearsSessionDespiteUmountFailure(t *testing.T) {
+	b := &Backend{
+		session: &guestfishSession{pid: 4242, ownedExternally: true},
+	}
+	err := b.Release()
+	if err == nil {
+		t.Fatal("expected umount-all failure for dead session")
+	}
+	if !strings.Contains(err.Error(), "not running") {
+		t.Fatalf("error=%v", err)
+	}
+	if b.session != nil {
+		t.Fatal("Release should clear session even when umount-all fails")
 	}
 }

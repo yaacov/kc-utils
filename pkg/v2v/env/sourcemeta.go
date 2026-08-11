@@ -16,7 +16,7 @@ func FetchSourceMeta(cfg *config.Config) (types.SourceSpec, error) {
 	}
 	source.FirmwareHint = firmwareHintFromEnv(cfg.Firmware)
 
-	if isVSphereSource(cfg) && cfg.LibvirtURL != "" && cfg.VmName != "" {
+	if IsVSphereSource(cfg) && cfg.LibvirtURL != "" && cfg.VmName != "" {
 		inv, err := vsphere.LoadInventory(cfg)
 		if err != nil {
 			return source, err
@@ -36,15 +36,6 @@ func FetchSourceMeta(cfg *config.Config) (types.SourceSpec, error) {
 		source.FirmwareHint = "bios"
 	}
 	return source, nil
-}
-
-func isVSphereSource(cfg *config.Config) bool {
-	switch strings.ToLower(cfg.Source) {
-	case "vsphere", "vmware":
-		return true
-	default:
-		return false
-	}
 }
 
 func firmwareHintFromEnv(raw string) string {

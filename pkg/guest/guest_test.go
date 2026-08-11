@@ -56,3 +56,17 @@ func TestCheckoutDirect(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMkdirCreatesParents(t *testing.T) {
+	dir := t.TempDir()
+	g := &Guest{rootPath: dir, mode: ModeDirect, backend: direct.NewMounted(nil, dir, nil)}
+	if err := g.Mkdir("a/b/c", 0o755); err != nil {
+		t.Fatalf("Mkdir: %v", err)
+	}
+	if !g.IsDir("/a/b/c") {
+		t.Fatal("expected /a/b/c to exist as a directory")
+	}
+	if !g.IsDir("/a") || !g.IsDir("/a/b") {
+		t.Fatal("expected intermediate parents to be created")
+	}
+}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -49,7 +49,7 @@ func Start(cfg *env.Config) error {
 	mux.HandleFunc("/warnings", s.warningsHandler)
 	mux.HandleFunc("/shutdown", s.shutdownHandler)
 	server = &http.Server{Addr: ":8080", Handler: mux}
-	fmt.Println("Starting server on :8080")
+	slog.Info("starting server", "addr", ":8080")
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
@@ -97,7 +97,7 @@ func (s *serverHandler) warningsHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *serverHandler) shutdownHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Shutdown request received. Shutting down server.")
+	slog.Info("shutdown request received")
 	w.WriteHeader(http.StatusNoContent)
 	if server != nil {
 		_ = server.Shutdown(context.Background())

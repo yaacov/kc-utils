@@ -86,6 +86,7 @@ kc-copy --input copy-input.json
 | `--work-dir` / `workdir` | `/var/tmp/v2v` | Working directory |
 | `--output` / `output_path` | `copy-progress.json` | Progress output file |
 | `--copy-concurrency` / `copy_concurrency` | `4` | Max parallel disk copies (capped at disk count; `1` = sequential) |
+| `--log-level` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 vSphere credentials (read at connect time, not part of `CopyInput`):
 

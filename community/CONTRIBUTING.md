@@ -122,7 +122,8 @@ make cross-all      # amd64, arm64, ppc64le, s390x
 ## Test
 
 ```bash
-make test                 # unit tests
+make test                 # unit tests (on macOS skips //go:build linux packages)
+make test-container       # unit tests in a Linux container (covers linux-only packages)
 make lint                 # golangci-lint (auto-installs pinned golangci-lint)
 make check                # fmt + vet + lint + unit tests
 make test-e2e             # shell e2e tests (see below)
@@ -130,6 +131,10 @@ make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
 make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
+
+On macOS (and other non-Linux hosts), `make test` never compiles packages tagged
+`//go:build linux` (for example `pkg/guest/guestfs`). Use `make test-container`
+before pushing when those packages change, or rely on CI on `ubuntu-latest`.
 
 ### `make test-e2e`
 
@@ -255,7 +260,7 @@ deterministic and do not depend on the guest booting successfully.
 ## PR checklist
 
 - [ ] `make lint` passes
-- [ ] `make test` passes
+- [ ] `make test` passes (`make test-container` on macOS for linux-only packages)
 - [ ] `make test-e2e-container` passes (full e2e in Fedora container)
 - [ ] Keep the change focused
 - [ ] Follow [architecture.md](architecture.md) for structural changes

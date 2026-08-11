@@ -64,8 +64,8 @@ func TestConfigureDisplay(t *testing.T) {
 	bl := &fakeBootloader{}
 	ConfigureDisplay("/guest", bl)
 
-	if !contains(bl.removed, "vga=") || !contains(bl.removed, "video=cirrus") {
-		t.Errorf("removed = %v, want vga= and video=cirrus", bl.removed)
+	if !contains(bl.removed, "vga") || !contains(bl.removed, "video=cirrus") {
+		t.Errorf("removed = %v, want vga and video=cirrus", bl.removed)
 	}
 	if !contains(bl.added, "video=virtio") {
 		t.Errorf("added = %v, want video=virtio", bl.added)

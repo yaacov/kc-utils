@@ -62,9 +62,10 @@ func globDisks() ([]string, error) {
 	return paths, nil
 }
 
+var diskNumberRe = regexp.MustCompile(`\d+`)
+
 func diskNumber(path string) int {
-	re := regexp.MustCompile(`\d+`)
-	n, _ := strconv.Atoi(re.FindString(path))
+	n, _ := strconv.Atoi(diskNumberRe.FindString(path))
 	return n
 }
 

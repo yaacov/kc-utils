@@ -31,7 +31,7 @@ func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) 
 
 	for _, entry := range entries {
 		for _, dir := range candidateDirs(guestRoot) {
-			device := findDeviceByIP(dir, entry.IP, entry.MAC)
+			device := findDeviceByIP(dir, entry.IP)
 			if device != "" && device != "lo" {
 				rules = append(rules, nicnaming.NamingRule{MAC: entry.MAC, Device: device})
 				break
@@ -48,7 +48,7 @@ func candidateDirs(guestRoot string) []string {
 	}
 }
 
-func findDeviceByIP(scriptsDir, ip, mac string) string {
+func findDeviceByIP(scriptsDir, ip string) string {
 	entries, err := guest.FileReadDir(scriptsDir)
 	if err != nil {
 		return ""
@@ -61,7 +61,7 @@ func findDeviceByIP(scriptsDir, ip, mac string) string {
 		if !fileContainsIP(path, ip) {
 			continue
 		}
-		device := extractDevice(path, mac)
+		device := extractDevice(path)
 		if device != "" {
 			return device
 		}
@@ -85,7 +85,7 @@ func fileContainsIP(path, ip string) bool {
 	return false
 }
 
-func extractDevice(path, _ string) string {
+func extractDevice(path string) string {
 	data, err := guest.FileRead(path)
 	if err != nil {
 		return ""

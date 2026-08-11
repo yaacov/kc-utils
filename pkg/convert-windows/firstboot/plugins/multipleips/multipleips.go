@@ -2,12 +2,11 @@ package multipleips
 
 import (
 	"fmt"
-	"net"
-	"strconv"
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
+	"github.com/yaacov/kc-utils/pkg/convert-windows/staticip"
 )
 
 type Plugin struct{}
@@ -105,7 +104,7 @@ func powershellScript(ips []types.StaticIP) string {
 			cmd := fmt.Sprintf("    New-NetIPAddress -InterfaceIndex $%s.InterfaceIndex -IPAddress %q",
 				varName, sip.IP)
 			if sip.Netmask != "" {
-				cmd += fmt.Sprintf(" -PrefixLength %s", netmaskToPrefix(sip.Netmask))
+				cmd += fmt.Sprintf(" -PrefixLength %s", staticip.NetmaskToPrefixLength(sip.Netmask))
 			}
 			// Secondary IPs should not set gateway
 			b.WriteString(cmd + "\r\n")
@@ -192,20 +191,4 @@ func collectDNS(ips []types.StaticIP) []string {
 		}
 	}
 	return result
-}
-
-func netmaskToPrefix(mask string) string {
-	ip := net.ParseIP(mask)
-	if ip == nil {
-		return "24"
-	}
-	ip4 := ip.To4()
-	if ip4 == nil {
-		return "24"
-	}
-	ones, bits := net.IPMask(ip4).Size()
-	if bits == 0 {
-		return "24"
-	}
-	return strconv.Itoa(ones)
 }

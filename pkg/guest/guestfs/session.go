@@ -302,6 +302,9 @@ func drainGuestfishListenStderr(r io.Reader, mu *sync.Mutex, buf *bytes.Buffer) 
 		}
 		mu.Unlock()
 	}
+	if err := sc.Err(); err != nil {
+		slog.Debug("guestfish listen stderr drain ended", "error", err)
+	}
 }
 
 func parseListenOutput(out string) (int, error) {

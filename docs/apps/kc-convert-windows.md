@@ -107,9 +107,9 @@ Example: [examples/convert-output-windows.json](examples/convert-output-windows.
 |-----------|----------------|
 | `VersionHandler` | `win11`, `win10`, `win81`, `win8`, `win7`, `win2008r2`, `win2008`, `winvista`, `win2003`, `winxp`, `winunknown` |
 | `DriverSource` | `directory` |
-| `WindowsRemove` | `vmware`, `nutanix`, `awspv`, `ec2launch`, `ec2`, `virtualbox` |
+| `WindowsRemove` | `vmware`, `nutanix`, `awspv`, `ec2launch`, `ec2`, `virtualbox`, `citrix`, `hyperv`, `parallels` |
 | `DriverRegistrar` | `criticaldb` (legacy Windows), `driverdb` (Windows 8+) |
-| `WindowsServices` | `vmware`, `nutanix`, `virtualbox` |
+| `WindowsServices` | `vmware`, `nutanix`, `virtualbox`, `hyperv` |
 | `UEFIEditor` | `bcd` |
 
 ## Registry Access

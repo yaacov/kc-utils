@@ -3,8 +3,10 @@
 package hypervisor
 
 import (
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"log/slog"
 	"path/filepath"
+
+	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
 // UnitMaskTarget is the guest-absolute path DisableSystemdUnit uses when masking a unit.
@@ -36,9 +38,13 @@ func DisableSystemdUnit(guestRoot string, unit string) {
 		_ = guest.FileRemove(p)
 	}
 	maskPath := filepath.Join(guestRoot, "etc", "systemd", "system", unit)
-	_ = guest.FileMkdirAll(filepath.Dir(maskPath), 0o755)
+	if err := guest.FileMkdirAll(filepath.Dir(maskPath), 0o755); err != nil {
+		slog.Warn("creating systemd unit mask dir failed", "path", filepath.Dir(maskPath), "unit", unit, "error", err)
+	}
 	_ = guest.FileRemove(maskPath)
-	_ = guest.FileSymlink("/dev/null", maskPath)
+	if err := guest.FileSymlink("/dev/null", maskPath); err != nil {
+		slog.Warn("masking systemd unit failed", "path", maskPath, "unit", unit, "error", err)
+	}
 }
 
 // RemovePaths removes files/directories if present.

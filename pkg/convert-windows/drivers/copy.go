@@ -54,7 +54,7 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 			copiedAny = true
 			base := filepath.Base(srcFile)
 			lower := strings.ToLower(base)
-			if strings.HasSuffix(lower, ".sys") && bootCriticalDrivers[strings.TrimSuffix(lower, ".sys")] {
+			if strings.HasSuffix(lower, ".sys") && BootCriticalDrivers[strings.TrimSuffix(lower, ".sys")] {
 				sysDst := filepath.Join(sysDriversDir, base)
 				if wrErr := guest.FileUpload(srcFile, sysDst); wrErr != nil {
 					slog.Warn("writing system32 driver failed", "path", sysDst, "error", wrErr)
@@ -69,9 +69,4 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 		slog.Info("copied driver", "name", df.Name, "files", len(df.Files))
 	}
 	return copiedDriverNames, nil
-}
-
-var bootCriticalDrivers = map[string]bool{
-	"viostor": true,
-	"vioscsi": true,
 }

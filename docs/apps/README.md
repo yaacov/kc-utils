@@ -179,8 +179,8 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 ### Conversion pipeline
 
 - [kc-prepare.md](kc-prepare.md) — 9 blocks
-- [kc-convert-linux.md](kc-convert-linux.md) — 11 blocks
-- [kc-convert-windows.md](kc-convert-windows.md) — 9 blocks
+- [kc-convert-linux.md](kc-convert-linux.md) — 17 blocks
+- [kc-convert-windows.md](kc-convert-windows.md) — 15 blocks
 - [kc-finalize.md](kc-finalize.md) — 7 blocks
 
 ### V2V orchestration

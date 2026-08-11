@@ -50,7 +50,7 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 | `MAX_ATTEMPTS` | `180` | Max poll attempts (180 × 10 s = 30 min timeout) |
 
 Clean up afterward with
-[`test-mtv-benchmark-cleanup.sh`](../../../tests/scenarios/test-mtv-benchmark-cleanup.sh)
+[`clean-env.sh`](../../../tests/scenarios/clean-env.sh)
 or set `SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false` on the benchmark run.
 
 ### Output files

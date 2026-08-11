@@ -15,9 +15,9 @@ func TestNetmaskToPrefixLength(t *testing.T) {
 		"invalid":       "24",
 	}
 	for mask, want := range cases {
-		got := netmaskToPrefixLength(mask)
+		got := NetmaskToPrefixLength(mask)
 		if got != want {
-			t.Errorf("netmaskToPrefixLength(%q) = %q, want %q", mask, got, want)
+			t.Errorf("NetmaskToPrefixLength(%q) = %q, want %q", mask, got, want)
 		}
 	}
 }

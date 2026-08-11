@@ -6,9 +6,9 @@
 # touched by the benchmark (virt_v2v_image_fqin, feature_windows_wait_for_reboot).
 #
 # Examples:
-#   ./tests/scenarios/test-mtv-benchmark-cleanup.sh
-#   NS=other-ns ./tests/scenarios/test-mtv-benchmark-cleanup.sh --namespace-only
-#   RHEL_VM=my-rhel-vm ./tests/scenarios/test-mtv-benchmark-cleanup.sh --release-rhel
+#   ./tests/scenarios/clean-env.sh
+#   NS=other-ns ./tests/scenarios/clean-env.sh --namespace-only
+#   RHEL_VM=my-rhel-vm ./tests/scenarios/clean-env.sh --release-rhel
 #
 # Env (tests/scenarios/.env):
 #   NS        Benchmark namespace

@@ -59,6 +59,37 @@ CONVERTER=""
 SUMMARY_LOG=""
 MEM_DIR=""
 
+# Background monitor PIDs (memory sampler). Ctrl+C must kill these or they
+# keep polling after the main script is interrupted.
+_BG_PIDS=()
+_CLEANED_UP=false
+
+track_bg_pid() {
+  _BG_PIDS+=("$1")
+}
+
+untrack_bg_pid() {
+  local target="$1" pid
+  local kept=()
+  for pid in "${_BG_PIDS[@]:-}"; do
+    [[ "${pid}" == "${target}" ]] || kept+=("${pid}")
+  done
+  _BG_PIDS=("${kept[@]:-}")
+}
+
+kill_bg_jobs() {
+  local pid job
+  for pid in "${_BG_PIDS[@]:-}"; do
+    kill "${pid}" 2>/dev/null || true
+  done
+  while read -r job; do
+    [[ -n "${job}" ]] || continue
+    kill "${job}" 2>/dev/null || true
+  done < <(jobs -p 2>/dev/null || true)
+  wait 2>/dev/null || true
+  _BG_PIDS=()
+}
+
 usage() {
   cat <<EOF
 Usage: MODE=kc|compare $0
@@ -166,6 +197,10 @@ pod_net_bytes() {
 }
 
 monitor_conversion_memory() {
+  # Parent owns Ctrl+C / EXIT cleanup; reset inherited traps so this sampler
+  # dies on signal or explicit kill instead of racing the main cleanup path.
+  trap - INT TERM EXIT
+
   local plan="$1" label="$2"
   local csv="${MEM_DIR}/${label}-virt-v2v-memory.csv"
   mkdir -p "${MEM_DIR}"
@@ -200,7 +235,7 @@ monitor_conversion_memory() {
         "${net_rx:-?}" "${net_tx:-?}" "${phase:-?}" \
         | tee -a "${SUMMARY_LOG}"
     fi
-    sleep "${MEM_INTERVAL}"
+    sleep "${MEM_INTERVAL}" || exit 130
   done
 
   if [[ "$(wc -l < "${csv}")" -gt 1 ]]; then
@@ -224,6 +259,7 @@ monitor_plan() {
 
   monitor_conversion_memory "${plan}" "${label}" &
   local mem_pid=$!
+  track_bg_pid "${mem_pid}"
 
   log "--- Monitoring plan ${plan} (${label}) ---"
   local prev_pipe=""
@@ -252,7 +288,12 @@ monitor_plan() {
     sleep "${INTERVAL}"
   done
 
-  wait "${mem_pid}" 2>/dev/null || true
+  # Wait for monitor to finish peak summary; fall back to kill if it hangs.
+  if ! wait "${mem_pid}" 2>/dev/null; then
+    kill "${mem_pid}" 2>/dev/null || true
+    wait "${mem_pid}" 2>/dev/null || true
+  fi
+  untrack_bg_pid "${mem_pid}"
 
   local duration=$(( $(date +%s) - start_time ))
   LAST_PLAN_STATUS="${status}"
@@ -456,9 +497,25 @@ preflight_mtv_cluster
 save_mtv_settings
 
 cleanup() {
+  if [[ "${_CLEANED_UP}" == "true" ]]; then
+    return 0
+  fi
+  _CLEANED_UP=true
+  kill_bg_jobs
   benchmark_exit_cleanup
 }
+
+on_interrupt() {
+  echo "" >&2
+  echo "Interrupted (Ctrl+C) — stopping background monitors and exiting." >&2
+  echo "Note: in-cluster MTV plans keep running; use clean-env.sh to cancel/cleanup." >&2
+  cleanup
+  trap - EXIT INT TERM
+  exit 130
+}
+
 trap cleanup EXIT
+trap on_interrupt INT TERM
 
 overall_rc=0
 

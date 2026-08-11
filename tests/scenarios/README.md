@@ -4,14 +4,16 @@ Manual end-to-end benchmarks against a live OpenShift cluster with MTV
 (Forklift) and a vSphere source. Not part of GitHub CI.
 
 There is one runner: [`test-mtv-benchmark.sh`](test-mtv-benchmark.sh).
-Cleanup: [`test-mtv-benchmark-cleanup.sh`](test-mtv-benchmark-cleanup.sh).
+Cluster cleanup: [`clean-env.sh`](clean-env.sh).
+Local `runs/` cleanup: [`clean-runs.sh`](clean-runs.sh).
 
 ## Layout
 
 ```
 tests/scenarios/
 ├── test-mtv-benchmark.sh          # runner (MODE=kc | compare)
-├── test-mtv-benchmark-cleanup.sh  # standalone cleanup
+├── clean-env.sh                   # standalone cluster cleanup
+├── clean-runs.sh                  # wipe local runs/ artifacts
 ├── test-mtv-benchmark.md          # test plan
 ├── .env.example                   # template — copy to .env (gitignored)
 ├── virt-v2v-vs-kc-v2v.md           # published comparison narrative
@@ -52,7 +54,10 @@ MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 # Clean up after a run (default: delete namespace + reset MTV settings)
-./tests/scenarios/test-mtv-benchmark-cleanup.sh
+./tests/scenarios/clean-env.sh
+
+# Wipe local runs/ artifacts (logs, *-mem/, HTML); keeps .gitignore
+./tests/scenarios/clean-runs.sh
 
 # Or opt in to cleanup at the end of a benchmark run
 SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
@@ -90,7 +95,8 @@ To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
 | Path | Purpose |
 |---|---|
 | [test-mtv-benchmark.sh](test-mtv-benchmark.sh) | Benchmark runner (`MODE=kc` or `MODE=compare`) |
-| [test-mtv-benchmark-cleanup.sh](test-mtv-benchmark-cleanup.sh) | Standalone cleanup (`--all`, `--namespace-only`, `--settings-only`, `--release-rhel`) |
+| [clean-env.sh](clean-env.sh) | Standalone cluster cleanup (`--all`, `--namespace-only`, `--settings-only`, `--release-rhel`) |
+| [clean-runs.sh](clean-runs.sh) | Remove local `runs/` artifacts (`--dry-run` to preview) |
 | [test-mtv-benchmark.md](test-mtv-benchmark.md) | Test plan |
 | [lib/common.sh](lib/common.sh) | Shared helpers (settings, providers, inventory wait, controller sync) |
 | [lib/cleanup.sh](lib/cleanup.sh) | Cleanup helpers (namespace, plans, MTV settings) |

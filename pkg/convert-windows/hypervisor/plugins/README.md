@@ -25,6 +25,9 @@ uninstallation via `msiexec`).
 | `ec2launch` | remove/ec2launch/ | EC2Launch agent |
 | `ec2` | remove/ec2/ | EC2 cloud-init cleanup |
 | `virtualbox` | remove/virtualbox/ | VirtualBox guest additions |
+| `citrix` | remove/citrix/ | Citrix XenTools / XenServer tools |
+| `hyperv` | remove/hyperv/ | Hyper-V Integration Services |
+| `parallels` | remove/parallels/ | Parallels Tools |
 
 ### vmware
 
@@ -41,7 +44,7 @@ writes a firstboot PowerShell script that runs `msiexec /x {GUID} /qn` for
 each found MSI product, queries `Win32_Product` for remaining VMware entries,
 and stops/deletes residual VMware services.
 
-### nutanix / awspv / ec2launch / ec2 / virtualbox
+### nutanix / awspv / ec2launch / ec2 / virtualbox / citrix / hyperv / parallels
 
 **What they do:** Each removes its respective hypervisor's guest tools,
 following the same `Detect` → `Remove` pattern — checking for known
@@ -61,3 +64,4 @@ service that has an existing registry key under
 | `vmware` | services/vmware/ | VMware services (`VMTools`, `VGAuthService`, `VMwarePhysicalDiskHelper`, `vm3dservice`, `VMUSBArbService`) |
 | `nutanix` | services/nutanix/ | Nutanix services |
 | `virtualbox` | services/virtualbox/ | VirtualBox services |
+| `hyperv` | services/hyperv/ | Hyper-V Integration Services |

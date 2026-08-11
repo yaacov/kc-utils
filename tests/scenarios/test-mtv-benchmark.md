@@ -40,7 +40,7 @@ Warm / preflight caveats: [docs/apps/forklift-usage.md](../../docs/apps/forklift
 4. Generate `runs/test-mtv-benchmark-<ts>.html` dashboard from CSVs
 5. By default, leave MTV settings, RHEL plan/pods, and namespace in place
    (`KEEP_IMAGE_SETTING=true`, `KEEP_BETWEEN_TESTS=true`, `SKIP_CLEANUP=true`).
-   Run [`test-mtv-benchmark-cleanup.sh`](test-mtv-benchmark-cleanup.sh) afterward,
+   Run [`clean-env.sh`](clean-env.sh) afterward,
    or set `SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false` to clean up on exit.
 
 ## Artifacts
@@ -88,7 +88,7 @@ MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 # Clean up afterward
-./tests/scenarios/test-mtv-benchmark-cleanup.sh
+./tests/scenarios/clean-env.sh
 ```
 
 Narrative comparison of archived results:

@@ -89,7 +89,7 @@ and the key design decisions.
 ## Testing
 
 - [ ] `make lint` passes
-- [ ] `make test` passes
+- [ ] `make test` passes (`make test-container` on macOS for linux-only packages)
 - [ ] `make test-e2e-container` passes
 - [ ] Manual verification steps (if applicable)
 
@@ -108,7 +108,7 @@ follow-up work planned.
   link to tracked issues.
 - **Update docs.** If the change affects CLI flags, pipeline behavior, or
   architecture, update the corresponding `docs/` or `community/` file.
-- **Run CI locally first.** `make lint`, `make test`, and
-  `make test-e2e-container` before pushing.
+- **Run CI locally first.** `make lint`, `make test` (or `make test-container`
+  on macOS), and `make test-e2e-container` before pushing.
 - **Self-review before requesting review.** Read your own diff — catch
   leftover debug prints, TODO comments, or unintended file changes.

@@ -175,7 +175,10 @@ func (g *Guest) StatFS(guestPath string) (freeBytes, freeInodes int64, err error
 func (g *Guest) MountPartition(device, guestMountPoint string, readOnly bool) error {
 	guestMountPoint = normalizeGuestPath(guestMountPoint)
 	hostMountPoint := g.HostPath(guestMountPoint)
-	ft, _ := g.backend.FSType(device)
+	ft, err := g.backend.FSType(device)
+	if err != nil {
+		return fmt.Errorf("detect fstype %s: %w", device, err)
+	}
 	return g.backend.Mount(device, hostMountPoint, ft, readOnly)
 }
 

@@ -4,6 +4,7 @@ package xen
 
 import (
 	"bufio"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
@@ -78,7 +79,9 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 		out.WriteByte('\n')
 	}
 	if changed {
-		_ = guest.FileWrite(path, []byte(out.String()), 0o644)
+		if err := guest.FileWrite(path, []byte(out.String()), 0o644); err != nil {
+			slog.Warn("writing cleaned xen kernel config failed", "path", path, "error", err)
+		}
 	}
 	return nil
 }

@@ -109,7 +109,7 @@ func defaultBinDir() string {
 // LinkCertificates mirrors Forklift virt-v2v entrypoint: when the provider CA
 // secret is mounted at /etc/secret/cacert, symlink /opt/ca-bundle.crt → secret.
 func LinkCertificates(cfg *Config) error {
-	if cfg.Source != "vSphere" {
+	if !IsVSphereSource(cfg) {
 		return nil
 	}
 	if _, err := os.Stat(config.DefaultCaCert); err != nil {

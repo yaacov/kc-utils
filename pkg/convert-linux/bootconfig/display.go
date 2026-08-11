@@ -11,8 +11,8 @@ func ConfigureDisplay(guestRoot string, handler bootloader.BootloaderHandler) {
 	if handler == nil {
 		return
 	}
-	if err := handler.RemoveKernelArg(guestRoot, "vga="); err != nil {
-		slog.Warn("removing kernel arg failed", "arg", "vga=", "error", err)
+	if err := handler.RemoveKernelArg(guestRoot, "vga"); err != nil {
+		slog.Warn("removing kernel arg failed", "arg", "vga", "error", err)
 	}
 	if err := handler.RemoveKernelArg(guestRoot, "video=cirrus"); err != nil {
 		slog.Warn("removing kernel arg failed", "arg", "video=cirrus", "error", err)
