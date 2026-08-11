@@ -29,6 +29,19 @@ func TestRemoveFilter(t *testing.T) {
 	}
 }
 
+func TestRemoveFilterDeletesValueWhenEmpty(t *testing.T) {
+	h := mock.NewMockHive()
+	path := `ControlSet001\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}`
+	h.CreateKey(path)
+	h.SetMultiString(path, "UpperFilters", []string{"XENFILT"})
+
+	RemoveFilter(h, path, "UpperFilters", "XENFILT")
+
+	if _, err := h.GetMultiString(path, "UpperFilters"); err == nil {
+		t.Fatal("expected UpperFilters value to be deleted when it was the only entry")
+	}
+}
+
 func TestRemoveFilterMissing(t *testing.T) {
 	h := mock.NewMockHive()
 	RemoveFilter(h, `missing`, "LowerFilters", "prl_strg")

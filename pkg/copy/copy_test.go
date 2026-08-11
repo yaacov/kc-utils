@@ -6,6 +6,37 @@ import (
 	"testing"
 )
 
+func TestIsBlockEmptyIgnoresZeroStatSize(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "disk.raw")
+
+	// Populated content with st_size forced to 0 (Linux block-device Stat behavior).
+	data := make([]byte, 4096)
+	data[0] = 0x55 // MBR/boot signature-ish non-zero
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	empty, err := isBlockEmpty(path, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty {
+		t.Fatal("expected non-zero content to be treated as populated when Stat size is 0")
+	}
+
+	// Blank content with unknown size must still count as empty.
+	if err := os.WriteFile(path, make([]byte, emptyThreshold), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	empty, err = isBlockEmpty(path, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !empty {
+		t.Fatal("expected all-zero prefix to be empty when Stat size is 0")
+	}
+}
+
 func TestIsTargetEmptyFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "disk.img")

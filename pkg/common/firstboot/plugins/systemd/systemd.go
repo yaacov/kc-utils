@@ -17,7 +17,7 @@ func init() {
 	firstboot.Handlers.Register("systemd", &SystemdFirstBoot{})
 }
 
-const scriptHeader = "#!/bin/bash\nset -o pipefail\nRETRIES=3\nDELAY=30\n\nrun_with_retry() {\n  local cmd=\"$1\"\n  for attempt in $(seq 1 $RETRIES); do\n    if eval \"$cmd\"; then return 0; fi\n    logger -t kc-firstboot \"Command failed (attempt $attempt/$RETRIES): $cmd\"\n    [ \"$attempt\" -lt \"$RETRIES\" ] && sleep $DELAY\n  done\n  logger -t kc-firstboot \"Command failed after $RETRIES attempts: $cmd\"\n  return 1\n}\n\n"
+const scriptHeader = "#!/bin/bash\nset -o pipefail\nRETRIES=2\nDELAY=5\n\nrun_with_retry() {\n  local cmd=\"$1\"\n  for attempt in $(seq 1 $RETRIES); do\n    if eval \"$cmd\"; then return 0; fi\n    logger -t kc-firstboot \"Command failed (attempt $attempt/$RETRIES): $cmd\"\n    [ \"$attempt\" -lt \"$RETRIES\" ] && sleep $DELAY\n  done\n  logger -t kc-firstboot \"Command failed after $RETRIES attempts: $cmd\"\n  return 1\n}\n\n"
 
 const scriptTail = "\nsystemctl disable kc-firstboot.service\nrm -f /etc/systemd/system/kc-firstboot.service\nrm -f /usr/local/bin/kc-firstboot.sh\n"
 
@@ -77,7 +77,7 @@ Wants=network-online.target
 Type=oneshot
 ExecStart=/usr/local/bin/kc-firstboot.sh
 RemainAfterExit=true
-TimeoutStartSec=300
+TimeoutStartSec=120
 
 [Install]
 WantedBy=multi-user.target

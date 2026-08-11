@@ -125,6 +125,14 @@ func FileSymlink(target, linkpath string) error {
 	return os.Symlink(target, linkpath)
 }
 
+// FileReadlink returns the target of a symlink at path (guest or host).
+func FileReadlink(path string) (string, error) {
+	if gp, g, ok := guestPathFromHost(path); ok {
+		return g.Readlink(gp)
+	}
+	return os.Readlink(path)
+}
+
 // FileChmod changes mode via the guest backend when under RootPath.
 func FileChmod(path string, mode os.FileMode) error {
 	if gp, g, ok := guestPathFromHost(path); ok {

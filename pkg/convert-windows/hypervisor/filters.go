@@ -12,6 +12,7 @@ import (
 func RemoveFilter(hive registry.Hive, path, valueName, filterName string) {
 	vals, err := hive.GetMultiString(path, valueName)
 	if err != nil {
+		slog.Warn("read class filter failed", "path", path, "value", valueName, "error", err)
 		return
 	}
 	var kept []string
@@ -29,7 +30,11 @@ func RemoveFilter(hive registry.Hive, path, valueName, filterName string) {
 	if !changed {
 		return
 	}
-	hive.SetMultiString(path, valueName, kept)
+	if len(kept) == 0 {
+		hive.DeleteValue(path, valueName)
+	} else {
+		hive.SetMultiString(path, valueName, kept)
+	}
 	slog.Info("removed class filter", "path", path, "value", valueName, "filter", filterName)
 }
 

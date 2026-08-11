@@ -75,6 +75,10 @@ These drive:
 | qemu-guest-agent install | [`pkg/convert-linux/guestagent/install.go`](../../pkg/convert-linux/guestagent/install.go) | Local copy + firstboot `rpm -ivh` / `dpkg -i`, or network `dnf`/`apt`/`zypper` |
 | Offline QGA package pick | [`pkg/convert-linux/guestagent/plugins/packagesource/directory/`](../../pkg/convert-linux/guestagent/plugins/packagesource/directory/) | RPM: versioned `rpm/el{N}/{arch}/` (exact `el{major}` or nearest lower); DEB: flat `deb/{arch}/` |
 
+**Amazon Linux guest agent:** `localPackageMajorVersion` maps `amzn` `VERSION_ID` to an EL major for RPM lookup (`2` → `7`, `2023` → `9`). Amazon Linux 2 has no `el7` RPM staged, so it always falls back to `dnf install qemu-guest-agent` at first boot. Amazon Linux 2023+ has an `el9` RPM staged and never falls back to network install, since `qemu-guest-agent` is not packaged in AL2023 guest repos at all — if the local RPM is missing, the agent install is skipped.
+
+**Inspect os-release paths:** [`kc-prepare`](../../pkg/prepare/inspect/markers.go) reads `/etc/os-release` and `/usr/lib/os-release` (canonical on Fedora and Amazon Linux 2023 when `/etc/os-release` is a symlink). Root discovery uses the same markers.
+
 RHEL-family offline packages are staged in the kc-v2v image under
 `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/` by
 [`build/kc-v2v/stage-linux-packages.sh`](../../build/kc-v2v/stage-linux-packages.sh).

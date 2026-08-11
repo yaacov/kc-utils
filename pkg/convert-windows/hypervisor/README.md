@@ -13,5 +13,5 @@ Defines the plugin interfaces for detecting and removing source-hypervisor softw
 | `WindowsRemoves` | Plugin registry of `WindowsRemove` implementations keyed by name |
 | `WindowsServiceDisablers` | Plugin registry of `WindowsServices` implementations keyed by name |
 | `CurrentControlSet` | Resolves active `ControlSetNNN` from the SYSTEM hive |
-| `RemoveFilter` | Removes a name from a class `UpperFilters` / `LowerFilters` REG_MULTI_SZ |
+| `RemoveFilter` | Removes a name from a class `UpperFilters` / `LowerFilters` REG_MULTI_SZ; deletes the value when the last entry is removed |
 | `DisableService` | Sets service `Start=4` when the service key exists |

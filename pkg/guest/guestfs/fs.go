@@ -224,6 +224,22 @@ func (b *Backend) Symlink(target, link string) error {
 	return pathError("symlink", link, err)
 }
 
+func (b *Backend) Readlink(guestPath string) (string, error) {
+	var body strings.Builder
+	body.WriteString("readlink ")
+	body.WriteString(quoteGuestfish(guestPath))
+	body.WriteByte('\n')
+	out, err := b.withMounted(body.String())
+	if err != nil {
+		return "", pathError("readlink", guestPath, err)
+	}
+	target := strings.TrimSuffix(out, "\n")
+	if target == "" {
+		return "", fmt.Errorf("readlink %s: empty target", guestPath)
+	}
+	return target, nil
+}
+
 func (b *Backend) Chmod(guestPath string, mode os.FileMode) error {
 	var body strings.Builder
 	body.WriteString("chmod 0")

@@ -11,7 +11,8 @@ This package implements the `kc-copy` binary's core logic.
 
 1. **Target discovery** — scans `/dev/block[0-9]*` (block devices) and
    `/mnt/disks/disk[0-9]*` (filesystem mounts) for conversion-pod PVCs.
-   Filters to empty targets (block devices whose first 1 MiB is all zeros,
+   Filters to empty targets (block devices whose first 1 MiB is all zeros —
+   probed by read, since Linux `stat` reports size 0 for block devices —
    or filesystem images smaller than 1 MiB).
 
 2. **NFC export** — connects to vSphere using credentials from

@@ -57,6 +57,7 @@ func (b *Backend) ProbeMount(device, _ string, hostMountPoint string) error {
 
 var probeRemotePaths = []string{
 	"/etc/os-release",
+	"/usr/lib/os-release",
 	"/etc/redhat-release",
 	"/etc/debian_version",
 	"/Windows/System32/config/SYSTEM",

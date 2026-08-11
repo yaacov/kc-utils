@@ -86,12 +86,16 @@ communicate with the Hyper-V host and are non-functional under KVM.
 
 ## ec2
 
-**What it does:** Cleans up Amazon EC2 cloud-init configuration and agent
-artifacts.
+**What it does:** Cleans up Amazon EC2 cloud-init configuration, agent
+artifacts, and migrates Amazon Linux systemd-networkd off EC2 IMDS networking.
 
 **How it works:** Detects EC2-specific cloud-init datasource configuration
-and agent packages. Masks EC2 agent systemd units, disables cloud-init EC2
-datasource configuration, and leaves agent binaries in place for offline conversion.
+and agent packages. Masks EC2 agent systemd units, patches `cloud.cfg` and
+`cloud.cfg.d` snippets to `datasource_list: [None]` (not only a drop-in file),
+masks EC2-only net hooks via [`systemd.DisableEC2NetHooks`](../../systemd/) (`set-hostname-imds`, policy-route template units),
+and leaves agent binaries in place for offline conversion.
+
+For Amazon Linux 2023 and other **systemd-networkd-primary** guests (`Detect`: vendor `80-ec2.network`, `ID=amzn` with `VERSION_ID=2023` in os-release, or networkd enabled without active NetworkManager), the convert-linux pipeline installs virtio DHCP and a wait-online drop-in via [`networkd`](../../network/networkd/). Amazon Linux 2 is not matched unconditionally — it falls through to the networkd-enabled check like any other distro. Static IPs use MAC-matched `.network` files from pipeline block 15 instead of nmcli firstboot.
 
 ## nutanix
 

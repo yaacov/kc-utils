@@ -42,7 +42,7 @@ Order matches [`pkg/cmd/prepare/pipeline.go`](../../pkg/cmd/prepare/pipeline.go)
 | 5 | Firmware | pluggable: `FirmwareDetector` | `pkg/prepare/firmware/` | Determine BIOS vs UEFI (also refreshed after mount) |
 | 6 | Root | strict + pluggable selector | `pkg/prepare/root/` | Discover OS roots and apply `options.root` policy |
 | 7 | Mount | strict + pluggable planner | `pkg/prepare/mount/` | Plan and execute guest filesystem mounts |
-| 8 | Inspect | strict | `pkg/prepare/inspect/` | OS inspection, boot device, free space |
+| 8 | Inspect | strict | `pkg/prepare/inspect/` | OS inspection (`/etc/os-release`, `/usr/lib/os-release`, redhat-release, debian_version), boot device, free space |
 | 9 | Converter | pluggable: `ConverterSelector` | `pkg/prepare/converter/` | Choose converter binary |
 
 ## Filesystem checks

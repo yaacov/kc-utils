@@ -64,6 +64,7 @@ type Backend interface {
 	RemoveAll(guestPath string) error
 	Rename(oldPath, newPath string) error
 	Symlink(target, link string) error
+	Readlink(guestPath string) (string, error)
 	Chmod(guestPath string, mode os.FileMode) error
 	MkdirAll(guestPath string, perm os.FileMode) error
 	ReadDir(guestPath string) ([]DirEntry, error)

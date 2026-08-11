@@ -5,6 +5,7 @@ package ec2
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/common/registry/mock"
@@ -68,9 +69,14 @@ func TestRemove(t *testing.T) {
 	h := mock.NewMockHive()
 	h.SetDWORD(`Select`, "Current", 2)
 	ccs := "ControlSet002"
-	for _, svc := range []string{"AmazonSSMAgent", "Xennet"} {
+	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt"} {
 		h.CreateKey(ccs + `\Services\` + svc)
 		h.SetDWORD(ccs+`\Services\`+svc, "Start", 2)
+	}
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		h.CreateKey(classPath)
+		h.SetMultiString(classPath, "UpperFilters", []string{"PartMgr", "XENFILT"})
 	}
 
 	u := &Cleanup{}
@@ -78,13 +84,26 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Remove returned error: %v", err)
 	}
 
-	for _, svc := range []string{"AmazonSSMAgent", "Xennet"} {
+	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt"} {
 		start, err := h.GetDWORD(ccs+`\Services\`+svc, "Start")
 		if err != nil {
 			t.Fatalf("GetDWORD for %s: %v", svc, err)
 		}
 		if start != 4 {
 			t.Errorf("%s Start = %d, want 4 (disabled)", svc, start)
+		}
+	}
+
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		filters, err := h.GetMultiString(classPath, "UpperFilters")
+		if err != nil {
+			t.Fatalf("GetMultiString %s: %v", guid, err)
+		}
+		for _, f := range filters {
+			if strings.EqualFold(f, "XENFILT") {
+				t.Errorf("XENFILT still in UpperFilters for %s", guid)
+			}
 		}
 	}
 

@@ -23,8 +23,21 @@ func (c *Cleanup) Detect(mountRoot string, _, _ registry.Hive) bool {
 	return guest.FileExists(amazonDir)
 }
 
+const (
+	systemClassGUID = `{4d36e97d-e325-11ce-bfc1-08002be10318}`
+	hdcClassGUID    = `{4d36e96a-e325-11ce-bfc1-08002be10318}`
+)
+
 func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
 	ccs := hypervisor.CurrentControlSet(systemHive)
+	// Same XENFILT UpperFilters trap as Citrix/AWS PV: EC2 images often leave
+	// the class filter installed after xen*.sys removal.
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		hypervisor.RemoveFilter(systemHive, classPath, "UpperFilters", "XENFILT")
+	}
+	hypervisor.DisableService(systemHive, ccs, "xenfilt")
+
 	ec2Services := []string{
 		"AWSPVDrivers", "Xennet", "XenVbd", "XenVif", "AWSNVME",
 		"AmazonSSMAgent", "AmazonCloudWatchAgent", "Ec2Config", "EC2Launch",

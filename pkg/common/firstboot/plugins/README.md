@@ -22,8 +22,10 @@ and then removes both the unit file and the script so nothing persists.
 mounted guest:
 
 1. A shell script at a well-known path containing all requested commands.
-2. A systemd unit (`Type=oneshot`, `After=network-online.target`) that executes
+2. A systemd unit (`Type=oneshot`, `After=network-online.target`, `TimeoutStartSec=120`) that executes
    the script and deletes both files on completion.
+
+The script header uses `RETRIES=2` and `DELAY=5` for transient command failures.
 
 The unit is symlinked into `multi-user.target.wants` so systemd picks it up
 automatically. No package installation is needed — the mechanism relies only on

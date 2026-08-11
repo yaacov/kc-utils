@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -25,6 +26,6 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 	for _, p := range rcDirs {
 		_ = guest.FileRemove(p)
 	}
-	hypervisor.DisableSystemdUnit(guestRoot, "kudzu.service")
+	systemd.DisableSystemdUnit(guestRoot, "kudzu.service")
 	return nil
 }

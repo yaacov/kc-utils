@@ -5,6 +5,7 @@ package awspv
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/common/registry/mock"
@@ -55,7 +56,7 @@ func TestRemove(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	xenFiles := []string{"xenvbd.sys", "xennet.sys", "xenvif.sys"}
+	xenFiles := []string{"xenvbd.sys", "xennet.sys", "xenvif.sys", "xenfilt.sys"}
 	for _, f := range xenFiles {
 		if err := os.WriteFile(filepath.Join(driversDir, f), []byte("fake"), 0o644); err != nil {
 			t.Fatal(err)
@@ -66,15 +67,25 @@ func TestRemove(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := mock.NewMockHive()
-	h.CreateKey(`Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`)
+	systemHive := mock.NewMockHive()
+	systemHive.SetDWORD(`Select`, "Current", 1)
+	ccs := "ControlSet001"
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		systemHive.CreateKey(classPath)
+		systemHive.SetMultiString(classPath, "UpperFilters", []string{"PartMgr", "XENFILT"})
+	}
+	systemHive.CreateKey(ccs + `\Services\xenfilt`)
+
+	softwareHive := mock.NewMockHive()
+	softwareHive.CreateKey(`Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`)
 
 	u := &Remove{}
-	if err := u.Remove(guestRoot, nil, h); err != nil {
+	if err := u.Remove(guestRoot, systemHive, softwareHive); err != nil {
 		t.Fatalf("Remove returned error: %v", err)
 	}
 
-	if h.KeyExists(`Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`) {
+	if softwareHive.KeyExists(`Microsoft\Windows\CurrentVersion\Uninstall\AWS PV Drivers`) {
 		t.Error("uninstall key still exists after Remove")
 	}
 
@@ -86,5 +97,26 @@ func TestRemove(t *testing.T) {
 
 	if _, err := os.Stat(filepath.Join(driversDir, "ntfs.sys")); err != nil {
 		t.Error("non-xen driver ntfs.sys was incorrectly removed")
+	}
+
+	for _, guid := range []string{systemClassGUID, hdcClassGUID} {
+		classPath := ccs + `\Control\Class\` + guid
+		filters, err := systemHive.GetMultiString(classPath, "UpperFilters")
+		if err != nil {
+			t.Fatalf("GetMultiString %s: %v", guid, err)
+		}
+		for _, f := range filters {
+			if strings.EqualFold(f, "XENFILT") {
+				t.Errorf("XENFILT still in UpperFilters for %s", guid)
+			}
+		}
+	}
+
+	start, err := systemHive.GetDWORD(ccs+`\Services\xenfilt`, "Start")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if start != 4 {
+		t.Errorf("xenfilt Start = %d, want 4", start)
 	}
 }

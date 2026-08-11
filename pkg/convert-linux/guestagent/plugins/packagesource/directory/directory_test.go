@@ -225,3 +225,24 @@ func TestArchVariants(t *testing.T) {
 		t.Errorf("rpm x86_64 -> %v, want [x86_64]", v)
 	}
 }
+
+func TestFindPackagesAmazonLinuxMappedEL9(t *testing.T) {
+	base := t.TempDir()
+	writePkg(t, filepath.Join(base, "rpm", "el9", "x86_64"), "qemu-guest-agent-9.1.0-1.el9.x86_64.rpm")
+	writePkg(t, filepath.Join(base, "rpm", "el10", "x86_64"), "qemu-guest-agent-10.0-1.el10.x86_64.rpm")
+
+	src := &DirectorySource{BasePath: base}
+	pkgs, err := src.FindPackages(guestagent.FindRequest{
+		Name: "qemu-guest-agent", Format: "rpm", Arch: "x86_64",
+		Distro: "amzn", MajorVersion: 9,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("got %d packages, want 1", len(pkgs))
+	}
+	if pkgs[0].ELTag != "el9" {
+		t.Errorf("ELTag = %q, want el9 (not el10 for mapped AL major)", pkgs[0].ELTag)
+	}
+}

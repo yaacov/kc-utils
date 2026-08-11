@@ -49,7 +49,8 @@ Each plugin detects its own artifacts and cleans them up.
 | Action | Details |
 |--------|---------|
 | Services disabled and masked | `amazon-ssm-agent.service`, `amazon-cloudwatch-agent.service`, `ec2-instance-connect.service`, `hibagent.service`, `hibinit-agent.service` |
-| Cloud-init | Disabled via `99-kc-disable-ec2.cfg` (`datasource_list: [None]`) |
+| Cloud-init | Patches `cloud.cfg` and `cloud.cfg.d/*.cfg` containing `Ec2` to `datasource_list: [None]`; writes `99-kc-disable-ec2.cfg` as fallback |
+| EC2 net hooks masked | `set-hostname-imds.service`, `policy-routes@*`, `refresh-policy-routes@*` via [`systemd.DisableEC2NetHooks`](../../pkg/convert-linux/systemd/systemd.go) |
 | Binaries left in place | Agent binaries/config (e.g. `/usr/bin/amazon-ssm-agent`) are not removed offline |
 
 ### Nutanix AHV
@@ -144,7 +145,7 @@ guest is detected.
 | VirtIO kernel modules in initramfs | `virtio`, `virtio_ring`, `virtio_blk`, `virtio_scsi`, `virtio_net`, `virtio_pci`, `xts`, `bochs-drm`, `bochs` |
 | Modprobe aliases (`/etc/modprobe.d/kc-virtio.conf`) | `scsi_hostadapter` -> `virtio_blk`, `scsi_hostadapter1` -> `virtio_scsi`, `eth0` -> `virtio_net` |
 | Initramfs rebuild | `dracut` (rpm-based) or `update-initramfs`/`mkinitramfs` (deb-based) |
-| Guest agent | `qemu-guest-agent` -- local package from `/usr/share/kc-packages/` or firstboot network install |
+| Guest agent | `qemu-guest-agent` -- local package from `/usr/share/kc-packages/` or firstboot network install (see Amazon Linux below) |
 
 ### What gets cleaned up (install-related)
 
@@ -166,6 +167,21 @@ guest is detected.
 | apt | `dpkg -i` from `/usr/share/kc-packages/` | `apt-get install -y qemu-guest-agent` |
 | zypper | `rpm -ivh` from `/usr/share/kc-packages/` | `zypper --non-interactive install qemu-guest-agent` |
 
+**Amazon Linux (`amzn`):** `VERSION_ID` maps to an EL major for local lookup (`2` → `el7`, `2023` → `el9`) via `localPackageMajorVersion` in [`guestagent/elmajor.go`](../../pkg/convert-linux/guestagent/elmajor.go), then follows the normal local-first/network-fallback flow above — with one exception: Amazon Linux 2023+ never falls back to network install, because `qemu-guest-agent` is not packaged in AL2023 guest repos at all. In practice this means Amazon Linux 2 (no `el7` package staged) always installs via `dnf install` at first boot, while Amazon Linux 2023+ (`el9` package staged in `kc-v2v`) always installs from the bundled local RPM and is skipped entirely if that RPM is missing.
+
+### systemd-networkd guests (blocks 11b / 15)
+
+**Code:** [`pkg/convert-linux/network/networkd/`](../../pkg/convert-linux/network/networkd/)
+
+After hypervisor cleanup, the pipeline calls `networkd.Detect` once. When true:
+
+| Block | Action |
+|-------|--------|
+| 11b | Writes `10-kc-virtio.network` (virtio DHCP) and a `systemd-networkd-wait-online` drop-in (30s `--any`) |
+| 15 | Writes MAC-matched `10-kc-static-*.network` files for plan static IPs (skips `nicnaming` + [`staticip`](../../pkg/convert-linux/network/staticip/) firstboot) |
+
+`Detect` is true when any of: vendor `80-ec2.network`, `ID=amzn` with `VERSION_ID=2023` in os-release (Amazon Linux 2023 only — AL2 falls through), or systemd-networkd enabled without active NetworkManager.
+
 ### NIC naming handlers
 
 **Plugin directory:** [`pkg/convert-linux/nicnaming/plugins/`](../../pkg/convert-linux/nicnaming/plugins/)
@@ -178,6 +194,8 @@ guest is detected.
 | `dhclient` | dhclient config |
 | `netplan` | Ubuntu/Debian netplan YAML |
 | `wicked` | SUSE Wicked |
+
+Guests matching `networkd.Detect` bypass these plugins for static IP configuration; see **systemd-networkd guests** above. Guests that use `nicnaming` also use [`pkg/convert-linux/network/staticip/`](../../pkg/convert-linux/network/staticip/) in the same pipeline block to write a macToIP mapping file and firstboot `nmcli`/`ip` commands.
 
 ---
 

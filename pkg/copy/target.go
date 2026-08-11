@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -130,17 +131,16 @@ func isTargetEmpty(t Target) (bool, error) {
 const emptyCheckChunk = 64 << 10 // 64 KiB per read
 
 func isBlockEmpty(path string, size int64) (bool, error) {
-	if size == 0 {
-		return true, nil
-	}
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err
 	}
 	defer f.Close()
 
+	// Linux reports st_size=0 for block devices; treat that as unknown size and
+	// always probe the first emptyThreshold bytes instead of assuming empty.
 	remaining := emptyThreshold
-	if size < int64(remaining) {
+	if size > 0 && size < int64(remaining) {
 		remaining = int(size)
 	}
 	var buf [emptyCheckChunk]byte
@@ -150,15 +150,23 @@ func isBlockEmpty(path string, size int64) (bool, error) {
 			toRead = emptyCheckChunk
 		}
 		n, err := f.Read(buf[:toRead])
+		if n > 0 {
+			for _, b := range buf[:n] {
+				if b != 0 {
+					return false, nil
+				}
+			}
+			remaining -= n
+		}
+		if err == io.EOF {
+			return true, nil
+		}
 		if err != nil {
 			return false, err
 		}
-		for _, b := range buf[:n] {
-			if b != 0 {
-				return false, nil
-			}
+		if n == 0 {
+			return true, nil
 		}
-		remaining -= n
 	}
 	return true, nil
 }

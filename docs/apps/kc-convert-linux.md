@@ -66,11 +66,12 @@ Debian/SUSE guests are not covered by the baked matrix; without a matching local
 | 8 | Kernel Select | strict | `pkg/convert-linux/kernel/` | Select best virtio-capable kernel |
 | 9 | Console Config | strict | `pkg/convert-linux/bootconfig/` | Configure serial console kernel args |
 | 10 | Display Config | strict | `pkg/convert-linux/bootconfig/` | Configure virtio video kernel args |
-| 11 | Hypervisor | pluggable: `LinuxCleanup` | `pkg/convert-linux/hypervisor/` | Remove source hypervisor tools |
-| 12 | Guest Agent | pluggable | `pkg/convert-linux/guestagent/` | Install qemu-guest-agent, static IP firstboot, local packages |
+| 11 | Hypervisor | pluggable: `LinuxCleanup` | `pkg/convert-linux/hypervisor/` | Remove source hypervisor tools; EC2 masks IMDS net hooks |
+| 11b | Network (networkd) | `networkd.Detect` | `pkg/convert-linux/network/networkd/` | Virtio DHCP + wait-online for systemd-networkd-primary guests |
+| 12 | Guest Agent | pluggable | `pkg/convert-linux/guestagent/` | Install qemu-guest-agent, local or firstboot network packages |
 | 13 | Guest Cleanup | strict | `pkg/convert-linux/guestcleanup/` | Remove blkid/LVM caches and update modprobe aliases |
 | 14 | Initramfs | strict | `pkg/convert-linux/initramfs/` | Rebuild initramfs with virtio drivers |
-| 15 | Static IP / NIC Naming | pluggable: `NICNamer` | `pkg/convert-linux/nicnaming/` | Preserve NIC names and static IP configuration |
+| 15 | Static IP / NIC Naming | pluggable: `NICNamer` / `networkd` | `pkg/convert-linux/nicnaming/`, `pkg/convert-linux/network/networkd/`, `pkg/convert-linux/network/staticip/` | networkd guests: MAC `.network` files; others: nicnaming + staticip firstboot |
 | 16 | SELinux Relabel | strict | `pkg/convert-linux/selinux/` | Offline SELinux relabel via `setfiles` |
 | 17 | GuestCaps | strict | `pkg/convert-linux/guestcaps/` | Derive guest capabilities for KVM |
 

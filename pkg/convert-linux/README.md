@@ -4,21 +4,26 @@ All pipeline blocks for [`cmd/kc-convert-linux`](../../cmd/kc-convert-linux/main
 blocks document implementers in `<block>/plugins/README.md`. Each block has its
 own README with detailed exports and mechanism.
 
+Stage-local helpers (not pipeline blocks): [`systemd/`](systemd/) — shared systemd unit mask/disable utilities used by hypervisor plugins and `network/networkd`.
+
 | # | Block | Package | Type | Description |
 |---|-------|---------|------|-------------|
-| 1 | Distro | [`distro/`](distro/) | pluggable | Classify OS, package format, package manager |
-| 2 | Bootloader | [`bootloader/`](bootloader/) | pluggable | Detect boot config format (grub2, bls) |
-| 3 | Remap | [`remap/`](remap/) | pluggable | Rewrite block device names in fstab/crypttab/bootloader |
-| 4 | Kernel | [`kernel/`](kernel/) | pluggable scan + strict select | Scan kernels, select best virtio candidate |
-| 5 | Boot Config | [`bootconfig/`](bootconfig/) | strict | Serial console and virtio video kernel args |
-| 6 | UEFI | [`uefi/`](uefi/) | pluggable | Update UEFI boot entries on ESP |
-| 7 | Hypervisor | [`hypervisor/`](hypervisor/) | pluggable | Remove source hypervisor tools |
-| 8 | Guest Agent | [`guestagent/`](guestagent/) | pluggable | qemu-guest-agent, static IP, local packages |
-| 9 | Guest Cleanup | [`guestcleanup/`](guestcleanup/) | strict | Remove blkid/LVM caches, update modprobe aliases |
-| 10 | Initramfs | [`initramfs/`](initramfs/) | strict | Inject virtio modules via pure-Go CPIO |
-| 11 | NIC Naming | [`nicnaming/`](nicnaming/) | pluggable | Preserve NIC names and static IP configuration |
-| 12 | SELinux | [`selinux/`](selinux/) | strict | Offline SELinux relabel via setfiles |
-| 13 | GuestCaps | [`guestcaps/`](guestcaps/) | strict | Derive block/net bus, virtio flags, machine type |
+| 1 | Distro | [`distro/`](distro/) | pluggable | Classify OS family |
+| 2–3 | Package format / manager | [`distro/`](distro/) | strict | RPM/deb format and dnf/apt/zypper |
+| 4 | Bootloader | [`bootloader/`](bootloader/) | pluggable | Detect boot config format (grub2, bls) |
+| 5 | Kernel scan | [`kernel/`](kernel/) | pluggable | Scan installed kernels |
+| 6 | Remap | [`remap/`](remap/) | pluggable | Rewrite block device names in fstab/crypttab/bootloader |
+| 7 | UEFI | [`uefi/`](uefi/) + `pkg/common/uefi/` | pluggable | Update UEFI boot entries on ESP |
+| 8 | Kernel select | [`kernel/`](kernel/) | strict | Select best virtio-capable kernel |
+| 9–10 | Boot config | [`bootconfig/`](bootconfig/) | strict | Serial console and virtio video kernel args |
+| 11 | Hypervisor | [`hypervisor/`](hypervisor/) | pluggable | Remove source hypervisor tools |
+| 11b | Network (networkd) | [`network/networkd/`](network/networkd/) | strict (`Detect`) | Virtio DHCP + wait-online for systemd-networkd-primary guests |
+| 12 | Guest agent | [`guestagent/`](guestagent/) | pluggable | qemu-guest-agent, static IP firstboot, local packages |
+| 13 | Guest cleanup | [`guestcleanup/`](guestcleanup/) | strict | Remove blkid/LVM caches, update modprobe aliases |
+| 14 | Initramfs | [`initramfs/`](initramfs/) | strict | Rebuild initramfs with virtio drivers |
+| 15 | Static IP / NIC naming | [`nicnaming/`](nicnaming/), [`network/networkd/`](network/networkd/) | pluggable / strict | networkd: offline `.network`; else nicnaming + firstboot |
+| 16 | SELinux | [`selinux/`](selinux/) | strict | Offline SELinux relabel via setfiles |
+| 17 | GuestCaps | [`guestcaps/`](guestcaps/) | strict | Derive block/net bus, virtio flags, machine type |
 
 Orchestrator: [`pkg/cmd/convert-linux/`](../cmd/convert-linux/).
 Docs: [`docs/apps/kc-convert-linux.md`](../../docs/apps/kc-convert-linux.md).

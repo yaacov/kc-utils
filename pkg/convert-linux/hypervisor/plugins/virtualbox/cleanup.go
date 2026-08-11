@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -25,7 +26,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
 	for _, unit := range []string{"vboxadd-service.service", "vboxadd.service", "vboxservice.service"} {
-		hypervisor.DisableSystemdUnit(guestRoot, unit)
+		systemd.DisableSystemdUnit(guestRoot, unit)
 	}
 
 	cfgPath := filepath.Join(guestRoot, "var", "lib", "VBoxGuestAdditions", "config")
@@ -38,12 +39,12 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 			}
 			dir := strings.Trim(strings.TrimPrefix(line, "INSTALL_DIR="), `"'`)
 			if strings.HasPrefix(dir, "/") {
-				hypervisor.RemovePaths(filepath.Join(guestRoot, dir))
+				systemd.RemovePaths(filepath.Join(guestRoot, dir))
 			}
 		}
 	}
 
-	hypervisor.RemovePaths(
+	systemd.RemovePaths(
 		filepath.Join(guestRoot, "var", "lib", "VBoxGuestAdditions"),
 		filepath.Join(guestRoot, "opt", "VBoxGuestAdditions"),
 	)

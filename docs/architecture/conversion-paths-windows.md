@@ -40,6 +40,8 @@ VMware drivers.
 |--------|---------|
 | Registry keys removed | `Uninstall\AWS PV Drivers` |
 | Driver files removed | All `xen*.sys` from `System32\drivers` |
+| UpperFilters cleaned | Remove `XENFILT` from System and HDC class GUIDs |
+| Services disabled (Start=4) | `xenfilt` |
 
 ### EC2/Amazon
 
@@ -47,9 +49,10 @@ VMware drivers.
 
 | Action | Details |
 |--------|---------|
-| Services disabled (Start=4) | `AWSPVDrivers`, `Xennet`, `XenVbd`, `XenVif`, `AWSNVME`, `AmazonSSMAgent`, `AmazonCloudWatchAgent`, `Ec2Config`, `EC2Launch` |
+| Services disabled (Start=4) | `AWSPVDrivers`, `Xennet`, `XenVbd`, `XenVif`, `AWSNVME`, `AmazonSSMAgent`, `AmazonCloudWatchAgent`, `Ec2Config`, `EC2Launch`, `xenfilt` |
 | Scheduled tasks removed | Amazon EC2 Launch tasks |
 | Driver files removed | `xen*.sys` |
+| UpperFilters cleaned | Remove `XENFILT` from System and HDC class GUIDs |
 
 ### EC2 Launch
 
