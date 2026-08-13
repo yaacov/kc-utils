@@ -16,20 +16,23 @@ locates the agent package on the conversion host.
 
 ### qemu-ga
 
-**What it does:** Manages the QEMU Guest Agent lifecycle during conversion —
-detects any existing installation, removes it if present (to avoid version
-conflicts), and schedules a firstboot installation from either a local package
-or the guest's package manager.
+**What it does:** Detects an existing QEMU guest agent binary and ensures the
+systemd unit is enabled for next boot. When the binary is absent, schedules a
+firstboot installation from either a local package or the guest's package
+manager.
 
-**How it works:** During conversion, checks for existing `qemu-guest-agent`
-packages and `qemu-ga` binaries on the guest. If found, removes them to ensure
-a clean install. Then locates a suitable package via the `PackageSource`
-registry (the `directory` source). If a local RPM/DEB is available, copies it
-into the guest and generates firstboot commands to install it via
-`rpm -ivh` / `dpkg -i`. If no local package is found and the guest is online,
-generates firstboot commands to install via the guest's package manager
+**How it works:** During conversion, checks for the `qemu-ga` binary on the
+guest. When present and `qemu-guest-agent.service` is already enabled and not
+masked, no further work is done. When present but disabled or masked,
+conversion enables the unit offline via `systemd.EnableSystemdUnit`. When the
+binary is absent, locates a suitable package via the `PackageSource` registry
+(the `directory` source). If a local RPM/DEB is available, copies it into the
+guest and generates firstboot commands to install it via `rpm -ivh` /
+`dpkg -i`. If no local package is found and the guest is online, generates
+firstboot commands to install via the guest's package manager
 (`dnf`/`yum`/`apt`/`zypper`). The firstboot commands are installed via the
-shared `pkg/common/firstboot` handler (systemd oneshot service).
+shared `pkg/common/firstboot` handler (systemd oneshot service). The plugin
+also exposes `Remove()` for tests; the conversion pipeline does not call it.
 
 ## PackageSource
 

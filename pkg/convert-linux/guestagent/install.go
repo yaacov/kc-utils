@@ -9,8 +9,11 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/firstboot"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
+
+const qemuGAUnit = "qemu-guest-agent.service"
 
 // Install ensures qemu-guest-agent is installed or scheduled via firstboot.
 func Install(guestRoot string, pkgFormat, pkgManager, arch, distro string, majorVersion int, offline bool) {
@@ -19,7 +22,15 @@ func Install(guestRoot string, pkgFormat, pkgManager, arch, distro string, major
 		agentInstalled = qa.Detect(guestRoot)
 	}
 	if agentInstalled {
-		slog.Info("qemu-guest-agent already installed")
+		if agentOperational(guestRoot) {
+			slog.Info("qemu-guest-agent already installed and enabled")
+			return
+		}
+		slog.Info("qemu-guest-agent installed but not enabled, enabling")
+		if err := systemd.EnableSystemdUnit(guestRoot, qemuGAUnit); err != nil {
+			slog.Warn("offline guest-agent enable failed, scheduling firstboot", "error", err)
+			installFirstboot(guestRoot, enableAgentCommands())
+		}
 		return
 	}
 
@@ -61,11 +72,27 @@ func Install(guestRoot string, pkgFormat, pkgManager, arch, distro string, major
 		slog.Warn("no local qemu-guest-agent package found and network install unavailable, skipping agent install")
 	}
 	if len(firstbootCmds) > 0 {
-		if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
-			if err := fbHandler.Install(guestRoot, firstbootCmds); err != nil {
-				slog.Warn("firstboot install failed", "error", err)
-			}
+		installFirstboot(guestRoot, firstbootCmds)
+	}
+}
+
+func agentOperational(guestRoot string) bool {
+	return systemd.UnitWantsEnabled(guestRoot, qemuGAUnit) &&
+		!systemd.UnitIsMasked(guestRoot, qemuGAUnit)
+}
+
+func installFirstboot(guestRoot string, commands []string) {
+	if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
+		if err := fbHandler.Install(guestRoot, commands); err != nil {
+			slog.Warn("firstboot install failed", "error", err)
 		}
+	}
+}
+
+func enableAgentCommands() []string {
+	return []string{
+		"systemctl unmask qemu-guest-agent || true",
+		"systemctl enable --now qemu-guest-agent",
 	}
 }
 
@@ -108,8 +135,8 @@ func copyAndInstallLocal(guestRoot string, pkgs []PackageFile, format string) ([
 	default:
 		cmds = append(cmds, "rpm -ivh "+strings.Join(installPaths, " "))
 	}
+	cmds = append(cmds, enableAgentCommands()...)
 	cmds = append(cmds,
-		"systemctl enable --now qemu-guest-agent",
 		"rm -rf /var/lib/kc-packages",
 		selinuxRestoreCmd,
 	)
@@ -133,10 +160,8 @@ func networkInstallCommands(pkgManager string) []string {
 			"dnf install -y qemu-guest-agent || yum install -y qemu-guest-agent",
 		)
 	}
-	cmds = append(cmds,
-		"systemctl enable --now qemu-guest-agent",
-		selinuxRestoreCmd,
-	)
+	cmds = append(cmds, enableAgentCommands()...)
+	cmds = append(cmds, selinuxRestoreCmd)
 	return cmds
 }
 

@@ -1,5 +1,9 @@
 # Conversion Paths Reference
 
+For identification, persistence, and stage consumption of the hypervisor, guest
+OS, OS version, and network stack axes, see
+[conversion-dimensions.md](conversion-dimensions.md).
+
 This document maps every OS + source-hypervisor code path in kc-utils.
 Conversion has two independent concerns:
 

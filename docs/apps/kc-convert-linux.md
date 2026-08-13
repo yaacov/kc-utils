@@ -24,13 +24,21 @@ Requires Linux (`//go:build linux`).
 ## qemu-guest-agent Installation
 
 The converter always searches for a matching local package first, regardless
-of the `--offline` flag. The decision flow is:
+of the `--offline` flag. If `/usr/bin/qemu-ga` is already present, conversion
+skips package installation only when `qemu-guest-agent.service` is enabled and
+not masked. A pre-installed but disabled or masked unit is enabled offline
+during conversion (admin wants symlink under `/etc/systemd/system/`), with
+firstboot `systemctl unmask` / `systemctl enable --now` as fallback when the
+unit file is missing. The decision flow is:
 
-1. **Local package found** -- copy it into the guest (`/var/lib/kc-packages/`)
+1. **Binary present and unit operational** -- skip guest-agent work entirely.
+2. **Binary present but unit disabled/masked** -- enable offline, or schedule
+   enable-only firstboot when the unit file is missing.
+3. **Local package found** -- copy it into the guest (`/var/lib/kc-packages/`)
    and install at firstboot via `rpm -ivh` or `dpkg -i`. No network required.
-2. **No local package found, `--offline=false`** (default) -- add a firstboot
+4. **No local package found, `--offline=false`** (default) -- add a firstboot
    script that installs via `dnf`/`yum`/`apt`/`zypper` after network is up.
-3. **No local package found, `--offline=true`** -- skip guest-agent
+5. **No local package found, `--offline=true`** -- skip guest-agent
    installation entirely (no firstboot script added).
 
 `kc-v2v` passes `--offline` when `V2V_offline=true` so convertor pods use
