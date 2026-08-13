@@ -186,12 +186,45 @@ type BlockError struct {
 	CausedBy string `json:"causedBy,omitempty"`
 }
 
+const (
+	HypervisorActionCleanup        = "cleanup"
+	HypervisorActionRemove         = "remove"
+	HypervisorActionDisableService = "disable_services"
+
+	HypervisorStatusSucceeded = "succeeded"
+	HypervisorStatusFailed    = "failed"
+
+	NetworkPrimarySystemdNetworkd = "systemd-networkd"
+	NetworkPrimaryLegacy          = "legacy"
+)
+
 // ConverterOutput is the JSON output from kc-convert-linux or kc-convert-windows.
 type ConverterOutput struct {
-	GuestCaps        GuestCaps    `json:"guestcaps"`
-	SELinuxRelabeled bool         `json:"selinux_relabeled,omitempty"`
-	Warnings         []string     `json:"warnings,omitempty"`
-	Errors           []BlockError `json:"errors,omitempty"`
+	GuestCaps        GuestCaps             `json:"guestcaps"`
+	Hypervisor       *HypervisorInspection `json:"hypervisor,omitempty"`
+	Network          *NetworkInspection    `json:"network,omitempty"`
+	SELinuxRelabeled bool                  `json:"selinux_relabeled,omitempty"`
+	Warnings         []string              `json:"warnings,omitempty"`
+	Errors           []BlockError          `json:"errors,omitempty"`
+}
+
+// HypervisorInspection records in-guest hypervisor plugin detections and outcomes.
+type HypervisorInspection struct {
+	Plugins []HypervisorPluginResult `json:"plugins"`
+}
+
+// HypervisorPluginResult is the outcome of a single hypervisor plugin action.
+type HypervisorPluginResult struct {
+	Name   string `json:"name"`
+	Action string `json:"action"`
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
+// NetworkInspection records the selected Linux network handler (convert-linux only).
+type NetworkInspection struct {
+	Handler string `json:"handler"`
+	Primary string `json:"primary"`
 }
 
 type GuestCaps struct {

@@ -97,6 +97,11 @@ Prepare input with static IPs: [examples/prepare-input-windows.json](examples/pr
   - `net_bus` -- `virtio` when netkvm was copied, else `e1000`
   - feature flags (`virtio_rng`, balloon, socket) from matching drivers
   - `rtc_utc` -- whether the guest uses UTC for the hardware clock
+- `hypervisor` -- in-guest hypervisor plugin outcomes (only when at least one plugin matched):
+  - `plugins[].name` -- registry key (for example `vmware`, `hyperv`)
+  - `plugins[].action` -- `remove` or `disable_services`
+  - `plugins[].status` -- `succeeded` or `failed`
+  - `plugins[].error` -- present when status is `failed`
 - `warnings` -- non-fatal messages (for example detected antivirus products)
 
 Example: [examples/convert-output-windows.json](examples/convert-output-windows.json).

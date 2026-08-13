@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yaacov/kc-utils/pkg/common/firstboot"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/common/uefi"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/bootconfig"
@@ -20,9 +19,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/initramfs"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/kernel"
-	"github.com/yaacov/kc-utils/pkg/convert-linux/network/networkd"
-	"github.com/yaacov/kc-utils/pkg/convert-linux/network/staticip"
-	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
+	"github.com/yaacov/kc-utils/pkg/convert-linux/network"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/remap"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/selinux"
 	"github.com/yaacov/kc-utils/pkg/guest"
@@ -132,22 +129,42 @@ func Run(cfg *Config) error {
 
 	// Block 11 (pluggable): Hypervisor cleanup
 	slog.Info("cleaning up hypervisor artifacts", "plugins", hypervisor.LinuxCleanups.List())
+	var hvPlugins []types.HypervisorPluginResult
 	for name, u := range hypervisor.LinuxCleanups.All() {
-		if u.Detect(cfg.MountRoot) {
-			slog.Info("running hypervisor cleanup", "name", name)
-			if err := u.Cleanup(cfg.MountRoot); err != nil {
-				slog.Warn("hypervisor cleanup failed", "name", name, "error", err)
-				output.Errors = append(output.Errors, types.BlockError{
-					Block: "hypervisor-cleanup/" + name, Message: err.Error(),
-				})
-				continue
-			}
+		if !u.Detect(cfg.MountRoot) {
+			continue
+		}
+		slog.Info("running hypervisor cleanup", "name", name)
+		result := types.HypervisorPluginResult{
+			Name:   name,
+			Action: types.HypervisorActionCleanup,
+		}
+		if err := u.Cleanup(cfg.MountRoot); err != nil {
+			slog.Warn("hypervisor cleanup failed", "name", name, "error", err)
+			result.Status = types.HypervisorStatusFailed
+			result.Error = err.Error()
+			output.Errors = append(output.Errors, types.BlockError{
+				Block: "hypervisor-cleanup/" + name, Message: err.Error(),
+			})
+		} else {
+			result.Status = types.HypervisorStatusSucceeded
 			slog.Info("hypervisor cleanup complete", "name", name)
 		}
+		hvPlugins = append(hvPlugins, result)
+	}
+	if len(hvPlugins) > 0 {
+		output.Hypervisor = &types.HypervisorInspection{Plugins: hvPlugins}
 	}
 
-	networkdPrimary := networkd.Detect(cfg.MountRoot)
-	output.Errors = append(output.Errors, applyKubeVirtNetworking(cfg.MountRoot, networkdPrimary)...)
+	netHandler := network.Select(cfg.MountRoot)
+	if netHandler != nil {
+		slog.Info("selected network handler", "handler", netHandler.Name())
+		output.Network = &types.NetworkInspection{
+			Handler: netHandler.Name(),
+			Primary: network.PrimaryLabel(netHandler),
+		}
+		output.Errors = append(output.Errors, netHandler.InstallKubeVirtNetworking(cfg.MountRoot)...)
+	}
 
 	// Block 12: Guest agent installation
 	slog.Debug("installing guest agent")
@@ -178,8 +195,8 @@ func Run(cfg *Config) error {
 	}
 
 	// Block 15: Static IP configuration + NIC naming preservation
-	if len(cfg.PrepareData.Options.StaticIPs) > 0 {
-		output.Errors = append(output.Errors, configureStaticIPs(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs, networkdPrimary)...)
+	if len(cfg.PrepareData.Options.StaticIPs) > 0 && netHandler != nil {
+		output.Errors = append(output.Errors, netHandler.ConfigureStaticIPs(cfg.MountRoot, cfg.PrepareData.Options.StaticIPs)...)
 	}
 
 	// Block 16: Offline SELinux relabel — run setfiles against the guest
@@ -256,64 +273,6 @@ func selectKernelAndSetDefault(mountRoot string, allKernels []types.KernelInfo, 
 		}
 	}
 	return selected
-}
-
-func applyKubeVirtNetworking(mountRoot string, networkdPrimary bool) []types.BlockError {
-	if !networkdPrimary {
-		return nil
-	}
-	slog.Info("configuring systemd-networkd for KubeVirt")
-	var errs []types.BlockError
-	if err := networkd.InstallKubeVirtNetworking(mountRoot); err != nil {
-		slog.Warn("systemd-networkd KubeVirt networking failed", "error", err)
-		errs = append(errs, types.BlockError{
-			Block: "networkd/kubevirt", Message: err.Error(),
-		})
-	}
-	return errs
-}
-
-func configureStaticIPs(mountRoot string, staticIPs []types.StaticIP, networkdPrimary bool) []types.BlockError {
-	var errs []types.BlockError
-
-	if networkdPrimary {
-		slog.Debug("configuring static IPs via systemd-networkd")
-		if err := networkd.WriteStaticNetworks(mountRoot, staticIPs); err != nil {
-			slog.Warn("writing systemd-networkd static config failed", "error", err)
-			errs = append(errs, types.BlockError{
-				Block: "static-ip/networkd", Message: err.Error(),
-			})
-		}
-		return errs
-	}
-
-	slog.Debug("preserving NIC naming")
-	if err := nicnaming.Apply(mountRoot, staticIPs); err != nil {
-		slog.Warn("NIC naming preservation failed", "error", err)
-		errs = append(errs, types.BlockError{
-			Block: "nic-naming", Message: err.Error(),
-		})
-	}
-
-	slog.Debug("configuring static IPs")
-	if err := staticip.WriteMacToIP(mountRoot, staticIPs); err != nil {
-		slog.Warn("writing macToIP failed", "error", err)
-		errs = append(errs, types.BlockError{
-			Block: "static-ip", Message: err.Error(),
-		})
-		return errs
-	}
-
-	if fbHandler, ok := firstboot.Handlers.Get("systemd"); ok {
-		if err := fbHandler.Install(mountRoot, staticip.FirstbootCommands()); err != nil {
-			slog.Warn("static IP firstboot install failed", "error", err)
-			errs = append(errs, types.BlockError{
-				Block: "static-ip/firstboot", Message: err.Error(),
-			})
-		}
-	}
-
-	return errs
 }
 
 func scanKernels(mountRoot string) []types.KernelInfo {

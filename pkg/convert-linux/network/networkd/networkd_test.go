@@ -122,6 +122,24 @@ func TestDetectNetworkdWithNMEnabled(t *testing.T) {
 	}
 }
 
+func TestDetectAmazonLinux2023AmbiguousStack(t *testing.T) {
+	root := t.TempDir()
+	usrLib := filepath.Join(root, "usr", "lib")
+	if err := os.MkdirAll(usrLib, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(usrLib, "os-release"),
+		[]byte("ID=amzn\nVERSION_ID=2023\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	setupNetworkdPrimary(t, root, true, false)
+	enableUnitWants(t, root, "NetworkManager.service")
+
+	if networkd.Detect(root) {
+		t.Error("Detect = true, want false for AL2023 when networkd and NM both enabled")
+	}
+}
+
 func setupNetworkdPrimary(t *testing.T, root string, networkdEnabled, maskNM bool) {
 	t.Helper()
 	if networkdEnabled {

@@ -99,6 +99,19 @@
       "arch": "x86_64",
       "virtio_1_0": true,
       "rtc_utc": true
+    },
+    "hypervisor": {
+      "plugins": [
+        {
+          "name": "vmware",
+          "action": "cleanup",
+          "status": "succeeded"
+        }
+      ]
+    },
+    "network": {
+      "handler": "default",
+      "primary": "legacy"
     }
   }
 }

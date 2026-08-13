@@ -15,20 +15,20 @@ the GuestCaps output.
 
 **How it works:** Each block is either pluggable (dispatched via a
 `plugin.Registry` — distro, bootloader, remap, kernel scan, UEFI, hypervisor,
-guestagent, nicnaming) or strict (fixed logic — bootconfig, guestcleanup,
-initramfs, kernel select, guestcaps, SELinux, `network/networkd`). Pluggable
+guestagent, nicnaming, network) or strict (fixed logic — bootconfig, guestcleanup,
+initramfs, kernel select, guestcaps, SELinux). Pluggable
 blocks iterate all registered plugins: `Detect`/`Matches` selects which run,
 errors are recorded as warnings but do not abort the pipeline (except initramfs
 failure, which is fatal since the VM will not boot without virtio drivers).
 
-After hypervisor cleanup (block 11), the orchestrator calls `networkd.Detect`
-once and passes the result to block 11b (KubeVirt virtio DHCP) and block 15
-(static IP / NIC naming branch).
+After hypervisor cleanup (block 11), the orchestrator calls `network.Select()`
+once; the chosen handler drives block 11b (KubeVirt virtio DHCP when networkd)
+and block 15 (static IP / NIC naming).
 
 **Pluggable:** `pkg/convert-linux/<block>/plugins/` (distro, bootloader, remap, kernel,
-uefi, hypervisor, guestagent, nicnaming).
+uefi, hypervisor, guestagent, nicnaming, network handlers).
 
-**Strict:** `pkg/convert-linux/<block>/` (bootconfig, guestcleanup, initramfs, guestcaps, network/networkd).
+**Strict:** `pkg/convert-linux/<block>/` (bootconfig, guestcleanup, initramfs, guestcaps).
 
 **Stage helpers:** [`pkg/convert-linux/systemd/`](../convert-linux/systemd/) — systemd unit mask/disable (hypervisor plugins).
 

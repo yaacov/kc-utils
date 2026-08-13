@@ -171,16 +171,16 @@ guest is detected.
 
 ### systemd-networkd guests (blocks 11b / 15)
 
-**Code:** [`pkg/convert-linux/network/networkd/`](../../pkg/convert-linux/network/networkd/)
+**Code:** [`pkg/convert-linux/network/`](../../pkg/convert-linux/network/) — exclusive handler selection via [`network.Select()`](../../pkg/convert-linux/network/network.go)
 
-After hypervisor cleanup, the pipeline calls `networkd.Detect` once. When true:
+After hypervisor cleanup, the pipeline calls `network.Select()` once. When the `networkd` handler wins:
 
 | Block | Action |
 |-------|--------|
 | 11b | Writes `10-kc-virtio.network` (virtio DHCP) and a `systemd-networkd-wait-online` drop-in (30s `--any`) |
 | 15 | Writes MAC-matched `10-kc-static-*.network` files for plan static IPs (skips `nicnaming` + [`staticip`](../../pkg/convert-linux/network/staticip/) firstboot) |
 
-`Detect` is true when any of: vendor `80-ec2.network`, `ID=amzn` with `VERSION_ID=2023` in os-release (Amazon Linux 2023 only — AL2 falls through), or systemd-networkd enabled without active NetworkManager.
+The `networkd` handler's `Detect` is true when any of: vendor `80-ec2.network`, `ID=amzn` with `VERSION_ID=2023` in os-release (unless both networkd and NetworkManager are enabled — AL2 falls through), or systemd-networkd enabled without active NetworkManager. Leftover NM connection files on a networkd-primary guest do not change the selection.
 
 ### NIC naming handlers
 
@@ -195,7 +195,7 @@ After hypervisor cleanup, the pipeline calls `networkd.Detect` once. When true:
 | `netplan` | Ubuntu/Debian netplan YAML |
 | `wicked` | SUSE Wicked |
 
-Guests matching `networkd.Detect` bypass these plugins for static IP configuration; see **systemd-networkd guests** above. Guests that use `nicnaming` also use [`pkg/convert-linux/network/staticip/`](../../pkg/convert-linux/network/staticip/) in the same pipeline block to write a macToIP mapping file and firstboot `nmcli`/`ip` commands.
+Guests on the `default` network handler use these plugins for static IP configuration (via [`handlers/default/`](../../pkg/convert-linux/network/handlers/default/)); the `networkd` handler bypasses them. Guests that use `nicnaming` also use [`pkg/convert-linux/network/staticip/`](../../pkg/convert-linux/network/staticip/) in the same pipeline block to write a macToIP mapping file and firstboot `nmcli`/`ip` commands.
 
 ---
 
