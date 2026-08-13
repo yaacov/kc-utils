@@ -63,8 +63,9 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 ```
 
-Each leg sets or clears `virt_v2v_image_fqin`, waits for the forklift-controller
-rollout to sync `VIRT_V2V_IMAGE`, then creates a fresh namespace and providers.
+Each leg clears or sets `virt_v2v_image_fqin`, waits `SETTING_SETTLE_SECS`
+(default 15s) for MTV to pick up the change, then creates a fresh namespace
+and providers. No forklift-controller rollout wait.
 Inventory VM discovery retries until `mtv-func*` RHEL and Windows VMs appear
 (unless `RHEL_VM` / `WIN_VM` are pinned).
 

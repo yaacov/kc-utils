@@ -11,7 +11,7 @@ Two modes:
 | Mode | What it runs | Use when |
 |---|---|---|
 | `kc` (default) | Once with `KC_V2V_IMAGE` | Independent kc-v2v benchmark |
-| `compare` | Twice: kc-v2v, then operator-default virt-v2v | Full side-by-side compare |
+| `compare` | Twice: operator-default virt-v2v, then kc-v2v | Full side-by-side compare |
 
 ## Prerequisites
 
@@ -31,12 +31,11 @@ Warm / preflight caveats: [docs/apps/forklift-usage.md](../../docs/apps/forklift
 
 1. Preflight: verify `oc`, MTV settings, and VDDK image; save current
    `virt_v2v_image_fqin` and `feature_windows_wait_for_reboot`
-2. **kc leg:** set image to `KC_V2V_IMAGE`, wait for forklift-controller
-   `VIRT_V2V_IMAGE` sync, create namespace + providers, wait for inventory
-   (unless VMs pinned), cold plan RHEL then Windows; sample conversion-pod
-   metrics; archive pod logs
-3. **compare only:** clear `virt_v2v_image_fqin`, wait for controller sync,
-   fresh namespace + providers, repeat RHEL then Windows as the **ref** leg
+2. **compare:** clear `virt_v2v_image_fqin` (operator default), wait
+   `SETTING_SETTLE_SECS` (default 15s), then run the **ref** leg
+3. **kc mode / compare kc leg:** set `virt_v2v_image_fqin` to `KC_V2V_IMAGE`,
+   wait `SETTING_SETTLE_SECS`, then run migrations (no forklift-controller
+   rollout wait)
 4. Generate `runs/test-mtv-benchmark-<ts>.html` dashboard from CSVs
 5. By default, leave MTV settings, RHEL plan/pods, and namespace in place
    (`KEEP_IMAGE_SETTING=true`, `KEEP_BETWEEN_TESTS=true`, `SKIP_CLEANUP=true`).
@@ -64,7 +63,7 @@ python3 tests/scenarios/lib/generate-run-dashboard.py \
 ## Pass Criteria
 
 - Every planned leg reaches `Completed` or `Succeeded` for both VMs
-- In `compare` mode, a failed kc leg skips the ref leg and fails overall
+- In `compare` mode, a failed ref leg skips the kc leg and fails overall
 
 ## Fail Criteria
 
@@ -84,7 +83,7 @@ cp tests/scenarios/.env.example tests/scenarios/.env
 # Independent kc-v2v benchmark (default)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 
-# Full compare: kc-v2v then operator default
+# Full compare: operator default then kc-v2v
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 # Clean up afterward

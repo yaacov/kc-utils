@@ -5,7 +5,7 @@
 #
 # Modes (MODE):
 #   kc       Run once with KC_V2V_IMAGE (independent kc-v2v benchmark). Default.
-#   compare  Run twice: kc-v2v then operator-default virt-v2v (full compare).
+#   compare  Run twice: operator-default virt-v2v then kc-v2v (full compare).
 #
 # Prerequisites: oc, oc mtv, jq, tests/scenarios/.env configured, VDDK on cluster.
 #
@@ -19,7 +19,7 @@
 #   SKIP_CLEANUP            keep NS on exit (default true); use cleanup script to remove later
 #   KEEP_BETWEEN_TESTS      leave RHEL plan/pods after RHEL (default true)
 #   KEEP_IMAGE_SETTING      leave virt_v2v_image_fqin / reboot flag (default true)
-#   DISABLE_WAIT_FOR_REBOOT set feature_windows_wait_for_reboot=false (default true)
+#   SETTING_SETTLE_SECS     seconds to wait after virt_v2v_image_fqin change (default 15)
 #   MEM_INTERVAL            memory sample seconds (default 10)
 #   INTERVAL                plan poll seconds (default 10)
 #   MAX_ATTEMPTS            plan poll attempts (default 180 => 30m)
@@ -33,11 +33,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+_SHELL_MODE="${MODE-}"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 # shellcheck source=lib/cleanup.sh
 source "${SCRIPT_DIR}/lib/cleanup.sh"
 
+if [[ -n "${_SHELL_MODE}" ]]; then
+  MODE="${_SHELL_MODE}"
+fi
 MODE="${MODE:-kc}"
 RHEL_VM="${RHEL_VM:-}"
 WIN_VM="${WIN_VM:-}"
@@ -45,6 +49,7 @@ SKIP_CLEANUP="${SKIP_CLEANUP:-true}"
 KEEP_BETWEEN_TESTS="${KEEP_BETWEEN_TESTS:-true}"
 KEEP_IMAGE_SETTING="${KEEP_IMAGE_SETTING:-true}"
 DISABLE_WAIT_FOR_REBOOT="${DISABLE_WAIT_FOR_REBOOT:-true}"
+SETTING_SETTLE_SECS="${SETTING_SETTLE_SECS:-15}"
 INTERVAL="${INTERVAL:-10}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-180}"
 MEM_INTERVAL="${MEM_INTERVAL:-10}"
@@ -97,13 +102,35 @@ Usage: MODE=kc|compare $0
   Configure tests/scenarios/.env first (see .env.example).
 
   MODE=kc       Independent kc-v2v benchmark (default)
-  MODE=compare  kc-v2v then operator-default virt-v2v
+  MODE=compare  operator-default virt-v2v then kc-v2v
 
 Artifacts: ${ARTIFACT_PREFIX}-<converter>.log and -mem/
 EOF
 }
 
 log() { echo "$*" | tee -a "${SUMMARY_LOG}"; }
+
+# Clear or set virt_v2v_image_fqin for a converter leg, then pause briefly so
+# MTV picks up the change before plans run (no forklift-controller rollout wait).
+apply_converter_image() {
+  local converter="$1"
+  case "${converter}" in
+    kc)
+      set_virt_v2v_image "${KC_V2V_IMAGE}"
+      ;;
+    ref)
+      clear_virt_v2v_image
+      ;;
+    *)
+      echo "ERROR: unknown converter '${converter}'" >&2
+      return 1
+      ;;
+  esac
+  if [[ "${SETTING_SETTLE_SECS}" -gt 0 ]]; then
+    echo "Waiting ${SETTING_SETTLE_SECS}s for MTV settings to propagate (no controller rollout wait)..."
+    sleep "${SETTING_SETTLE_SECS}"
+  fi
+}
 
 begin_leg() {
   CONVERTER="$1"
@@ -386,19 +413,6 @@ run_converter_leg() {
   log "NS=${NS} SKIP_CLEANUP=${SKIP_CLEANUP} KEEP_BETWEEN_TESTS=${KEEP_BETWEEN_TESTS}"
   log ""
 
-  case "${converter}" in
-    kc)
-      set_virt_v2v_image "${KC_V2V_IMAGE}"
-      ;;
-    ref)
-      clear_virt_v2v_image
-      ;;
-    *)
-      log "ERROR: unknown converter '${converter}'"
-      return 1
-      ;;
-  esac
-
   if [[ "${DISABLE_WAIT_FOR_REBOOT}" == "true" ]]; then
     disable_windows_wait_for_reboot
   fi
@@ -519,17 +533,21 @@ trap on_interrupt INT TERM
 
 overall_rc=0
 
-run_converter_leg "kc" || overall_rc=$?
-
 if [[ "${MODE}" == "compare" ]]; then
+  apply_converter_image "ref" || exit 1
+  run_converter_leg "ref" || overall_rc=$?
   if [[ "${overall_rc}" -ne 0 ]]; then
-    echo "kc leg failed — skipping ref (default) leg."
+    echo "ref leg failed — skipping kc leg."
   else
     echo ""
-    echo "kc leg OK. Starting ref (operator default) leg..."
+    echo "ref leg OK. Starting kc leg..."
     echo ""
-    run_converter_leg "ref" || overall_rc=$?
+    apply_converter_image "kc" || exit 1
+    run_converter_leg "kc" || overall_rc=$?
   fi
+else
+  apply_converter_image "kc" || exit 1
+  run_converter_leg "kc" || overall_rc=$?
 fi
 
 echo "=========================================="
