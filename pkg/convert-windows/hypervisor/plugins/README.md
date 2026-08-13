@@ -64,8 +64,10 @@ deleting driver files — leaving `XENFILT` registered causes
 
 ### ec2
 
-**What it does:** Disables EC2 Xen services, removes `xen*.sys`, clears
-`XENFILT` `UpperFilters` (same trap as AWS PV), and disables `xenfilt`.
+**What it does:** Disables EC2 Xen and Nitro services (`ena`, `AWSNVME`, Xen PV,
+agents), removes `xen*.sys`, `ena.sys`, and `AWSNVMe.sys` from
+`System32\drivers`, clears `XENFILT` `UpperFilters` (same trap as AWS PV), and
+disables `xenfilt`. Missing services or driver files are skipped without error.
 
 ### ec2launch / virtualbox / citrix / hyperv / parallels
 

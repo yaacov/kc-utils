@@ -53,6 +53,10 @@ Each plugin detects its own artifacts and cleans them up.
 | EC2 net hooks masked | `set-hostname-imds.service`, `policy-routes@*`, `refresh-policy-routes@*` via [`systemd.DisableEC2NetHooks`](../../pkg/convert-linux/systemd/systemd.go) |
 | Binaries left in place | Agent binaries/config (e.g. `/usr/bin/amazon-ssm-agent`) are not removed offline |
 
+Nitro EC2 instances use in-kernel `ena` and `nvme` modules for networking and
+storage. Those modules are intentionally **not** removed; conversion adds virtio
+via initramfs/kernel injection and network handlers (`networkd` or NIC naming).
+
 ### Nutanix AHV
 
 **Code:** [`pkg/convert-linux/hypervisor/plugins/nutanix/cleanup.go`](../../pkg/convert-linux/hypervisor/plugins/nutanix/cleanup.go)

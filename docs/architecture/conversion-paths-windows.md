@@ -49,10 +49,15 @@ VMware drivers.
 
 | Action | Details |
 |--------|---------|
-| Services disabled (Start=4) | `AWSPVDrivers`, `Xennet`, `XenVbd`, `XenVif`, `AWSNVME`, `AmazonSSMAgent`, `AmazonCloudWatchAgent`, `Ec2Config`, `EC2Launch`, `xenfilt` |
+| Services disabled (Start=4) | `AWSPVDrivers`, `Xennet`, `XenVbd`, `XenVif`, `AWSNVME`, `ena`, `AmazonSSMAgent`, `AmazonCloudWatchAgent`, `Ec2Config`, `EC2Launch`, `xenfilt` |
 | Scheduled tasks removed | Amazon EC2 Launch tasks |
-| Driver files removed | `xen*.sys` |
+| Driver files removed | `xen*.sys`, `ena.sys`, `AWSNVMe.sys` (best-effort; Driver Store packages left in place) |
 | UpperFilters cleaned | Remove `XENFILT` from System and HDC class GUIDs |
+
+Nitro-based instances use `ena` (network) and `AWSNVME` (storage) instead of Xen PV
+drivers. Cleanup disables those services and removes boot `.sys` files from
+`System32\drivers`; virtio drivers are copied and registered later in the pipeline.
+Missing services or files are skipped without failing conversion.
 
 ### EC2 Launch
 

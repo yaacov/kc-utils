@@ -44,7 +44,8 @@ func TestRemove(t *testing.T) {
 		t.Fatal(err)
 	}
 	xenFiles := []string{"xenvbd.sys", "xennet.sys"}
-	for _, f := range xenFiles {
+	nitroFiles := []string{"ena.sys", "AWSNVMe.sys"}
+	for _, f := range append(xenFiles, nitroFiles...) {
 		if err := os.WriteFile(filepath.Join(driversDir, f), []byte("fake"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -69,7 +70,7 @@ func TestRemove(t *testing.T) {
 	h := mock.NewMockHive()
 	h.SetDWORD(`Select`, "Current", 2)
 	ccs := "ControlSet002"
-	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt"} {
+	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt", "ena", "AWSNVME"} {
 		h.CreateKey(ccs + `\Services\` + svc)
 		h.SetDWORD(ccs+`\Services\`+svc, "Start", 2)
 	}
@@ -84,7 +85,7 @@ func TestRemove(t *testing.T) {
 		t.Fatalf("Remove returned error: %v", err)
 	}
 
-	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt"} {
+	for _, svc := range []string{"AmazonSSMAgent", "Xennet", "xenfilt", "ena", "AWSNVME"} {
 		start, err := h.GetDWORD(ccs+`\Services\`+svc, "Start")
 		if err != nil {
 			t.Fatalf("GetDWORD for %s: %v", svc, err)
@@ -107,13 +108,13 @@ func TestRemove(t *testing.T) {
 		}
 	}
 
-	for _, f := range xenFiles {
+	for _, f := range append(xenFiles, nitroFiles...) {
 		if _, err := os.Stat(filepath.Join(driversDir, f)); !os.IsNotExist(err) {
-			t.Errorf("xen driver %s still exists after Remove", f)
+			t.Errorf("EC2 driver %s still exists after Remove", f)
 		}
 	}
 	if _, err := os.Stat(filepath.Join(driversDir, "disk.sys")); err != nil {
-		t.Error("non-xen driver disk.sys was incorrectly removed")
+		t.Error("non-EC2 driver disk.sys was incorrectly removed")
 	}
 
 	for _, task := range []string{

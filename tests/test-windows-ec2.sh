@@ -43,6 +43,11 @@ Windows Registry Editor Version 5.00
 "Start"=dword:00000002
 "Type"=dword:00000010
 "ImagePath"="C:\\Program Files\\Amazon\\SSM\\amazon-ssm-agent.exe"
+
+[ControlSet001\Services\ena]
+"Start"=dword:00000002
+"Type"=dword:00000001
+"ImagePath"="system32\\drivers\\ena.sys"
 REGEOF
 hivexregedit --merge "$root/Windows/System32/config/SYSTEM" "$d/ec2-services.reg"
 
@@ -63,7 +68,7 @@ test -f "$d/output.json"
 
 # Verify EC2 services were disabled (Start changed from 2 to 4).
 # Export each service key from the SYSTEM hive and check Start value.
-for svc in AWSPVDrivers AmazonSSMAgent; do
+for svc in AWSPVDrivers AmazonSSMAgent ena; do
     hivexregedit --export "$root/Windows/System32/config/SYSTEM" \
         "\\ControlSet001\\Services\\$svc" > "$d/after-${svc}.reg"
 

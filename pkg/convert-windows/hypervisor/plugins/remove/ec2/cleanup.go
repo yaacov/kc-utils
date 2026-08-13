@@ -39,7 +39,7 @@ func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
 	hypervisor.DisableService(systemHive, ccs, "xenfilt")
 
 	ec2Services := []string{
-		"AWSPVDrivers", "Xennet", "XenVbd", "XenVif", "AWSNVME",
+		"AWSPVDrivers", "Xennet", "XenVbd", "XenVif", "AWSNVME", "ena",
 		"AmazonSSMAgent", "AmazonCloudWatchAgent", "Ec2Config", "EC2Launch",
 	}
 	for _, svc := range ec2Services {
@@ -58,17 +58,29 @@ func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
 		_ = guest.FileRemoveAll(tp)
 	}
 
-	driversDir := filepath.Join(mountRoot, "Windows", "System32", "drivers")
-	entries, err := guest.FileReadDir(driversDir)
-	if err == nil {
-		for _, e := range entries {
-			name := strings.ToLower(e.Name)
-			if strings.HasPrefix(name, "xen") && strings.HasSuffix(name, ".sys") {
-				_ = guest.FileRemove(filepath.Join(driversDir, e.Name))
-			}
-		}
-	}
+	removeEC2DriverFiles(mountRoot)
 
 	slog.Info("EC2 cleanup complete")
 	return nil
+}
+
+var nitroDriverFiles = map[string]bool{
+	"ena.sys":     true,
+	"awsnvme.sys": true,
+}
+
+// removeEC2DriverFiles strips Xen PV and Nitro boot drivers from System32\drivers.
+// Missing files are ignored; Driver Store packages are left in place.
+func removeEC2DriverFiles(mountRoot string) {
+	driversDir := filepath.Join(mountRoot, "Windows", "System32", "drivers")
+	entries, err := guest.FileReadDir(driversDir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		name := strings.ToLower(e.Name)
+		if (strings.HasPrefix(name, "xen") && strings.HasSuffix(name, ".sys")) || nitroDriverFiles[name] {
+			_ = guest.FileRemove(filepath.Join(driversDir, e.Name))
+		}
+	}
 }
