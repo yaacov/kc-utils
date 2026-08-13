@@ -5,6 +5,7 @@ Stage-local helpers for masking/disabling systemd units during Linux conversion.
 | Function | Role |
 |----------|------|
 | `DisableSystemdUnit` | Remove wants symlinks and mask unit to `/dev/null` |
+| `EnableSystemdUnit` | Unmask unit if needed and create admin wants symlink for next boot |
 | `SystemdUnitMaskPath` | Host path to the mask symlink for a unit |
 | `VendorWantsPath` | Host path to vendor preset wants symlink |
 | `UnitWantsEnabled` | True when unit has a wants symlink under standard targets |

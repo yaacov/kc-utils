@@ -6,6 +6,7 @@
 package systemd
 
 import (
+	"fmt"
 	"log/slog"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,12 @@ var wantsRelDirs = []string{
 	filepath.Join("usr", "lib", "systemd", "system", "default.target.wants"),
 	filepath.Join("usr", "lib", "systemd", "system", "sockets.target.wants"),
 	filepath.Join("usr", "lib", "systemd", "system", "graphical.target.wants"),
+}
+
+var unitFileRelDirs = []string{
+	filepath.Join("etc", "systemd", "system"),
+	filepath.Join("usr", "lib", "systemd", "system"),
+	filepath.Join("lib", "systemd", "system"),
 }
 
 // DisableSystemdUnit removes wants symlinks and masks the unit under the guest root.
@@ -78,6 +85,45 @@ func UnitWantsEnabled(guestRoot, unit string) bool {
 		}
 	}
 	return false
+}
+
+// EnableSystemdUnit unmasks unit if needed and creates an admin wants symlink
+// so the unit starts on next boot. Returns an error when the unit file is missing.
+func EnableSystemdUnit(guestRoot, unit string) error {
+	if UnitIsMasked(guestRoot, unit) {
+		if err := guest.FileRemove(SystemdUnitMaskPath(guestRoot, unit)); err != nil {
+			return fmt.Errorf("unmasking %s: %w", unit, err)
+		}
+	}
+	if UnitWantsEnabled(guestRoot, unit) {
+		return nil
+	}
+
+	unitPath, err := findUnitFileGuestPath(guestRoot, unit)
+	if err != nil {
+		return err
+	}
+
+	wantsDir := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants")
+	if err := guest.FileMkdirAll(wantsDir, 0o755); err != nil {
+		return fmt.Errorf("creating wants dir for %s: %w", unit, err)
+	}
+	wantsLink := filepath.Join(wantsDir, unit)
+	_ = guest.FileRemove(wantsLink)
+	if err := guest.FileSymlink(unitPath, wantsLink); err != nil {
+		return fmt.Errorf("enabling %s: %w", unit, err)
+	}
+	return nil
+}
+
+func findUnitFileGuestPath(guestRoot, unit string) (string, error) {
+	for _, rel := range unitFileRelDirs {
+		hostPath := filepath.Join(guestRoot, rel, unit)
+		if guest.FileExists(hostPath) {
+			return "/" + filepath.ToSlash(filepath.Join(rel, unit)), nil
+		}
+	}
+	return "", fmt.Errorf("unit file not found: %s", unit)
 }
 
 // UnitIsMasked reports whether unit is masked to /dev/null under etc/systemd/system.

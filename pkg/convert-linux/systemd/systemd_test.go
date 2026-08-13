@@ -173,3 +173,120 @@ func TestDisableEC2NetHooksVendorAndNonMultiUserWants(t *testing.T) {
 		}
 	}
 }
+
+func writeUnitFile(t *testing.T, root, unit string) {
+	t.Helper()
+	unitDir := filepath.Join(root, "usr", "lib", "systemd", "system")
+	if err := os.MkdirAll(unitDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(unitDir, unit), []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeAdminUnitFile(t *testing.T, root, unit string) {
+	t.Helper()
+	unitDir := filepath.Join(root, "etc", "systemd", "system")
+	if err := os.MkdirAll(unitDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(unitDir, unit), []byte("[Unit]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestEnableSystemdUnitDisabled(t *testing.T) {
+	root := t.TempDir()
+	unit := "example.service"
+	writeUnitFile(t, root, unit)
+
+	if err := EnableSystemdUnit(root, unit); err != nil {
+		t.Fatalf("EnableSystemdUnit returned error: %v", err)
+	}
+	if !UnitWantsEnabled(root, unit) {
+		t.Error("UnitWantsEnabled = false, want true after EnableSystemdUnit")
+	}
+	wantsLink := filepath.Join(root, "etc", "systemd", "system", "multi-user.target.wants", unit)
+	target, err := os.Readlink(wantsLink)
+	if err != nil {
+		t.Fatalf("reading wants symlink: %v", err)
+	}
+	if target != "/usr/lib/systemd/system/example.service" {
+		t.Errorf("wants target = %q, want /usr/lib/systemd/system/example.service", target)
+	}
+}
+
+func TestEnableSystemdUnitMasked(t *testing.T) {
+	root := t.TempDir()
+	unit := "example.service"
+	writeUnitFile(t, root, unit)
+
+	maskDir := filepath.Join(root, "etc", "systemd", "system")
+	if err := os.MkdirAll(maskDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(UnitMaskTarget, filepath.Join(maskDir, unit)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := EnableSystemdUnit(root, unit); err != nil {
+		t.Fatalf("EnableSystemdUnit returned error: %v", err)
+	}
+	if UnitIsMasked(root, unit) {
+		t.Error("UnitIsMasked = true, want false after EnableSystemdUnit")
+	}
+	if !UnitWantsEnabled(root, unit) {
+		t.Error("UnitWantsEnabled = false, want true after EnableSystemdUnit")
+	}
+}
+
+func TestEnableSystemdUnitAlreadyEnabled(t *testing.T) {
+	root := t.TempDir()
+	unit := "example.service"
+	writeUnitFile(t, root, unit)
+
+	vendorWantsDir := filepath.Join(root, "usr", "lib", "systemd", "system", "multi-user.target.wants")
+	if err := os.MkdirAll(vendorWantsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/usr/lib/systemd/system/example.service", filepath.Join(vendorWantsDir, unit)); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := EnableSystemdUnit(root, unit); err != nil {
+		t.Fatalf("EnableSystemdUnit returned error: %v", err)
+	}
+	adminWants := filepath.Join(root, "etc", "systemd", "system", "multi-user.target.wants", unit)
+	if _, err := os.Lstat(adminWants); !os.IsNotExist(err) {
+		t.Error("admin wants symlink created when vendor wants already enabled")
+	}
+}
+
+func TestEnableSystemdUnitMissingUnitFile(t *testing.T) {
+	root := t.TempDir()
+	if err := EnableSystemdUnit(root, "missing.service"); err == nil {
+		t.Fatal("EnableSystemdUnit = nil, want error when unit file is missing")
+	}
+}
+
+func TestEnableSystemdUnitEtcOnlyUnitFile(t *testing.T) {
+	root := t.TempDir()
+	unit := "example.service"
+	writeAdminUnitFile(t, root, unit)
+
+	if err := EnableSystemdUnit(root, unit); err != nil {
+		t.Fatalf("EnableSystemdUnit returned error: %v", err)
+	}
+	if !UnitWantsEnabled(root, unit) {
+		t.Error("UnitWantsEnabled = false, want true after EnableSystemdUnit")
+	}
+	wantsLink := filepath.Join(root, "etc", "systemd", "system", "multi-user.target.wants", unit)
+	target, err := os.Readlink(wantsLink)
+	if err != nil {
+		t.Fatalf("reading wants symlink: %v", err)
+	}
+	if target != "/etc/systemd/system/example.service" {
+		t.Errorf("wants target = %q, want /etc/systemd/system/example.service", target)
+	}
+}

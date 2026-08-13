@@ -2,7 +2,8 @@
 # Test: Guest agent firstboot service creation.
 # Verifies that kc-convert-linux creates a systemd firstboot unit
 # to install qemu-guest-agent when it is not pre-installed.
-# Also verifies that --offline mode skips the firstboot creation.
+# Also verifies that --offline mode skips the firstboot creation and that a
+# pre-installed but disabled agent is enabled offline without package install.
 
 source "$(cd "$(dirname "$0")" && pwd)/functions.sh"
 set -e
@@ -127,6 +128,74 @@ cleanup_fn rm -f "$output_json2"
 if [ -f "$d2/etc/systemd/system/kc-firstboot.service" ]; then
     echo "FAIL: firstboot service should not exist in offline mode"
     exit 1
+fi
+
+# --- Test 3: Pre-installed disabled agent enabled offline ---
+d3=$(mktemp -d)
+cleanup_fn rm -rf "$d3"
+
+mkdir -p "$d3/etc"
+cat > "$d3/etc/os-release" <<'EOF'
+NAME="Red Hat Enterprise Linux"
+VERSION="9.2 (Plow)"
+ID="rhel"
+ID_LIKE="fedora"
+VERSION_ID="9.2"
+EOF
+
+cat > "$d3/etc/fstab" <<'EOF'
+/dev/sda1 / ext4 defaults 0 1
+EOF
+
+mkdir -p "$d3/etc/default"
+mkdir -p "$d3/boot/grub2"
+cat > "$d3/boot/grub2/grub.cfg" <<'EOF'
+menuentry 'RHEL' { linux /vmlinuz-5.14.0-284 root=/dev/sda1; }
+EOF
+cat > "$d3/etc/default/grub" <<'EOF'
+GRUB_CMDLINE_LINUX="root=/dev/sda1"
+EOF
+
+touch "$d3/boot/vmlinuz-5.14.0-284"
+mkdir -p "$d3/usr/lib/modules/5.14.0-284/kernel/drivers/virtio"
+touch "$d3/usr/lib/modules/5.14.0-284/kernel/drivers/virtio/virtio_blk.ko"
+mkdir -p "$d3/etc/modprobe.d"
+mkdir -p "$d3/etc/systemd/system"
+install_stub_dracut "$d3"
+
+mkdir -p "$d3/usr/bin"
+echo binary > "$d3/usr/bin/qemu-ga"
+chmod 755 "$d3/usr/bin/qemu-ga"
+mkdir -p "$d3/usr/lib/systemd/system"
+cat > "$d3/usr/lib/systemd/system/qemu-guest-agent.service" <<'EOF'
+[Unit]
+Description=QEMU Guest Agent
+EOF
+
+prepare_json3=$(mktemp)
+cleanup_fn rm -f "$prepare_json3"
+make_linux_prepare_json "$d3" "rhel" 9 2 "x86_64" "Red Hat Enterprise Linux 9.2" "bios" > "$prepare_json3"
+
+pipeline_json3=$(mktemp)
+cleanup_fn rm -f "$pipeline_json3"
+jq -n --slurpfile p "$prepare_json3" '{prepare: $p[0]}' > "$pipeline_json3"
+
+output_json3=$(mktemp)
+cleanup_fn rm -f "$output_json3"
+
+"$BIN_DIR/kc-convert-linux" \
+    --input "$pipeline_json3" \
+    --output "$output_json3" \
+    --mount-root "$d3" \
+    --offline \
+    --log-level debug
+
+test -L "$d3/etc/systemd/system/multi-user.target.wants/qemu-guest-agent.service"
+if [ -f "$d3/usr/local/bin/kc-firstboot.sh" ]; then
+    if grep -q 'dnf install -y qemu-guest-agent' "$d3/usr/local/bin/kc-firstboot.sh"; then
+        echo "FAIL: pre-installed agent should not schedule package install"
+        exit 1
+    fi
 fi
 
 echo "PASS: test-linux-firstboot"
