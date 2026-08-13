@@ -481,6 +481,15 @@ run_converter_leg() {
   return 0
 }
 
+write_dashboard() {
+  local dash="${ARTIFACT_PREFIX}.html"
+  if python3 "${SCRIPT_DIR}/lib/generate-run-dashboard.py" "${ARTIFACT_PREFIX}"; then
+    echo "Dashboard: ${dash}"
+  else
+    echo "WARNING: failed to generate dashboard HTML" >&2
+  fi
+}
+
 # ===================================================================
 #  Main
 # ===================================================================
@@ -536,6 +545,7 @@ overall_rc=0
 if [[ "${MODE}" == "compare" ]]; then
   apply_converter_image "ref" || exit 1
   run_converter_leg "ref" || overall_rc=$?
+  write_dashboard
   if [[ "${overall_rc}" -ne 0 ]]; then
     echo "ref leg failed — skipping kc leg."
   else
@@ -544,10 +554,12 @@ if [[ "${MODE}" == "compare" ]]; then
     echo ""
     apply_converter_image "kc" || exit 1
     run_converter_leg "kc" || overall_rc=$?
+    write_dashboard
   fi
 else
   apply_converter_image "kc" || exit 1
   run_converter_leg "kc" || overall_rc=$?
+  write_dashboard
 fi
 
 echo "=========================================="
@@ -556,13 +568,7 @@ echo "=========================================="
 echo "MODE=${MODE}"
 echo "KC_V2V_IMAGE=${KC_V2V_IMAGE}"
 echo "Artifacts: ${ARTIFACT_PREFIX}-*.log / ${ARTIFACT_PREFIX}-*-mem/"
-
-DASHBOARD_HTML="${ARTIFACT_PREFIX}.html"
-if python3 "${SCRIPT_DIR}/lib/generate-run-dashboard.py" "${ARTIFACT_PREFIX}"; then
-  echo "Dashboard: ${DASHBOARD_HTML}"
-else
-  echo "WARNING: failed to generate dashboard HTML" >&2
-fi
+echo "Dashboard: ${ARTIFACT_PREFIX}.html"
 
 echo "Namespace: ${NS} (SKIP_CLEANUP=${SKIP_CLEANUP})"
 if [[ "${overall_rc}" -eq 0 ]]; then
