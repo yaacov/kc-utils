@@ -51,6 +51,10 @@ import (
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/guestagent/plugins/agent/qemuga"
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/guestagent/plugins/packagesource/directory"
 
+	// Plugin registrations: guest network stack handlers
+	_ "github.com/yaacov/kc-utils/pkg/convert-linux/network/handlers/default"
+	_ "github.com/yaacov/kc-utils/pkg/convert-linux/network/handlers/networkd"
+
 	// Plugin registrations: NIC naming preservation
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming/plugins/dhclient"
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming/plugins/ifcfg"

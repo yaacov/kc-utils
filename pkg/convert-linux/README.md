@@ -4,7 +4,7 @@ All pipeline blocks for [`cmd/kc-convert-linux`](../../cmd/kc-convert-linux/main
 blocks document implementers in `<block>/plugins/README.md`. Each block has its
 own README with detailed exports and mechanism.
 
-Stage-local helpers (not pipeline blocks): [`systemd/`](systemd/) — shared systemd unit mask/disable utilities used by hypervisor plugins and `network/networkd`.
+Stage-local helpers (not pipeline blocks): [`systemd/`](systemd/) — shared systemd unit mask/disable utilities used by hypervisor plugins and network handlers.
 
 | # | Block | Package | Type | Description |
 |---|-------|---------|------|-------------|
@@ -17,11 +17,10 @@ Stage-local helpers (not pipeline blocks): [`systemd/`](systemd/) — shared sys
 | 8 | Kernel select | [`kernel/`](kernel/) | strict | Select best virtio-capable kernel |
 | 9–10 | Boot config | [`bootconfig/`](bootconfig/) | strict | Serial console and virtio video kernel args |
 | 11 | Hypervisor | [`hypervisor/`](hypervisor/) | pluggable | Remove source hypervisor tools |
-| 11b | Network (networkd) | [`network/networkd/`](network/networkd/) | strict (`Detect`) | Virtio DHCP + wait-online for systemd-networkd-primary guests |
+| 11b, 15 | Network | [`network/`](network/) | pluggable (`Select`) | Exclusive handler: networkd offline config or default firstboot path |
 | 12 | Guest agent | [`guestagent/`](guestagent/) | pluggable | qemu-guest-agent, static IP firstboot, local packages |
 | 13 | Guest cleanup | [`guestcleanup/`](guestcleanup/) | strict | Remove blkid/LVM caches, update modprobe aliases |
 | 14 | Initramfs | [`initramfs/`](initramfs/) | strict | Rebuild initramfs with virtio drivers |
-| 15 | Static IP / NIC naming | [`nicnaming/`](nicnaming/), [`network/networkd/`](network/networkd/) | pluggable / strict | networkd: offline `.network`; else nicnaming + firstboot |
 | 16 | SELinux | [`selinux/`](selinux/) | strict | Offline SELinux relabel via setfiles |
 | 17 | GuestCaps | [`guestcaps/`](guestcaps/) | strict | Derive block/net bus, virtio flags, machine type |
 

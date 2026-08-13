@@ -13,7 +13,10 @@ The `PipelineData` envelope contains optional pointers to each stage's input/out
 | `PipelineData` | Top-level envelope accumulating all stage outputs |
 | `PrepareInput` | Input to kc-prepare: disks, source, network map, LUKS, options |
 | `PrepareOutput` | Output from kc-prepare: inspect data, firmware, boot device, disks |
-| `ConverterOutput` | Output from kc-convert: guest capabilities, warnings, errors |
+| `ConverterOutput` | Output from kc-convert: guest capabilities, hypervisor outcomes, network stack (Linux), warnings, errors |
+| `HypervisorInspection` | In-guest hypervisor plugin detections and cleanup/remove/disable outcomes |
+| `HypervisorPluginResult` | Single hypervisor plugin outcome: name, action, status, optional error |
+| `NetworkInspection` | Selected Linux network handler and primary stack label (convert-linux only) |
 | `TargetMeta` | Output from kc-finalize: target buses, NICs, firmware, boot device |
 | `InspectData` | OS inspection results: distro, version, arch, apps, kernel |
 | `WindowsInspect` | Windows-specific inspection: system root, hives, drive mappings |

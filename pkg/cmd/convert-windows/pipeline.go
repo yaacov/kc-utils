@@ -98,18 +98,28 @@ func Run(cfg *Config) error {
 
 	// Block 4 (pluggable): Remove hypervisor software
 	slog.Info("removing hypervisor software", "plugins", hypervisor.WindowsRemoves.List())
+	var hvPlugins []types.HypervisorPluginResult
 	for name, u := range hypervisor.WindowsRemoves.All() {
-		if u.Detect(cfg.MountRoot, systemHive, softwareHive) {
-			slog.Info("running hypervisor remove", "name", name)
-			if uninstErr := u.Remove(cfg.MountRoot, systemHive, softwareHive); uninstErr != nil {
-				slog.Warn("hypervisor remove failed", "name", name, "error", uninstErr)
-				output.Errors = append(output.Errors, types.BlockError{
-					Block: "hypervisor-remove/" + name, Message: uninstErr.Error(),
-				})
-				continue
-			}
+		if !u.Detect(cfg.MountRoot, systemHive, softwareHive) {
+			continue
+		}
+		slog.Info("running hypervisor remove", "name", name)
+		result := types.HypervisorPluginResult{
+			Name:   name,
+			Action: types.HypervisorActionRemove,
+		}
+		if uninstErr := u.Remove(cfg.MountRoot, systemHive, softwareHive); uninstErr != nil {
+			slog.Warn("hypervisor remove failed", "name", name, "error", uninstErr)
+			result.Status = types.HypervisorStatusFailed
+			result.Error = uninstErr.Error()
+			output.Errors = append(output.Errors, types.BlockError{
+				Block: "hypervisor-remove/" + name, Message: uninstErr.Error(),
+			})
+		} else {
+			result.Status = types.HypervisorStatusSucceeded
 			slog.Info("hypervisor remove complete", "name", name)
 		}
+		hvPlugins = append(hvPlugins, result)
 	}
 
 	// Block 5: Copy virtio drivers into the guest
@@ -132,17 +142,29 @@ func Run(cfg *Config) error {
 	// Block 8 (pluggable): Disable hypervisor services
 	slog.Info("disabling hypervisor services", "plugins", hypervisor.WindowsServiceDisablers.List())
 	for name, u := range hypervisor.WindowsServiceDisablers.All() {
-		if u.Detect(cfg.MountRoot, systemHive, ccs) {
-			slog.Info("running hypervisor service disable", "name", name)
-			if uncErr := u.DisableServices(cfg.MountRoot, systemHive, ccs); uncErr != nil {
-				slog.Warn("hypervisor service disable failed", "name", name, "error", uncErr)
-				output.Errors = append(output.Errors, types.BlockError{
-					Block: "hypervisor-service/" + name, Message: uncErr.Error(),
-				})
-				continue
-			}
+		if !u.Detect(cfg.MountRoot, systemHive, ccs) {
+			continue
+		}
+		slog.Info("running hypervisor service disable", "name", name)
+		result := types.HypervisorPluginResult{
+			Name:   name,
+			Action: types.HypervisorActionDisableService,
+		}
+		if uncErr := u.DisableServices(cfg.MountRoot, systemHive, ccs); uncErr != nil {
+			slog.Warn("hypervisor service disable failed", "name", name, "error", uncErr)
+			result.Status = types.HypervisorStatusFailed
+			result.Error = uncErr.Error()
+			output.Errors = append(output.Errors, types.BlockError{
+				Block: "hypervisor-service/" + name, Message: uncErr.Error(),
+			})
+		} else {
+			result.Status = types.HypervisorStatusSucceeded
 			slog.Info("hypervisor service disable complete", "name", name)
 		}
+		hvPlugins = append(hvPlugins, result)
+	}
+	if len(hvPlugins) > 0 {
+		output.Hypervisor = &types.HypervisorInspection{Plugins: hvPlugins}
 	}
 
 	// Block 9: Disable crash auto-reboot on BSOD

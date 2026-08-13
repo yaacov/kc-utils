@@ -27,10 +27,10 @@ Four mostly independent axes drive conversion behavior:
 
 | Axis | Drives primarily | Identified | Persisted in JSON? |
 |------|------------------|------------|-------------------|
-| Source hypervisor | **Cleanup** — remove old HV tools, services, drivers | Convert stage (in-guest artifacts) | Metadata only (`source.type`); cleanup match is runtime |
+| Source hypervisor | **Cleanup** — remove old HV tools, services, drivers | Convert stage (in-guest artifacts) | Metadata (`source.type`) + in-guest outcomes (`convert.hypervisor`) |
 | Guest OS (linux/windows) | **Which converter** + broad install path | `kc-prepare` | Yes (`prepare.inspect`, `prepare.converter`) |
 | Guest OS version | **Install** — packages, drivers, firstboot scripts | `kc-prepare` | Yes (`prepare.inspect`, `prepare.inspect_windows`) |
-| Guest network stack | **Networking install** (Linux only) | `kc-convert-linux` | No (runtime variable) |
+| Guest network stack | **Networking install** (Linux only) | `kc-convert-linux` | Yes (`convert.network`) |
 
 Two concern types cut across those axes:
 
@@ -80,7 +80,7 @@ flowchart LR
 
   subgraph convert [kc-convert]
     HVCleanup[hypervisor plugin Detect]
-    NetDetect[networkd.Detect]
+    NetDetect[network.Select]
     DistroHandler[distro / version handlers]
   end
 
@@ -180,18 +180,20 @@ cleanup:
 
 ```text
 kc-convert-linux block 11  →  hypervisor cleanup plugins
-                          →  networkd.Detect()  →  networkdPrimary bool
+                          →  network.Select()  →  one NetworkHandler
 ```
 
-[`networkd.Detect()`](../../pkg/convert-linux/network/networkd/networkd.go)
-returns true when the guest uses **systemd-networkd** as its primary stack:
+[`network.Select()`](../../pkg/convert-linux/network/network.go) picks exactly
+one registered handler by active network stack. The `networkd` handler
+([`networkd.Detect()`](../../pkg/convert-linux/network/networkd/networkd.go))
+matches when the guest uses **systemd-networkd** as its primary stack:
 
 - `usr/lib/systemd/network/80-ec2.network` exists (EC2 cloud-init pattern)
-- Guest is Amazon Linux 2023
+- Guest is Amazon Linux 2023 (unless both networkd and NetworkManager are enabled)
 - systemd-networkd is enabled and NetworkManager is masked or absent
 
-When `networkdPrimary` is false, the guest is treated as NetworkManager or
-legacy (ifupdown, etc.) for static IP and NIC naming.
+When no handler matches, the `default` handler runs: NetworkManager or legacy
+(ifupdown, etc.) static IP and NIC naming via firstboot.
 
 **Windows** — no networkd fork. Static IP script style is chosen by the
 Windows version handler ([`pkg/convert-windows/staticip`](../../pkg/convert-windows/staticip/)):
@@ -216,9 +218,9 @@ stage; subsequent stages read and update `pipeline.json`.
 | Converter choice | `prepare.converter` | `kc-prepare` | `kc-v2v` (subprocess selection) | Yes |
 | Firmware, disks, boot, options | `prepare.firmware`, `prepare.disks`, etc. | `kc-prepare` | `kc-convert-*`, `kc-finalize` | Yes |
 | Convert results | `convert.guestcaps`, `convert.warnings`, `convert.errors` | `kc-convert-*` | `kc-finalize` | Yes |
+| In-guest hypervisor plugin outcomes | `convert.hypervisor.plugins` | `kc-convert-*` | Orchestrator / audit | Yes |
+| Guest network stack (Linux) | `convert.network` | `kc-convert-linux` | Orchestrator / audit | Yes |
 | Final VM metadata | `target` | `kc-finalize` | Orchestrator / MTV | Yes |
-| **Which HV plugins matched** | — | — | — | **No** (runtime only) |
-| **Guest network stack choice** | — | — | — | **No** (`networkdPrimary` variable) |
 
 ### Annotated excerpt
 
@@ -244,6 +246,17 @@ Abbreviated from [`docs/apps/examples/prepare-output-complete.json`](../apps/exa
       "product_name": "Red Hat Enterprise Linux 9.2 (Plow)"
     },
     "source": { "type": "vmware", "nics": ["..."] }
+  },
+  "convert": {
+    "hypervisor": {
+      "plugins": [
+        { "name": "vmware", "action": "cleanup", "status": "succeeded" }
+      ]
+    },
+    "network": {
+      "handler": "networkd",
+      "primary": "systemd-networkd"
+    }
   }
 }
 ```
@@ -255,6 +268,8 @@ Abbreviated from [`docs/apps/examples/prepare-output-complete.json`](../apps/exa
 | `prepare.converter` | Guest OS | `kc-convert-linux` vs `kc-convert-windows` |
 | `prepare.inspect.*` | Guest OS + version | Drives all install/version branching in convert |
 | `prepare.inspect_windows` | Guest OS version (Windows) | Hive paths for registry edits during convert |
+| `convert.hypervisor.plugins` | In-guest hypervisor | Plugins where `Detect()` matched; `action` and `status` per plugin |
+| `convert.network` | Guest network stack (Linux) | Selected handler (`networkd` or `default`) and axis label (`systemd-networkd` or `legacy`) |
 
 Full examples: [`docs/apps/examples/`](../apps/examples/).
 
@@ -297,8 +312,8 @@ or virtio install. Key outputs:
 | **OS / version (install)** | 14 | Initramfs rebuild tool (`dracut` vs `update-initramfs`) by package format |
 | **Hypervisor (cleanup)** | 11 | All plugins where `Detect()` is true run `Cleanup()` |
 | **Hypervisor (cleanup)** | 13 | `guestcleanup.Run()` — blkid/LVM caches, hypervisor modprobe aliases → virtio |
-| **Network stack (install)** | 11b | `networkdPrimary` → `InstallKubeVirtNetworking` (`.network` DHCP files) |
-| **Network stack (install)** | 15 | Static IPs: networkd `.network` files vs `nicnaming` + `staticip` firstboot |
+| **Network stack (install)** | 11b | `network.Select()` → handler `InstallKubeVirtNetworking` (networkd: `.network` DHCP files) |
+| **Network stack (install)** | 15 | `network.Select()` → handler `ConfigureStaticIPs` (networkd: `.network` files; default: `nicnaming` + `staticip` firstboot) |
 
 Orchestrator: [`pkg/cmd/convert-linux/pipeline.go`](../../pkg/cmd/convert-linux/pipeline.go).
 
@@ -341,7 +356,7 @@ Finalize does not re-detect hypervisor, OS version, or network stack.
 | **Source hypervisor** | Convert: plugin `Detect()` on guest artifacts | — |
 | **Guest OS** | — | Prepare: converter selection; convert: handler family |
 | **Guest OS version** | — | Convert: distro handlers / `version.Classify()` |
-| **Guest network stack** | — | Convert-linux: `networkd.Detect()` → networking blocks |
+| **Guest network stack** | — | Convert-linux: `network.Select()` → exclusive handler for blocks 11b/15 |
 
 ---
 
@@ -350,6 +365,7 @@ Finalize does not re-detect hypervisor, OS version, or network stack.
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version handler detail
 - [conversion-paths.md](conversion-paths.md) — per-hypervisor cleanup and per-OS install matrices
 - [docs/apps/kc-v2v.md](../apps/kc-v2v.md) — `V2V_*` environment variables → JSON mapping
-- [pkg/convert-linux/network/networkd/README.md](../../pkg/convert-linux/network/networkd/README.md) — networkd vs non-networkd branch
+- [pkg/convert-linux/network/README.md](../../pkg/convert-linux/network/README.md) — exclusive handler selection (`network.Select`)
+- [pkg/convert-linux/network/networkd/README.md](../../pkg/convert-linux/network/networkd/README.md) — systemd-networkd offline helpers
 - [pkg/convert-linux/network/staticip/README.md](../../pkg/convert-linux/network/staticip/README.md) — firstboot static IP for non-networkd guests
 - [community/architecture.md](../../community/architecture.md) — stage isolation and JSON-only inter-stage communication

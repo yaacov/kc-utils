@@ -75,11 +75,11 @@ Debian/SUSE guests are not covered by the baked matrix; without a matching local
 | 9 | Console Config | strict | `pkg/convert-linux/bootconfig/` | Configure serial console kernel args |
 | 10 | Display Config | strict | `pkg/convert-linux/bootconfig/` | Configure virtio video kernel args |
 | 11 | Hypervisor | pluggable: `LinuxCleanup` | `pkg/convert-linux/hypervisor/` | Remove source hypervisor tools; EC2 masks IMDS net hooks |
-| 11b | Network (networkd) | `networkd.Detect` | `pkg/convert-linux/network/networkd/` | Virtio DHCP + wait-online for systemd-networkd-primary guests |
+| 11b | Network | `network.Select` | `pkg/convert-linux/network/` | Exclusive handler: networkd virtio DHCP + wait-online, or no-op (default) |
 | 12 | Guest Agent | pluggable | `pkg/convert-linux/guestagent/` | Install qemu-guest-agent, local or firstboot network packages |
 | 13 | Guest Cleanup | strict | `pkg/convert-linux/guestcleanup/` | Remove blkid/LVM caches and update modprobe aliases |
 | 14 | Initramfs | strict | `pkg/convert-linux/initramfs/` | Rebuild initramfs with virtio drivers |
-| 15 | Static IP / NIC Naming | pluggable: `NICNamer` / `networkd` | `pkg/convert-linux/nicnaming/`, `pkg/convert-linux/network/networkd/`, `pkg/convert-linux/network/staticip/` | networkd guests: MAC `.network` files; others: nicnaming + staticip firstboot |
+| 15 | Static IP / NIC Naming | `network.Select` + `NICNamer` | `pkg/convert-linux/network/`, `pkg/convert-linux/nicnaming/` | networkd handler: MAC `.network` files; default handler: nicnaming + staticip firstboot |
 | 16 | SELinux Relabel | strict | `pkg/convert-linux/selinux/` | Offline SELinux relabel via `setfiles` |
 | 17 | GuestCaps | strict | `pkg/convert-linux/guestcaps/` | Derive guest capabilities for KVM |
 
@@ -100,11 +100,19 @@ Example: [examples/prepare-output-complete.json](examples/prepare-output-complet
 
 `ConverterOutput` JSON containing:
 
-- `guest_caps` -- guest capabilities derived during conversion:
+- `guestcaps` -- guest capabilities derived during conversion:
   - `block_bus` -- `virtio` or `ide` (fallback when no virtio modules found)
   - `net_bus` -- `virtio` or `e1000`
   - virtio feature flags (RNG, balloon, socket, etc.)
   - `machine_type` -- `q35` (x86_64) or `virt` (aarch64)
+- `hypervisor` -- in-guest hypervisor plugin outcomes (only when at least one plugin matched):
+  - `plugins[].name` -- registry key (for example `vmware`, `ec2`)
+  - `plugins[].action` -- `cleanup`
+  - `plugins[].status` -- `succeeded` or `failed`
+  - `plugins[].error` -- present when status is `failed`
+- `network` -- selected network handler (Linux only):
+  - `handler` -- `networkd` or `default`
+  - `primary` -- `systemd-networkd` or `legacy`
 
 Example: [examples/convert-output-linux.json](examples/convert-output-linux.json).
 
@@ -121,6 +129,7 @@ Example: [examples/convert-output-linux.json](examples/convert-output-linux.json
 | `PackageSource` | `directory` (local RPM/DEB packages) |
 | `FirstbootHandler` | `systemd` |
 | `NICNamer` | `nm`, `netplan`, `ifcfg`, `wicked`, `dhclient`, `nmdhcp` |
+| `NetworkHandler` | `networkd`, `default` |
 | `UEFIEditor` | `grub-fallback` |
 
 ## Initramfs Rebuild Strategy

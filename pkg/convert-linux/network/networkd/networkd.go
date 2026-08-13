@@ -43,6 +43,9 @@ ExecStart=/usr/lib/systemd/systemd-networkd-wait-online --timeout=30 --any
 
 // Detect reports whether the guest uses systemd-networkd as its primary network stack.
 func Detect(guestRoot string) bool {
+	if isNetworkStackAmbiguous(guestRoot) {
+		return false
+	}
 	if guest.FileExists(filepath.Join(guestRoot, "usr", "lib", "systemd", "network", "80-ec2.network")) {
 		return true
 	}
@@ -50,6 +53,18 @@ func Detect(guestRoot string) bool {
 		return true
 	}
 	return isNetworkdPrimary(guestRoot)
+}
+
+// isNetworkStackAmbiguous is true when both systemd-networkd and NetworkManager
+// are enabled. Tier-2 distro shortcuts must not override this conflict.
+func isNetworkStackAmbiguous(guestRoot string) bool {
+	if !systemd.UnitWantsEnabled(guestRoot, "systemd-networkd.service") {
+		return false
+	}
+	if systemd.UnitIsMasked(guestRoot, "NetworkManager.service") {
+		return false
+	}
+	return systemd.UnitWantsEnabled(guestRoot, "NetworkManager.service")
 }
 
 // isAmazonLinux2023 reports whether os-release identifies Amazon Linux 2023,
