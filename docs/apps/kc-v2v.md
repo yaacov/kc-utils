@@ -96,7 +96,7 @@ overrides via `env.Load()`. Full schema:
 | Variable | When | Purpose |
 |----------|------|---------|
 | `V2V_source` | Always | Source hypervisor (`vSphere`, `ec2`, `nutanix`, …) |
-| `V2V_backend` | Always | Guest disk backend (`direct`\|`guestfs`\|`qemu`; no default). Image sets `guestfs`. |
+| `V2V_backend` | Always | Guest disk backend (`direct`\|`guestfs`\|`qemu`). No application default; the kc-v2v image sets `V2V_backend=guestfs`. See [../backends/README.md](../backends/README.md). |
 | `V2V_libvirtURL` | vSphere copy | vCenter URL (govmomi inventory + NFC export) |
 | `V2V_firmware` | vSphere | Optional firmware override (`uefi` or `bios`) |
 | `V2V_vmName` | vSphere copy | Source VM name |
@@ -120,7 +120,7 @@ overrides via `env.Load()`. Full schema:
 | `V2V_RootDisk` | `first` | Root selection policy passed to kc-prepare |
 | `V2V_staticIPs` | | Static IP mapping for Windows guests |
 | `V2V_overlayEnabled` | `true` | qcow2 overlay during conversion |
-| `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock (Forklift Plan `nbdeClevis` / Conversion `diskEncryption.type=Clevis`). Guestfs enables appliance networking; Tang must be reachable from the pod. Clevis takes precedence over `/etc/luks` keyfiles. |
+| `V2V_NBDE_CLEVIS` | `false` | Enable Clevis LUKS unlock (Forklift Plan `nbdeClevis` / Conversion `diskEncryption.type=Clevis`). Appliance backends enable networking; Tang must be reachable from the pod. Clevis takes precedence over `/etc/luks` keyfiles. See [../backends/clevis-nbde.md](../backends/clevis-nbde.md). |
 | `V2V_offline` | `false` | Pass `--offline` to converters (use image-staged packages only) |
 
 The container image bakes Windows virtio-win drivers under
@@ -161,19 +161,10 @@ Workdir defaults: `/var/tmp/v2v` (JSON handoff files), mount root `/tmp/kc-guest
 
 ### QEMU appliance (`V2V_backend=qemu`)
 
-| Variable | Purpose |
-|----------|---------|
-| `KC_AGENT_SOCK` | Unix socket for `kc-agent` (set by `kc-v2v` shared session) |
-| `KC_QEMU_PID` | QEMU pid after prepare Setup (liveness) |
-| `KC_APPLIANCE_DIR` | Directory with `vmlinuz` and `initramfs.img` for host `GOARCH` |
-| `KC_VIRTIO_WIN` | Host virtio-win tree (same as other backends; not packed in the appliance) |
-| `KC_PACKAGES` | Host qemu-ga package tree (same as other backends) |
-| `KC_GUESTFS_NETWORK` | `1`/`true` enables QEMU user-net for Clevis (same env as guestfs) |
-
-Build artifacts with `make appliance`. On macOS install Homebrew QEMU; virtio-win
-and qemu-ga RPMs stay on the host (`KC_VIRTIO_WIN` / `KC_PACKAGES`). Stage those
-trees with `make stage-offline` (Fedora container → gitignored `build/offline/`).
-The Mac does not need hivex, libguestfs, or LVM.
+The qemu backend has its own env vars (`KC_AGENT_SOCK`, `KC_QEMU_PID`,
+`KC_APPLIANCE_DIR`, `KC_VIRTIO_WIN`, `KC_PACKAGES`, `KC_GUESTFS_NETWORK`),
+appliance build (`make appliance`), and macOS notes. See
+[../backends/qemu.md](../backends/qemu.md).
 
 ## HTTP API
 

@@ -18,7 +18,7 @@ Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` ar
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
-| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. See [../backends/README.md](../backends/README.md). |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 VirtIO drivers are located from the pre-extracted virtio-win tree via the

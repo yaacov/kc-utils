@@ -14,7 +14,8 @@ describes only its own contract**; composition and deployment live elsewhere.
 | **Stage / utility** | [../apps/kc-*.md](../apps/) | CLI flags, input/output JSON, in-process behavior | How the orchestrator builds JSON, Forklift env vars, sibling binaries |
 | **Orchestrator** | [../apps/kc-v2v.md](../apps/kc-v2v.md), [../apps/forklift-usage.md](../apps/forklift-usage.md) | `V2V_*` → JSON mapping, subprocess order, Forklift wiring | Block/plugin internals (link to architecture + stage docs) |
 | **Integration** | [../apps/README.md](../apps/README.md), [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) | Full pod flow, image contents, MTV setup | Per-flag reference (link to stage docs) |
-| **Design** | This directory | Cross-cutting behavior (privilege, OS paths, benchmarks) | CLI tables duplicated from app docs |
+| **Design** | This directory | Cross-cutting behavior (OS paths, benchmarks, fsck) | CLI tables duplicated from app docs |
+| **Backends** | [../backends/](../backends/README.md) | Guest disk backend mechanics, privilege model, appliance, `kc-agent`, Clevis | Per-stage CLI flags (link to app docs) |
 
 **Rules (mirror [block isolation](../../community/architecture.md#block-isolation)):**
 
@@ -40,7 +41,7 @@ orchestrator or integration docs.
 
 ## Design docs
 
-- [privilege-model.md](privilege-model.md) — host-mount vs libguestfs appliance privilege trade-offs
+- [../backends/README.md](../backends/README.md) — guest disk backends (direct / guestfs / qemu), privilege trade-offs, the QEMU appliance, and `kc-agent`
 - [filesystem-checks.md](filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair, Windows NTFS
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [conversion-dimensions.md](conversion-dimensions.md) — how hypervisor, guest OS, OS version, and network stack are identified, persisted, and consumed across stages

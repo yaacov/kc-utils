@@ -67,8 +67,8 @@ Runnable examples and sample JSON for every handoff live in
 [examples/](examples/README.md).
 
 From a Linux host with root, after `make build`
-(see [../architecture/privilege-model.md](../architecture/privilege-model.md) for why root is required and how
-libguestfs avoids it):
+(see [../backends/README.md](../backends/README.md) for why root is required and how
+the appliance backends avoid it):
 
 ```bash
 sudo docs/apps/examples/run-linux-disk.sh
@@ -194,9 +194,10 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 - [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
 - [../../tests/scenarios/README.md](../../tests/scenarios/README.md) — Cluster benchmark tests (manual)
 
-### Architecture reference
+### Backends & architecture reference
 
-See [../architecture/README.md](../architecture/README.md) for privilege model,
-guest OS handlers, conversion-path matrices, and benchmark data.
+See [../backends/README.md](../backends/README.md) for guest disk backends and
+the privilege model, and [../architecture/README.md](../architecture/README.md)
+for guest OS handlers, conversion-path matrices, and benchmark data.
 
 - [../architecture/filesystem-checks.md](../architecture/filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair

@@ -39,7 +39,7 @@ instead of a separate DiskTransferV2v stream.
 Interactive charts of memory, CPU, and network I/O over time for the ref vs
 kc-v2v runs.
 
-Two guest access modes plus a QEMU appliance backend are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)). `--backend` / `V2V_backend` is required (no default):
+Two guest access modes plus a QEMU appliance backend are supported (see [docs/backends/README.md](docs/backends/README.md)). `--backend` / `V2V_backend` is required (no default):
 
 - **host-mount** (`--backend=direct`) - mounts guest filesystems with
   `mount(8)` and runs guest tools via `chroot` into that tree; requires Linux
@@ -128,10 +128,15 @@ dependencies, build, test, and PR guidance.
 - [docs/apps/kc-convert-windows.md](docs/apps/kc-convert-windows.md) - Windows converter pipeline
 - [docs/apps/kc-finalize.md](docs/apps/kc-finalize.md) - kc-finalize pipeline
 
+### Backends
+
+- [docs/backends/README.md](docs/backends/README.md) - Guest disk backends (direct / guestfs / qemu): selection and comparison
+- [docs/backends/appliance.md](docs/backends/appliance.md) - QEMU appliance artifacts and build
+- [docs/backends/kc-agent.md](docs/backends/kc-agent.md) - In-appliance RPC agent
+
 ### Architecture
 
 - [docs/architecture/README.md](docs/architecture/README.md) - Architecture reference index
-- [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md) - Privilege model: host-mount vs guestfish / libguestfs appliance
 - [docs/architecture/guest-os-handlers.md](docs/architecture/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
 - [docs/architecture/conversion-paths.md](docs/architecture/conversion-paths.md) - OS + source-hypervisor conversion path reference
 

@@ -62,6 +62,10 @@ Cross-stage shared code lives in:
 
 ## Guest disk backend plugins
 
+> User-facing backend docs (selection, appliance, `kc-agent`, Clevis) live in
+> [docs/backends/](../docs/backends/README.md). This section covers the
+> code-level plugin contract.
+
 `pkg/guest/` provides a `Backend` interface and a `Factories` registry. Built-in
 implementations self-register via `init()`:
 
@@ -149,7 +153,8 @@ When modifying a pipeline block, update the corresponding `docs/apps/kc-<stage>.
 
 - **Stage app docs** (`docs/apps/kc-*.md`) document only that binary's CLI and JSON contract. Put orchestrator mapping (`V2V_*` → handoff JSON), Forklift wiring, and "when spawned by kc-v2v" notes in an **Integration** section at the end—or in `docs/apps/kc-v2v.md`—not in the opening paragraph or primary config tables.
 - **Orchestrator docs** (`kc-v2v.md`, `forklift-usage.md`, `build/kc-v2v/README.md`) own env translation, subprocess spawning, and deployment.
-- **Architecture docs** (`docs/architecture/`) own cross-cutting design (privilege model, conversion paths, shared listener contract). Link from stage docs instead of duplicating kc-v2v lifecycle in every stage file.
+- **Architecture docs** (`docs/architecture/`) own cross-cutting design (conversion paths, shared listener contract, fsck). Link from stage docs instead of duplicating kc-v2v lifecycle in every stage file.
+- **Backend docs** (`docs/backends/`) own guest disk backend mechanics, privilege trade-offs, the QEMU appliance, and `kc-agent`.
 
 Test: *If this binary were run standalone with only JSON input, would this sentence still belong here?*
 

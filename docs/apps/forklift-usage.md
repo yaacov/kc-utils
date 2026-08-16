@@ -69,7 +69,7 @@ Optional Plan / feature env Forklift may also set:
 | `V2V_inPlace` | Skip disk copy (pre-filled PVCs) | Respected |
 | `V2V_staticIPs` | Static IP mapping (set when Plan `preserveStaticIPs` yields MAC→IP data) | Respected |
 | `V2V_HOSTNAME` | Guest hostname | Respected |
-| `V2V_NBDE_CLEVIS` | Clevis LUKS unlock | Respected |
+| `V2V_NBDE_CLEVIS` | Clevis LUKS unlock ([../backends/clevis-nbde.md](../backends/clevis-nbde.md)) | Respected |
 | `V2V_NewName` | Destination VM name | Respected |
 | `V2V_RootDisk` | Root disk policy | Respected |
 | `V2V_firmware` | `uefi` / `bios` override | Respected |
@@ -84,7 +84,7 @@ Image / `kc-v2v`-only (not Forklift `AppConfig`; image defaults or overrides):
 
 | Variable | Role |
 |----------|------|
-| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`\|`qemu`; **required**. Image sets `guestfs`) |
+| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`\|`qemu`; **required**. Image sets `guestfs`). See [../backends/README.md](../backends/README.md) |
 | `V2V_offline` | Pass `--offline` to converters |
 | `V2V_copyConcurrency` | Max parallel NFC copies (default `4`) |
 | `KC_BIN_DIR` | Stage binary dir (default `/usr/lib/kc-utils`) |
