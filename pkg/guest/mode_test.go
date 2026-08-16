@@ -11,7 +11,8 @@ func TestModeString(t *testing.T) {
 	}{
 		{ModeDirect, "direct"},
 		{ModeGuestfs, "guestfs"},
-		{Mode(""), "direct"},
+		{ModeQemu, "qemu"},
+		{Mode(""), ""},
 	}
 	for _, tc := range cases {
 		if got := tc.mode.String(); got != tc.want {

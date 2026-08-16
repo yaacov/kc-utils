@@ -37,6 +37,7 @@ make_windows_prepare_json "$root" 6 0 x86_64 "Windows Server (R) 2008 Enterprise
 jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
 
 "$BIN_DIR/kc-convert-windows" \
+    --backend direct \
     --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \

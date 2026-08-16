@@ -21,7 +21,8 @@ env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
       → DiscoverDisks
       → StartSharedSession(backend): nil when backend has no SharedSessionFactory
       → kc-prepare → kc-convert-* → kc-finalize (--backend <name>)
-           (guestfs stages adopt via GUESTFISH_PID / KC_GUESTFISH_PID; pkg/guest only)
+           (guestfs: GUESTFISH_PID / KC_GUESTFISH_PID;
+            qemu: KC_AGENT_SOCK / KC_QEMU_PID; pkg/guest only)
       → on failure after prepare may have set up guest:
            kc-finalize --teardown-only (best-effort backend teardown, no Sync)
       → if shared session was started: SharedSession.Close
@@ -95,6 +96,7 @@ overrides via `env.Load()`. Full schema:
 | Variable | When | Purpose |
 |----------|------|---------|
 | `V2V_source` | Always | Source hypervisor (`vSphere`, `ec2`, `nutanix`, …) |
+| `V2V_backend` | Always | Guest disk backend (`direct`\|`guestfs`\|`qemu`; no default). Image sets `guestfs`. |
 | `V2V_libvirtURL` | vSphere copy | vCenter URL (govmomi inventory + NFC export) |
 | `V2V_firmware` | vSphere | Optional firmware override (`uefi` or `bios`) |
 | `V2V_vmName` | vSphere copy | Source VM name |
@@ -156,6 +158,22 @@ When disk copy runs, `env.BuildCopyInput` writes `copy-input.json` for
 | Secure, no provider CA in secret | omit both → kc-copy uses system CA |
 
 Workdir defaults: `/var/tmp/v2v` (JSON handoff files), mount root `/tmp/kc-guest`.
+
+### QEMU appliance (`V2V_backend=qemu`)
+
+| Variable | Purpose |
+|----------|---------|
+| `KC_AGENT_SOCK` | Unix socket for `kc-agent` (set by `kc-v2v` shared session) |
+| `KC_QEMU_PID` | QEMU pid after prepare Setup (liveness) |
+| `KC_APPLIANCE_DIR` | Directory with `vmlinuz` and `initramfs.img` for host `GOARCH` |
+| `KC_VIRTIO_WIN` | Host virtio-win tree (same as other backends; not packed in the appliance) |
+| `KC_PACKAGES` | Host qemu-ga package tree (same as other backends) |
+| `KC_GUESTFS_NETWORK` | `1`/`true` enables QEMU user-net for Clevis (same env as guestfs) |
+
+Build artifacts with `make appliance`. On macOS install Homebrew QEMU; virtio-win
+and qemu-ga RPMs stay on the host (`KC_VIRTIO_WIN` / `KC_PACKAGES`). Stage those
+trees with `make stage-offline` (Fedora container → gitignored `build/offline/`).
+The Mac does not need hivex, libguestfs, or LVM.
 
 ## HTTP API
 

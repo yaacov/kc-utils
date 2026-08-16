@@ -10,7 +10,7 @@ The package ships concrete handlers for Windows 11, 10, 8.1, 8, 7, Vista, Server
 |------|---------|
 | `version.go` | `VersionHandler` interface, kind enums (`LauncherKind`, `StaticIPKind`, etc.), `Classify`, and `Register` |
 | `handlers.go` | Concrete handler structs for each Windows version (win11 through winxp) and the winunknown fallback |
-| `match.go` | `NormalizeProductName`, `isServerProduct`, and `isWindows11Product` helper functions |
+| `match.go` | `NormalizeProductName`, `isServerProduct`, and `usesWin11DriverSet` helper functions |
 | `register.go` | `init()` function that registers all handlers in classification priority order |
 | `guestagent.go` | `CollectGuestAgentMSI` and the legacy-version exclusion list |
 

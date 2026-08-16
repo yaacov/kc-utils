@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package initramfs
 
@@ -142,10 +142,17 @@ func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) error {
 	if existing, err := guest.FileRead(modulesFile); err == nil {
 		content = string(existing)
 	}
+	// Track already-listed modules by whole word. A substring check would drop
+	// e.g. "bochs" because it is contained in the earlier "bochs-drm" entry.
+	present := make(map[string]bool)
+	for _, w := range strings.Fields(content) {
+		present[w] = true
+	}
 	changed := false
 	for _, m := range strings.Fields(virtioDrivers) {
-		if !strings.Contains(content, m) {
+		if !present[m] {
 			content = strings.TrimRight(content, "\n") + "\n" + m + "\n"
+			present[m] = true
 			changed = true
 		}
 	}

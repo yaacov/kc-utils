@@ -4,7 +4,7 @@ Converts a Linux guest to run on KVM/virtio. Removes source hypervisor tools,
 injects virtio drivers into the initramfs, remaps device names, and fixes
 the bootloader configuration.
 
-Requires Linux (`//go:build linux`).
+Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` are Linux-only at runtime.
 
 ## Entry Point
 
@@ -18,7 +18,7 @@ Requires Linux (`//go:build linux`).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network firstboot when no local package matches (local packages are always tried first) |
-| `--backend` | no | `direct` | Guest disk backend (`direct`\|`guestfs`; runtime list from registered plugins) |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 ## qemu-guest-agent Installation
@@ -46,7 +46,8 @@ image-staged packages without falling back to network install.
 
 ### Host package layout (RHEL family)
 
-Default base: `/usr/share/kc-packages`
+Default base: `/usr/share/kc-packages` (override with `KC_PACKAGES`;
+`make stage-offline` writes `build/offline/kc-packages`).
 
 ```text
 /usr/share/kc-packages/rpm/el8/x86_64/qemu-guest-agent-*.rpm

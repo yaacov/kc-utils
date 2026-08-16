@@ -9,7 +9,9 @@ MODULE  := github.com/yaacov/kc-utils
 #   PLATFORM=linux/amd64        Container build platform (linux/amd64 or linux/arm64)
 #   CONTAINER_RUNTIME=          Force docker or podman (auto-detected if empty)
 
-# All binaries require GOOS=linux (pkg/guest is //go:build linux).
+# Stage binaries are unix (linux or darwin). kc-agent is linux-only (appliance pid 1).
+# Default GOOS=linux for container images; use GOOS=darwin for a Mac host CLI.
+GOOS ?= linux
 BINS := kc-prepare kc-finalize kc-v2v kc-copy kc-convert-linux kc-convert-windows
 BIN_DIR    := bin
 
@@ -63,14 +65,17 @@ KC_V2V_IMAGE_BASE := $(REGISTRY)/$(REGISTRY_ORG)/kc-v2v
 KC_V2V_IMAGE ?= $(KC_V2V_IMAGE_BASE):$(REGISTRY_TAG)
 KC_V2V_IMAGE_LOCAL := $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
 TEST_IMAGE   := kc-utils-test
+APPLIANCE_OUT ?= build/appliance/out
+APPLIANCE_IMAGE ?= kc-appliance
 
-.PHONY: all build $(BINS) test test-race test-coverage test-container \
+.PHONY: all build $(BINS) kc-agent test test-race test-coverage test-container \
         lint lint-install fmt vet clean cross-linux-amd64 cross-linux-arm64 \
         cross-linux-ppc64le cross-linux-s390x cross-all mod-tidy mod-verify \
         check test-e2e test-e2e-container test-e2e-disk test-e2e-disk-guestfs \
         test-image test-image-rebuild test-build check-all help build-kc-v2v \
-        build-kc-copy cache-virtio-win build-kc-v2v-image \
-        push-kc-v2v-image test-kc-v2v-image check_container_runtime
+        build-kc-copy cache-virtio-win stage-offline build-kc-v2v-image \
+        push-kc-v2v-image test-kc-v2v-image check_container_runtime \
+        appliance appliance-amd64 appliance-arm64 appliance-arch
 
 all: build
 
@@ -83,6 +88,7 @@ help:
 	@printf "  \033[36m%-28s\033[0m %s\n" "GIT_TAGS="                  "Extra image tags to push (auto-detected from git when empty)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "PLATFORM=linux/amd64"        "Container build platform (linux/amd64 or linux/arm64)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "CONTAINER_RUNTIME="          "Force docker or podman (auto-detected if empty)"
+	@printf "  \033[36m%-28s\033[0m %s\n" "GOOS=linux"                  "Stage binary GOOS (linux or darwin; kc-agent is always linux)"
 	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n"
 	@printf "\033[1mRelease:\033[0m     git tag v0.1.0 && make push-kc-v2v-image  # pushes devel-amd64 + v0.1.0-amd64\n\n"
 	@awk '/^## /{desc=substr($$0,4)} /^[a-zA-Z0-9_-]+:/ && desc{sub(/:.*/, "", $$1); printf "  \033[36m%-24s\033[0m %s\n", $$1, desc; desc=""}' $(MAKEFILE_LIST)
@@ -91,7 +97,11 @@ help:
 build: $(BINS)
 
 $(BINS):
-	CGO_ENABLED=0 GOOS=linux $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
+	CGO_ENABLED=0 GOOS=$(GOOS) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
+
+## Build kc-agent (linux-only; pid 1 inside the QEMU appliance)
+kc-agent:
+	CGO_ENABLED=0 GOOS=linux $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/kc-agent ./cmd/kc-agent
 
 ## Run unit tests locally (macOS skips //go:build linux packages; use test-container)
 test:
@@ -113,7 +123,7 @@ lint-install:
 	GOBIN=$(GOBIN) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@echo "golangci-lint installed successfully."
 
-## Run golangci-lint (GOOS=linux: pkg/guest and related packages are linux-only)
+## Run golangci-lint (GOOS=linux covers linux-only packages such as kc-agent)
 lint: $(GOLANGCI_LINT_STAMP)
 	@echo "Running golangci-lint..."
 	GOOS=linux $(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/...
@@ -261,6 +271,28 @@ cache-virtio-win:
 		if [ -f "$$f" ]; then echo "Cached: $$f"; \
 		else echo "Downloading $$(basename "$$url")..."; curl -fL --retry 3 --retry-delay 5 -o "$$f" "$$url"; fi; \
 	done
+
+## Stage virtio-win + qemu-ga RPMs into build/offline/ for local testing
+stage-offline: check_container_runtime
+	./build/kc-v2v/stage-offline-local.sh
+
+## Build QEMU appliance artifacts for amd64 and arm64 (vmlinuz, initramfs.img)
+appliance: appliance-amd64 appliance-arm64
+
+## Build QEMU appliance artifacts for linux/amd64
+appliance-amd64:
+	$(MAKE) appliance-arch ARCH=amd64 PLATFORM=linux/amd64
+
+## Build QEMU appliance artifacts for linux/arm64
+appliance-arm64:
+	$(MAKE) appliance-arch ARCH=arm64 PLATFORM=linux/arm64
+
+appliance-arch: check_container_runtime
+	@mkdir -p $(APPLIANCE_OUT)/$(ARCH)
+	$(CONTAINER_CMD) build $(PLATFORM_FLAG) -t $(APPLIANCE_IMAGE):$(ARCH) \
+	    --output type=local,dest=$(APPLIANCE_OUT)/$(ARCH) \
+	    -f build/appliance/Containerfile .
+	@ls -lh $(APPLIANCE_OUT)/$(ARCH)
 
 ## Build kc-v2v container image
 build-kc-v2v-image: check_container_runtime build

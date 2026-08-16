@@ -20,7 +20,7 @@ Options:
   --disk PATH          Disk image to convert (required)
   --mount-root PATH    Guest mount root (default: /tmp/kc-guest)
   --offline            Skip network-dependent operations
-  --backend NAME       Guest disk backend: direct|guestfs (default: direct)
+  --backend NAME       Guest disk backend: direct|guestfs|qemu (default: direct)
   --log-level LEVEL    debug, info, warn, error (default: info)
   --work-dir PATH      Working dir for intermediate JSON (default: auto tmpdir)
   -h, --help           Show this help

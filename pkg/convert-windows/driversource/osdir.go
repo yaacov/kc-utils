@@ -37,10 +37,14 @@ func FindBestOSDirWithPrefs(archDir, osVersion string, prefs, fallbacks []string
 		return filepath.Join(archDir, matches[0]), nil
 	}
 
+	// Match fallbacks case-insensitively against the actual directory names,
+	// consistent with the primary scan. A bare os.Stat is case-sensitive on
+	// Linux and would miss e.g. "2k8R2" vs an on-disk "2k8r2".
 	for _, dirName := range append(append([]string{}, prefs...), fallbacks...) {
-		dir := filepath.Join(archDir, dirName)
-		if st, statErr := os.Stat(dir); statErr == nil && st.IsDir() {
-			return dir, nil
+		for _, entry := range entries {
+			if entry.IsDir() && strings.EqualFold(entry.Name(), dirName) {
+				return filepath.Join(archDir, entry.Name()), nil
+			}
 		}
 	}
 

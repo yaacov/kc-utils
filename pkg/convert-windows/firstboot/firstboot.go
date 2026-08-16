@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package firstboot
 
@@ -137,45 +137,40 @@ func launcherScript(kind version.LauncherKind) string {
 }
 
 func modernLauncher() string {
-	return "@echo off\r\n" +
-		"setlocal enabledelayedexpansion\r\n" +
-		"cd /d \"%~dp0\"\r\n" +
-		"for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*.bat\" 2^>nul') do (\r\n" +
-		"    echo Running %%s\r\n" +
-		"    call \"%~dp0scripts\\%%s\"\r\n" +
-		")\r\n" +
-		"for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*.ps1\" 2^>nul') do (\r\n" +
-		"    echo Running %%s\r\n" +
-		"    powershell.exe -ExecutionPolicy Bypass -File \"%~dp0scripts\\%%s\"\r\n" +
-		")\r\n" +
-		cleanupFooter()
+	return buildLauncher("", "powershell.exe -ExecutionPolicy Bypass -File")
 }
 
 func psV1Launcher() string {
-	return "@echo off\r\n" +
-		"setlocal enabledelayedexpansion\r\n" +
-		"cd /d \"%~dp0\"\r\n" +
-		"reg add \"HKLM\\SOFTWARE\\Microsoft\\PowerShell\\1\\ShellIds\\Microsoft.PowerShell\" /v ExecutionPolicy /t REG_SZ /d RemoteSigned /f >nul 2>&1\r\n" +
-		"for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*.bat\" 2^>nul') do (\r\n" +
-		"    echo Running %%s\r\n" +
-		"    call \"%~dp0scripts\\%%s\"\r\n" +
-		")\r\n" +
-		"for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*.ps1\" 2^>nul') do (\r\n" +
-		"    echo Running %%s\r\n" +
-		"    powershell.exe -File \"%~dp0scripts\\%%s\"\r\n" +
-		")\r\n" +
-		cleanupFooter()
+	setup := "reg add \"HKLM\\SOFTWARE\\Microsoft\\PowerShell\\1\\ShellIds\\Microsoft.PowerShell\" /v ExecutionPolicy /t REG_SZ /d RemoteSigned /f >nul 2>&1\r\n"
+	return buildLauncher(setup, "powershell.exe -File")
 }
 
 func batOnlyLauncher() string {
-	return "@echo off\r\n" +
+	return buildLauncher("", "")
+}
+
+// buildLauncher assembles a firstboot.bat launcher. setup is emitted after the
+// header (empty for none); psInvocation is the PowerShell command used to run
+// .ps1 scripts (empty to skip the .ps1 loop entirely, for bat-only guests).
+func buildLauncher(setup, psInvocation string) string {
+	b := "@echo off\r\n" +
 		"setlocal enabledelayedexpansion\r\n" +
 		"cd /d \"%~dp0\"\r\n" +
-		"for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*.bat\" 2^>nul') do (\r\n" +
+		setup +
+		scriptLoop("bat", "call")
+	if psInvocation != "" {
+		b += scriptLoop("ps1", psInvocation)
+	}
+	return b + cleanupFooter()
+}
+
+// scriptLoop emits a for-loop that runs every scripts\*.<ext> file in name
+// order via the given invocation (e.g. "call" or a powershell.exe command).
+func scriptLoop(ext, invocation string) string {
+	return "for /f \"delims=\" %%s in ('dir /b /o:n \"scripts\\*." + ext + "\" 2^>nul') do (\r\n" +
 		"    echo Running %%s\r\n" +
-		"    call \"%~dp0scripts\\%%s\"\r\n" +
-		")\r\n" +
-		cleanupFooter()
+		"    " + invocation + " \"%~dp0scripts\\%%s\"\r\n" +
+		")\r\n"
 }
 
 func cleanupFooter() string {

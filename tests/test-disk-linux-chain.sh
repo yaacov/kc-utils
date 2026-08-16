@@ -25,6 +25,7 @@ cleanup_fn rm -rf "$d"
 # Run full chain.
 "$TESTS_DIR/kc-v2v.sh" \
     --disk "$d/linux.img" \
+    --backend direct \
     --offline \
     --work-dir "$d" \
     --log-level debug

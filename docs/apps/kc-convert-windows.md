@@ -4,7 +4,7 @@ Converts a Windows guest to run on KVM/virtio. Installs virtio-win drivers,
 registers them in the Windows registry, disables hypervisor-specific services,
 and generates firstboot scripts for post-reboot setup.
 
-Requires Linux (`//go:build linux`).
+Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` are Linux-only at runtime.
 
 ## Entry Point
 
@@ -18,11 +18,14 @@ Requires Linux (`//go:build linux`).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
-| `--backend` | no | `direct` | Guest disk backend (`direct`\|`guestfs`; runtime list from registered plugins) |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 VirtIO drivers are located from the pre-extracted virtio-win tree via the
-`directory` `DriverSource` plugin at `/usr/share/virtio-win/drivers/by-os`.
+`directory` `DriverSource` plugin at `/usr/share/virtio-win/drivers/by-os`
+(override with `KC_VIRTIO_WIN`). `--backend=qemu` uses the same host tree.
+Without the RPM, `make stage-offline` writes a gitignored copy under
+`build/offline/virtio-win`.
 
 ## Pipeline Blocks
 

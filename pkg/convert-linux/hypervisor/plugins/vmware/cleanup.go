@@ -1,11 +1,10 @@
-//go:build linux
+//go:build unix
 
 package vmware
 
 import (
 	"bufio"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -131,14 +130,7 @@ WantedBy=multi-user.target
 	if err := guest.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
 		slog.Warn("writing VMware pkg-remove unit failed", "path", unitPath, "error", err)
 	}
-	wants := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants", "kc-remove-vmware.service")
-	if err := guest.FileMkdirAll(filepath.Dir(wants), 0o755); err != nil {
-		slog.Warn("creating VMware pkg-remove wants dir failed", "path", filepath.Dir(wants), "error", err)
-	}
-	if err := guest.FileRemove(wants); err != nil && !os.IsNotExist(err) {
-		slog.Warn("removing stale VMware pkg-remove wants link failed", "path", wants, "error", err)
-	}
-	if err := guest.FileSymlink("/etc/systemd/system/kc-remove-vmware.service", wants); err != nil {
-		slog.Warn("enabling VMware pkg-remove unit failed", "path", wants, "error", err)
+	if err := systemd.EnableSystemdUnit(guestRoot, "kc-remove-vmware.service"); err != nil {
+		slog.Warn("enabling VMware pkg-remove unit failed", "error", err)
 	}
 }

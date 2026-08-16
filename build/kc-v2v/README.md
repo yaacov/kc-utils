@@ -23,6 +23,15 @@ VirtIO-Win drivers (modern + legacy pre–Win 8) are downloaded from the public
 [Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
 during image build. No manual staging required.
 
+For local testing without the image (macOS, or a host without the `virtio-win`
+RPM), stage the same trees into gitignored `build/offline/`:
+
+```bash
+make stage-offline
+export KC_VIRTIO_WIN=$PWD/build/offline/virtio-win
+export KC_PACKAGES=$PWD/build/offline/kc-packages
+```
+
 Override ISO URLs at build time for version bumps or mirrors:
 
 ```bash
@@ -253,7 +262,7 @@ V2V_inPlace=1 V2V_source=nutanix V2V_vmName=my-vm kc-v2v
 | `V2V_firmware` | Optional guest firmware override (`uefi` or `bios`) |
 | `V2V_fingerprint` | vCenter SSL thumbprint |
 | `V2V_vmName` | Source VM name |
-| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`). Image default often `guestfs` |
+| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`\|`qemu`). Image sets `guestfs` explicitly |
 
 ### Guestfs (default in image)
 

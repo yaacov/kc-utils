@@ -248,6 +248,10 @@ func (h *HivexHive) Save() error {
 	return nil
 }
 
+func (h *HivexHive) PendingReg() []byte {
+	return h.pending.Bytes()
+}
+
 func (h *HivexHive) Close() error {
 	h.pending.Reset()
 	return h.file.Close()

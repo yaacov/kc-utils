@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package guestfs
 
@@ -517,6 +517,45 @@ func (b *Backend) DeviceWrite(device string, offset int64, data []byte) error {
 	script.WriteByte('\n')
 	_, err = b.session.remoteScript(script.String())
 	return err
+}
+
+func (b *Backend) MergeHive(guestPath string, reg []byte) error {
+	if len(reg) == 0 {
+		return nil
+	}
+	if err := b.ensureMounted(); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp("", "kc-reg-*.reg")
+	if err != nil {
+		return fmt.Errorf("merge hive temp: %w", err)
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmp.Write(reg); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	applianceReg := "/tmp/.kc-merge.reg"
+	var script strings.Builder
+	script.WriteString("upload ")
+	script.WriteString(quoteGuestfish(tmpPath))
+	script.WriteByte(' ')
+	script.WriteString(quoteGuestfish(applianceReg))
+	script.WriteByte('\n')
+	script.WriteString("sh ")
+	script.WriteString(quoteGuestfish("hivexregedit --merge " + shellQuote(guestPath) + " " + shellQuote(applianceReg) + " 2>&1"))
+	script.WriteByte('\n')
+	_, err = b.withRecovery(func() ([]byte, error) {
+		return b.session.remoteScript(script.String())
+	})
+	if err != nil {
+		return fmt.Errorf("hivexregedit --merge %s: %w", guestPath, err)
+	}
+	return nil
 }
 
 func (b *Backend) Sync() error {

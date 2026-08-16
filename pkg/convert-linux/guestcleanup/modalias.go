@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package guestcleanup
 
@@ -38,15 +38,9 @@ func Configure(guestRoot string) {
 	cleanStaleAliases(modprobeDir)
 
 	modprobePath := filepath.Join(modprobeDir, "kc-virtio.conf")
-	var modCfg *modprobe.Config
-	if guest.FileExists(modprobePath) {
-		if existingModprobe, err := guest.FileRead(modprobePath); err == nil {
-			modCfg = modprobe.Parse(string(existingModprobe))
-		} else {
-			modCfg = modprobe.Parse("")
-		}
-	} else {
-		modCfg = modprobe.Parse("")
+	modCfg := modprobe.Parse("")
+	if existingModprobe, err := guest.FileRead(modprobePath); err == nil {
+		modCfg = modprobe.Parse(string(existingModprobe))
 	}
 	modCfg.AddAlias("scsi_hostadapter", "virtio_blk")
 	modCfg.AddAlias("scsi_hostadapter1", "virtio_scsi")

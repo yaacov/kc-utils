@@ -4,6 +4,8 @@ TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOP_DIR="$(cd "$TESTS_DIR/.." && pwd)"
 BIN_DIR="$TESTS_DIR/bin"
 
+GOOS="${GOOS:-linux}"
+
 mkdir -p "$BIN_DIR"
 cd "$TOP_DIR"
 
@@ -14,7 +16,7 @@ else
 fi
 
 for bin in $bins; do
-    echo "Building $bin..."
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -o "$BIN_DIR/$bin" "./cmd/$bin"
+    echo "Building $bin (GOOS=$GOOS)..."
+    CGO_ENABLED=0 GOOS="$GOOS" go build -trimpath -o "$BIN_DIR/$bin" "./cmd/$bin"
 done
 echo "Binaries built in $BIN_DIR/"

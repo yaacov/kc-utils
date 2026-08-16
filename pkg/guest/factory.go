@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package guest
 
@@ -54,13 +54,17 @@ func AvailableBackends() []string {
 func LookupFactory(name string) (Factory, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		name = string(ModeDirect)
+		avail := AvailableBackends()
+		if len(avail) == 0 {
+			return nil, fmt.Errorf("backend is required (no backends registered)")
+		}
+		return nil, fmt.Errorf("backend is required (available: %s)", strings.Join(avail, ", "))
 	}
 	f, ok := Factories.Get(name)
 	if !ok {
 		avail := AvailableBackends()
 		if len(avail) == 0 {
-			return nil, fmt.Errorf("unknown backend %q (no backends registered; blank-import pkg/guest/direct and pkg/guest/guestfs)", name)
+			return nil, fmt.Errorf("unknown backend %q (no backends registered)", name)
 		}
 		return nil, fmt.Errorf("unknown backend %q (available: %s)", name, strings.Join(avail, ", "))
 	}

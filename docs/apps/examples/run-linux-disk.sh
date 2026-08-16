@@ -72,6 +72,7 @@ echo "=== kc-prepare ==="
     --input "$PREPARE_INPUT" \
     --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
+    --backend direct \
     --log-level info
 
 CONVERTER=$(jq -r '.converter' "$WORK_DIR/pipeline.json")
@@ -85,6 +86,7 @@ echo "=== $CONVERTER ==="
     --input "$WORK_DIR/pipeline.json" \
     --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
+    --backend direct \
     $OFFLINE_FLAG \
     --log-level info
 
@@ -93,6 +95,7 @@ echo "=== kc-finalize ==="
     --input "$WORK_DIR/pipeline.json" \
     --output "$WORK_DIR/pipeline.json" \
     --mount-root "$MOUNT_ROOT" \
+    --backend direct \
     --log-level info
 
 echo ""

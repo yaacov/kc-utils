@@ -4,6 +4,8 @@ All pipeline blocks for [`cmd/kc-convert-windows`](../../cmd/kc-convert-windows/
 blocks document implementers in `<block>/plugins/README.md`. Each block has its
 own README with detailed exports and mechanism.
 
+**Type:** `strict` = single built-in implementation · `pluggable` = implementation chosen from a `plugins/` registry ([plugin model](../../community/architecture.md#plugin-system)) · `strict + pluggable` = registry plus built-in wiring/fallback · `inline` = handled directly by the stage orchestrator · `helper` = shared utility, not a pipeline block.
+
 | # | Block | Package | Type | Description |
 |---|-------|---------|------|-------------|
 | 1 | Version | [`version/`](version/) | strict | Classify Windows version, select behavior handlers |

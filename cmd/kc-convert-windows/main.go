@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // kc-convert-windows converts a mounted Windows guest for KubeVirt.
 // Documentation: docs/apps/kc-convert-windows.md
@@ -19,6 +19,7 @@ import (
 	// Guest disk backends
 	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
 	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
 
 	// Plugin registrations: registry editor
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
@@ -69,7 +70,7 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations")
-	backend := flag.String("backend", "direct", guest.BackendFlagUsage())
+	backend := flag.String("backend", "", guest.BackendFlagUsage()+" (required)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 

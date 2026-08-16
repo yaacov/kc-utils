@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package networkd
 
@@ -22,14 +22,7 @@ const (
 )
 
 const virtioDHCPConfig = `[Match]
-Name=enp*
-Driver=virtio_net
-
-[Network]
-DHCP=yes
-
-[Match]
-Name=eth*
+Name=enp* eth*
 Driver=virtio_net
 
 [Network]

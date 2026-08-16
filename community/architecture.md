@@ -67,11 +67,13 @@ implementations self-register via `init()`:
 
 | Name | Implementation | Requires |
 |------|----------------|----------|
-| **direct** (default) | `pkg/guest/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
-| **guestfs** (`--backend=guestfs`) | `pkg/guest/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC | `/dev/kvm` only |
+| **direct** | `pkg/guest/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN`; registered on Linux only |
+| **guestfs** (`--backend=guestfs`) | `pkg/guest/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC | `/dev/kvm` only; registered on Linux only |
+| **qemu** (`--backend=qemu`) | `pkg/guest/qemu/` — QEMU + shipped kernel/initramfs; `kc-agent` over a virtio-serial Unix socket | QEMU + appliance artifacts; registered on Linux and Darwin |
 
-CLI/env: `--backend <name>` / `V2V_backend`.
+CLI/env: `--backend <name>` / `V2V_backend` (**required**; no default).
 Available names come from `guest.Factories.List()` at runtime after blank imports.
+The `kc-v2v` container image sets `V2V_backend=guestfs` explicitly.
 
 Shared host helpers (not domain logic) live in `pkg/guest/common`. Backend packages
 must not import each other or share mutable package state. Parent `pkg/guest`
@@ -93,6 +95,7 @@ Converters never call `chroot` or other privileged tools directly. `kc-convert-l
 
 - **Direct** — real `chroot(2)` into the mounted guest root (`pkg/guest/direct/`)
 - **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/guest/guestfs/`)
+- **QEMU** — `chroot` inside the appliance via `kc-agent` (`pkg/guest/qemu/`)
 
 `kc-convert-windows` reads virtio-win drivers from the pre-extracted driver tree
 at `/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).

@@ -18,7 +18,9 @@ func isServerProduct(productName string) bool {
 	return strings.Contains(n, "server")
 }
 
-func isWindows11Product(productName string) bool {
+// usesWin11DriverSet reports whether a product should receive the Windows 11
+// driver set, which also covers Server 2022/2025 (same driver generation).
+func usesWin11DriverSet(productName string) bool {
 	n := NormalizeProductName(productName)
 	return strings.Contains(n, "windows 11") || strings.Contains(n, "server 2022") ||
 		strings.Contains(n, "server 2025")

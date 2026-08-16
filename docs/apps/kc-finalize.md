@@ -5,7 +5,7 @@ checks, assigns target bus slots, resolves firmware type, and assembles the
 final `TargetMeta` JSON that contains everything the orchestrator needs to
 create the KVM virtual machine.
 
-Requires Linux (`//go:build linux`).
+Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` are Linux-only at runtime.
 
 ## Entry Point
 
@@ -18,7 +18,7 @@ Requires Linux (`//go:build linux`).
 | `--input` | yes\* | | Path to PipelineData JSON (from kc-convert-linux or kc-convert-windows; contains `prepare` and `convert` sections) |
 | `--output` | no | `target-meta.json` | Path to write PipelineData JSON (with `target` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Guest mount root (live mounts in direct mode; path key for `pkg/guest` in guestfs mode) |
-| `--backend` | no | `direct` | Guest disk backend (`direct`\|`guestfs`; runtime list from registered plugins) |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
 | `--teardown-only` | no | `false` | Reclaim orphaned guest resources only (no metadata) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 

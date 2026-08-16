@@ -39,15 +39,19 @@ instead of a separate DiskTransferV2v stream.
 Interactive charts of memory, CPU, and network I/O over time for the ref vs
 kc-v2v runs.
 
-Two guest access modes are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)):
+Two guest access modes plus a QEMU appliance backend are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)). `--backend` / `V2V_backend` is required (no default):
 
-- **host-mount** (`--backend=direct`, default) - mounts guest filesystems with
-  `mount(8)` and runs guest tools via `chroot` into that tree; requires root or
-  `CAP_SYS_ADMIN`.
+- **host-mount** (`--backend=direct`) - mounts guest filesystems with
+  `mount(8)` and runs guest tools via `chroot` into that tree; requires Linux
+  root or `CAP_SYS_ADMIN`. Registered on Linux only.
 - **guestfs** (`--backend=guestfs` / `V2V_backend=guestfs`) - runs a minimal
   [libguestfs](https://libguestfs.org/) appliance VM via `guestfish`; guest disks
   are accessed inside the appliance (no host root); requires Linux with
-  `/dev/kvm`.
+  `/dev/kvm`. The `kc-v2v` container image sets `V2V_backend=guestfs` explicitly.
+- **qemu** (`--backend=qemu`) - boots a shipped kernel+initramfs under QEMU and
+  talks to `kc-agent` over a virtio-serial Unix socket. Host needs QEMU plus
+  appliance files (`vmlinuz`, `initramfs.img`); conversion
+  tools run inside the appliance. Registered on Linux and macOS.
 
 ## Forklift (MTV) Integration
 
@@ -65,7 +69,8 @@ See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage in
 ## Design Highlights
 
 - **Pure Go core pipeline** - builds with standard `go build`, no C toolchain
-  required. All binaries target Linux (`GOOS=linux`).
+  required. Stage binaries target Unix (`GOOS=linux` or `GOOS=darwin`). `kc-agent`
+  is Linux-only (QEMU appliance pid 1).
 - **Initramfs rebuild via guest tools** - virtio drivers are injected by running
   the guest's own tooling via `chroot` into the mounted guest root (host-mount)
   or an in-appliance chroot (guestfs): `dracut` first, then `update-initramfs`,
@@ -94,7 +99,9 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-v2v` | V2V orchestrator for Forklift: runs the pipeline + inspection HTTP (optional NFC disk copy for blank PVCs) |
 | `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
 
-All kc-utils binaries require Linux (`//go:build linux` / `GOOS=linux`).
+Stage binaries are Unix (`//go:build unix` / `GOOS=linux` or `GOOS=darwin`).
+`kc-agent` is Linux-only (QEMU appliance pid 1). `direct` and `guestfs` register
+at runtime on Linux only; Darwin lists `--backend=qemu`.
 
 Inter-app communication uses JSON files written to a shared directory, plus a
 shared mount point where the guest root filesystem is mounted.

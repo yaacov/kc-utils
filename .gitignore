@@ -12,6 +12,12 @@ tests/scenarios/.env
 # Cached virtio-win ISOs (stage-virtio-win.sh)
 build/kc-v2v/cache/*.iso
 
+# Host-side offline conversion assets (make stage-offline)
+build/offline/
+
+# QEMU appliance artifacts
+build/appliance/out/
+
 # Editor and IDE
 *.swp
 *.swo

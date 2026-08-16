@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package guest
 
@@ -75,6 +75,10 @@ type Backend interface {
 
 	// StatFS returns free bytes and free inodes for the filesystem containing guestPath.
 	StatFS(guestPath string) (freeBytes, freeInodes int64, err error)
+
+	// MergeHive applies a .reg snippet to the guest hive at guestPath using
+	// hivexregedit (host tool in direct mode; appliance tool otherwise).
+	MergeHive(guestPath string, reg []byte) error
 
 	// Sync is a no-op; guestfs writes go through the appliance live.
 	Sync() error

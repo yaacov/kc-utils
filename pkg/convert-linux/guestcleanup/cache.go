@@ -1,12 +1,13 @@
-//go:build linux
+//go:build unix
 
 package guestcleanup
 
 import (
-	"github.com/yaacov/kc-utils/pkg/guest"
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
 // Clean removes stale blkid and LVM caches that reference old device names,

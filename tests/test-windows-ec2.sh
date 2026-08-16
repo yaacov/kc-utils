@@ -57,6 +57,7 @@ jq -n --slurpfile p "$d/prepare.json" '{prepare: $p[0]}' > "$d/pipeline.json"
 
 # Run the Windows converter.
 "$BIN_DIR/kc-convert-windows" \
+    --backend direct \
     --input "$d/pipeline.json" \
     --output "$d/output.json" \
     --mount-root "$root" \

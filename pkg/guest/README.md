@@ -1,8 +1,8 @@
 # pkg/guest — privileged guest disk operations
 
-Sole boundary for privileged host and libguestfs operations on guest disks.
-Callers must not invoke guestfish, mount/umount, losetup, LVM, cryptsetup,
-chroot, fsck, or fstrim for guest disks outside this package.
+Sole boundary for privileged host, libguestfs, and QEMU-appliance operations
+on guest disks. Callers must not invoke guestfish, mount/umount, losetup, LVM,
+cryptsetup, chroot, fsck, or fstrim for guest disks outside this package.
 
 See also: [docs/architecture/filesystem-checks.md](../../docs/architecture/filesystem-checks.md)
 for fsck timing, supported filesystem types, and check-vs-repair behavior.
@@ -14,15 +14,19 @@ Stage binaries blank-import the implementations they ship:
 
 | Name | Package | Mechanism | Requirements |
 |------|---------|-----------|--------------|
-| `direct` (default) | [`direct/`](direct/) | Host kernel mounts via losetup, LVM, cryptsetup | CAP_SYS_ADMIN / privileged pod |
-| `guestfs` | [`guestfs/`](guestfs/) | libguestfs appliance RPC via `guestfish --listen` | `/dev/kvm`, unprivileged pod |
+| `direct` | [`direct/`](direct/) | Host kernel mounts via losetup, LVM, cryptsetup | CAP_SYS_ADMIN / privileged pod; registered on Linux only |
+| `guestfs` | [`guestfs/`](guestfs/) | libguestfs appliance RPC via `guestfish --listen` | `/dev/kvm`, unprivileged pod; registered on Linux only |
+| `qemu` | [`qemu/`](qemu/) | QEMU + shipped kernel/initramfs; `kc-agent` RPC | QEMU + appliance files; registered on Linux and Darwin |
 
-Select with `--backend <name>` / `V2V_backend` (runtime list from `Factories.List()`).
-Unset defaults to `direct`; the `kc-v2v` image typically sets `V2V_backend=guestfs`.
+Select with `--backend <name>` / `V2V_backend` (**required**; runtime list from `Factories.List()`).
+There is no default. The `kc-v2v` image sets `V2V_backend=guestfs` explicitly.
 
-Both backends implement the `Backend` interface. The `Guest` facade normalizes
+All backends implement the `Backend` interface. The `Guest` facade normalizes
 guest paths and delegates to the active backend — the rest of the codebase is
 unaware of which backend is in use.
+
+`direct` and `guestfs` compile on Unix but call `Factories.Register` only when
+`runtime.GOOS == "linux"`. Darwin `Factories` lists `qemu` only.
 
 ### Isolation rules
 
@@ -30,12 +34,13 @@ unaware of which backend is in use.
 - Parent `pkg/guest` must not import concrete backends (blank imports in `cmd/`).
 - Shared helpers live in [`common/`](common/) (host copy/`StatFS` only).
 - Stages/blocks use the `Guest` handle — never `pkg/guest/common` for disk I/O.
+- Host `pkg/guest/qemu` must not import `pkg/guest/qemu/server` (linux-only). Shared RPC types live in [`qemu/protocol/`](qemu/protocol/).
 
 ### Adding a backend
 
 1. New package under `pkg/guest/<name>/` implementing `guest.Backend` + `guest.Factory`
 2. Optional: `SharedSessionFactory`, `ClevisAwareFactory`
-3. `init() { guest.Factories.Register("<name>", …) }`
+3. `init() { guest.Factories.Register("<name>", …) }` (linux-only backends should return unless `runtime.GOOS == "linux"`)
 4. Blank-import from stage / `kc-v2v` mains
 
 ## Key types and functions
@@ -45,11 +50,11 @@ unaware of which backend is in use.
 | `Guest` | High-level handle used by prepare/convert/finalize pipelines |
 | `Backend` | Interface satisfied by backend plugins |
 | `Factory` / `Factories` | Registry of named backend factories |
-| `Mode` | Registry key string (`direct`, `guestfs`, …) |
+| `Mode` | Registry key string (`direct`, `guestfs`, `qemu`, …) |
 | `Open()` | Looks up factory, creates backend, runs Setup |
 | `AttachMounted()` | Reconnects to an already-prepared guest (convert/finalize entry) |
 | `TeardownMountRoot()` | Best-effort orphan cleanup when handoff data is unavailable |
-| `SharedSession` | Cross-stage session (guestfs `guestfish --listen`) |
+| `SharedSession` | Cross-stage session (guestfs `guestfish --listen`; qemu `KC_AGENT_SOCK`) |
 | `StartSharedSession()` | Starts a session when the backend implements `SharedSessionFactory` |
 | `AttachFromPrepare()` | Convenience wrapper: derives mode, orders disks, attaches, sets active handle |
 | `SetActive()` / `ClearActive()` | Global guest handle for `File*` convenience helpers |
@@ -73,6 +78,7 @@ pkg/guest/
   common/           — Shared host FS helpers (CopyFile, HostStatFS)
   direct/           — Direct backend plugin
   guestfs/          — Guestfs backend plugin
+  qemu/             — QEMU appliance backend (host client + protocol; server is linux-only)
 ```
 
 Import path: `github.com/yaacov/kc-utils/pkg/guest`

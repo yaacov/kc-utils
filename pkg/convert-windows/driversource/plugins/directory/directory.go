@@ -28,12 +28,18 @@ func (d *DirectorySource) basePath() string {
 	if d.BasePath != "" {
 		return d.BasePath
 	}
+	if p := strings.TrimSpace(os.Getenv("KC_VIRTIO_WIN")); p != "" {
+		return filepath.Join(p, "drivers", "by-os")
+	}
 	return DefaultBasePath
 }
 
 func (d *DirectorySource) guestAgentDir() string {
 	if d.GuestAgentDir != "" {
 		return d.GuestAgentDir
+	}
+	if p := strings.TrimSpace(os.Getenv("KC_VIRTIO_WIN")); p != "" {
+		return filepath.Join(p, "guest-agent")
 	}
 	return DefaultGuestAgentDir
 }

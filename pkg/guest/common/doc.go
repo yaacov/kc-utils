@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // Package common holds shared helpers for guest backend implementations
 // and the parent guest facade.

@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // kc-prepare opens guest disks, inspects the OS, and mounts filesystems.
 // Documentation: docs/apps/kc-prepare.md
@@ -20,16 +20,13 @@ import (
 	// Guest disk backends
 	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
 	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
 
 	// Plugin registrations: firmware detectors
 	_ "github.com/yaacov/kc-utils/pkg/prepare/firmware/plugins/gptesp"
 
 	// Plugin registrations: converter selector
 	_ "github.com/yaacov/kc-utils/pkg/prepare/converter/plugins/default"
-
-	// Plugin registrations: LUKS decryptors
-	_ "github.com/yaacov/kc-utils/pkg/prepare/decryptor/plugins/clevis"
-	_ "github.com/yaacov/kc-utils/pkg/prepare/decryptor/plugins/keyfile"
 
 	// Plugin registrations: root selection
 	_ "github.com/yaacov/kc-utils/pkg/prepare/root/plugins/device"
@@ -45,7 +42,7 @@ func main() {
 	inputFile := flag.String("input", "", "input JSON file")
 	outputFile := flag.String("output", "prepare-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	backend := flag.String("backend", "direct", guest.BackendFlagUsage())
+	backend := flag.String("backend", "", guest.BackendFlagUsage()+" (required)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 

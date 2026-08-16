@@ -43,5 +43,5 @@ func enrichDriverLookupError(handlerName, osVersion string, osPrefs []string, er
 	if err == nil || len(osPrefs) == 0 {
 		return err
 	}
-	return fmt.Errorf("handler=%s guest=%q required dir=%q: %v", handlerName, osVersion, osPrefs[0], err)
+	return fmt.Errorf("handler=%s guest=%q required dir=%q: %w", handlerName, osVersion, osPrefs[0], err)
 }

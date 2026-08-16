@@ -59,6 +59,7 @@ output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \
@@ -118,6 +119,7 @@ output_json2=$(mktemp)
 cleanup_fn rm -f "$output_json2"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json2" \
     --output "$output_json2" \
     --mount-root "$d2" \
@@ -184,6 +186,7 @@ output_json3=$(mktemp)
 cleanup_fn rm -f "$output_json3"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json3" \
     --output "$output_json3" \
     --mount-root "$d3" \

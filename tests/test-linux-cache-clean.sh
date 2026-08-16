@@ -50,6 +50,7 @@ output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \

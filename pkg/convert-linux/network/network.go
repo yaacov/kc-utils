@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // Package network selects an exclusive guest network handler for pipeline blocks
 // 11b and 15 based on the guest's active network stack.

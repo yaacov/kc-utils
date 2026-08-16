@@ -113,8 +113,39 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 		return nil
 	}
 
+	devicePaths := deviceBackingPaths(devices)
+	kept := collectLeaseDisks(info, devicePaths)
+	resolveMissingDiskPaths(kept, orderedDiskBackingPaths(devices))
+
+	urls := make([]DiskURL, 0, len(kept))
+	for _, p := range kept {
+		slog.Info("NFC lease disk",
+			"key", p.key,
+			"targetId", p.targetID,
+			"size", p.size,
+			"diskPath", p.diskPath,
+		)
+		urls = append(urls, DiskURL{
+			URL:      p.url,
+			DiskPath: p.diskPath,
+			Size:     p.size,
+		})
+	}
+	return urls
+}
+
+// pendingDiskURL is an NFC lease disk item awaiting final backing-path resolution.
+type pendingDiskURL struct {
+	url      string
+	key      string
+	targetID string
+	size     int64
+	diskPath string
+}
+
+// deviceBackingPaths maps each disk device key to its normalized backing path.
+func deviceBackingPaths(devices []vimtypes.BaseVirtualDevice) map[string]string {
 	devicePaths := map[string]string{}
-	orderedPaths := orderedDiskBackingPaths(devices)
 	for _, dev := range devices {
 		disk, ok := dev.(*vimtypes.VirtualDisk)
 		if !ok {
@@ -126,7 +157,14 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 		}
 		devicePaths[fmt.Sprintf("%d", disk.Key)] = path
 	}
+	return devicePaths
+}
 
+// collectLeaseDisks selects the disk items from the lease, pairing each with its
+// backing path by device key where known. Non-disk items are omitted: NFC flags
+// disks explicitly when any DeviceUrl.Disk is set, otherwise the disk-*.vmdk
+// TargetId pattern is used as a fallback discriminator.
+func collectLeaseDisks(info *nfc.LeaseInfo, devicePaths map[string]string) []pendingDiskURL {
 	n := len(info.DeviceUrl)
 	if len(info.Items) < n {
 		n = len(info.Items)
@@ -140,14 +178,7 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 		}
 	}
 
-	type pending struct {
-		url      string
-		key      string
-		targetID string
-		size     int64
-		diskPath string
-	}
-	var kept []pending
+	var kept []pendingDiskURL
 	for i := 0; i < n; i++ {
 		device := info.DeviceUrl[i]
 		item := info.Items[i]
@@ -167,7 +198,7 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 		if item.URL != nil {
 			itemURL = item.URL.String()
 		}
-		kept = append(kept, pending{
+		kept = append(kept, pendingDiskURL{
 			url:      itemURL,
 			key:      device.Key,
 			targetID: targetID,
@@ -175,7 +206,13 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 			diskPath: devicePaths[device.Key],
 		})
 	}
+	return kept
+}
 
+// resolveMissingDiskPaths fills in diskPath for lease items that lacked a
+// device-key match, assigning unused backing paths in bus/controller order and
+// falling back to the TargetId as a last resort. kept is mutated in place.
+func resolveMissingDiskPaths(kept []pendingDiskURL, orderedPaths []string) {
 	used := map[string]bool{}
 	for _, p := range kept {
 		if p.diskPath != "" {
@@ -202,22 +239,6 @@ func mapDiskURLs(info *nfc.LeaseInfo, devices []vimtypes.BaseVirtualDevice) []Di
 			kept[i].diskPath = kept[i].targetID
 		}
 	}
-
-	urls := make([]DiskURL, 0, len(kept))
-	for _, p := range kept {
-		slog.Info("NFC lease disk",
-			"key", p.key,
-			"targetId", p.targetID,
-			"size", p.size,
-			"diskPath", p.diskPath,
-		)
-		urls = append(urls, DiskURL{
-			URL:      p.url,
-			DiskPath: p.diskPath,
-			Size:     p.size,
-		})
-	}
-	return urls
 }
 
 func diskBackingPath(disk *vimtypes.VirtualDisk) string {
