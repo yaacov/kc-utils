@@ -11,7 +11,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/plugin"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // NamingRule represents a udev rule that pins a MAC address to an interface name.
@@ -118,14 +118,14 @@ func deduplicateRules(rules []NamingRule) []NamingRule {
 
 func writeUdevRules(guestRoot string, rules []NamingRule) error {
 	rulesDir := filepath.Join(guestRoot, "etc", "udev", "rules.d")
-	if err := guest.FileMkdirAll(rulesDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(rulesDir, 0o755); err != nil {
 		return fmt.Errorf("creating udev rules.d: %w", err)
 	}
 
 	rulesPath := filepath.Join(rulesDir, "70-persistent-net.rules")
 
 	// Don't overwrite existing non-empty rules
-	if data, err := guest.FileRead(rulesPath); err == nil && len(data) > 0 {
+	if data, err := guestio.FileRead(rulesPath); err == nil && len(data) > 0 {
 		slog.Info("70-persistent-net.rules already exists, skipping")
 		return nil
 	}
@@ -138,7 +138,7 @@ func writeUdevRules(guestRoot string, rules []NamingRule) error {
 		lines = append(lines, line)
 	}
 	content := strings.Join(lines, "\n") + "\n"
-	if err := guest.FileWrite(rulesPath, []byte(content), 0o644); err != nil {
+	if err := guestio.FileWrite(rulesPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("writing udev rules: %w", err)
 	}
 	slog.Info("wrote NIC naming udev rules", "path", rulesPath, "count", len(rules))
@@ -149,7 +149,7 @@ func writeUdevRules(guestRoot string, rules []NamingRule) error {
 // overrides raw udev NAME= rules.
 func writeSystemdLinks(guestRoot string, rules []NamingRule) {
 	linkDir := filepath.Join(guestRoot, "etc", "systemd", "network")
-	if err := guest.FileMkdirAll(linkDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(linkDir, 0o755); err != nil {
 		slog.Warn("creating systemd network dir", "error", err)
 		return
 	}
@@ -158,7 +158,7 @@ func writeSystemdLinks(guestRoot string, rules []NamingRule) {
 		mac := strings.ToLower(r.MAC)
 		content := fmt.Sprintf("[Match]\nMACAddress=%s\n\n[Link]\nName=%s\n", mac, r.Device)
 		linkPath := filepath.Join(linkDir, fmt.Sprintf("10-v2v-%s.link", r.Device))
-		if err := guest.FileWrite(linkPath, []byte(content), 0o644); err != nil {
+		if err := guestio.FileWrite(linkPath, []byte(content), 0o644); err != nil {
 			slog.Warn("writing systemd .link file", "device", r.Device, "error", err)
 		}
 	}

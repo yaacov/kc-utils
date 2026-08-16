@@ -10,6 +10,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/common/uefi"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -29,13 +30,13 @@ func (b *BCDEditor) ConvertToVirtio(guestRoot, espPath string) error {
 
 	// Remove graphicsmodedisabled from BCD hive if present.
 	bcdPath := filepath.Join(efiDir, "Microsoft", "Boot", "BCD")
-	if guest.FileExists(bcdPath) {
+	if guestio.FileExists(bcdPath) {
 		b.removeGraphicsDisabled(bcdPath)
 	}
 
 	// Ensure the fallback boot directory exists.
 	fallbackDir := filepath.Join(efiDir, "Boot")
-	if err := guest.FileMkdirAll(fallbackDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(fallbackDir, 0o755); err != nil {
 		slog.Warn("failed to create fallback boot dir", "error", err)
 		return nil
 	}
@@ -43,7 +44,7 @@ func (b *BCDEditor) ConvertToVirtio(guestRoot, espPath string) error {
 	// Try to copy the Microsoft bootloader as the fallback EFI binary.
 	// Try both x64 and aa64 variants.
 	srcPath := filepath.Join(efiDir, "Microsoft", "Boot", "bootmgfw.efi")
-	if !guest.FileExists(srcPath) {
+	if !guestio.FileExists(srcPath) {
 		slog.Warn("Microsoft bootloader not found, skipping fallback copy", "path", srcPath)
 		return nil
 	}
@@ -53,20 +54,20 @@ func (b *BCDEditor) ConvertToVirtio(guestRoot, espPath string) error {
 	fallbackPath := filepath.Join(fallbackDir, fallbackName)
 
 	// If x64 fallback already exists, check for aa64.
-	if guest.FileExists(fallbackPath) {
+	if guestio.FileExists(fallbackPath) {
 		slog.Debug("fallback bootloader already exists, skipping", "path", fallbackPath)
 		return nil
 	}
 
 	// Also check aa64 variant.
 	aa64Path := filepath.Join(fallbackDir, "bootaa64.efi")
-	if guest.FileExists(aa64Path) {
+	if guestio.FileExists(aa64Path) {
 		slog.Debug("fallback bootloader already exists, skipping", "path", aa64Path)
 		return nil
 	}
 
 	slog.Debug("copying bootloader", "src", srcPath, "dst", fallbackPath)
-	if err := guest.FileCopy(srcPath, fallbackPath); err != nil {
+	if err := guestio.FileCopy(srcPath, fallbackPath); err != nil {
 		slog.Warn("failed to copy fallback bootloader", "error", err)
 		// Best-effort: don't fail the conversion.
 		return nil

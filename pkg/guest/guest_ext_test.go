@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/guest"
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
+	"github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
 
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
 )
 
 func TestDirectFSRoundTrip(t *testing.T) {
@@ -67,7 +68,7 @@ func TestMkdirCreatesParents(t *testing.T) {
 
 func guestFromDirect(t *testing.T, dir string) *guest.Guest {
 	t.Helper()
-	g, err := guest.AttachMounted(nil, dir, guest.ModeDirect, nil)
+	g, err := guest.AttachMounted(nil, dir, backend.ModeDirect, nil)
 	if err != nil {
 		t.Fatalf("AttachMounted: %v", err)
 	}

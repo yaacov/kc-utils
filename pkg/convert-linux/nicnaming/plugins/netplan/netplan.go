@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Plugin struct{}
@@ -19,16 +19,16 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	dir := filepath.Join(guestRoot, "etc", "netplan")
-	return guest.FileIsDir(dir)
+	return guestio.FileIsDir(dir)
 }
 
 func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) ([]nicnaming.NamingRule, error) {
 	netplanDir := filepath.Join(guestRoot, "etc", "netplan")
-	yamlFiles, err := guest.FileGlob(filepath.Join(netplanDir, "*.yaml"))
+	yamlFiles, err := guestio.FileGlob(filepath.Join(netplanDir, "*.yaml"))
 	if err != nil {
 		return nil, nil
 	}
-	ymlFiles, _ := guest.FileGlob(filepath.Join(netplanDir, "*.yml"))
+	ymlFiles, _ := guestio.FileGlob(filepath.Join(netplanDir, "*.yml"))
 	yamlFiles = append(yamlFiles, ymlFiles...)
 
 	if len(yamlFiles) == 0 {
@@ -59,7 +59,7 @@ func findInterfaceInNetplan(files []string, ip string) string {
 }
 
 func scanNetplanFile(path, ip string) string {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return ""
 	}

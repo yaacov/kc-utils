@@ -15,7 +15,7 @@ Host kernel
   └── kc-finalize       fstrim, umount(8), fsck
 ```
 
-Implementation: [`pkg/guest/direct/`](../../pkg/guest/direct/README.md).
+Implementation: [`pkg/guest/plugins/direct/`](../../pkg/guest/plugins/direct/README.md).
 
 ## Privileged capabilities
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Plugin struct{}
@@ -19,12 +19,12 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	dir := filepath.Join(guestRoot, "etc", "NetworkManager", "system-connections")
-	return guest.FileIsDir(dir)
+	return guestio.FileIsDir(dir)
 }
 
 func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) ([]nicnaming.NamingRule, error) {
 	connDir := filepath.Join(guestRoot, "etc", "NetworkManager", "system-connections")
-	files, err := guest.FileReadDir(connDir)
+	files, err := guestio.FileReadDir(connDir)
 	if err != nil {
 		return nil, nil
 	}
@@ -50,7 +50,7 @@ func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) 
 }
 
 func nmFileHasIP(path, ip string) bool {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return false
 	}
@@ -65,7 +65,7 @@ func nmFileHasIP(path, ip string) bool {
 }
 
 func nmFileDevice(path string) string {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return ""
 	}

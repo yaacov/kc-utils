@@ -295,7 +295,10 @@ appliance-arch: check_container_runtime
 	@ls -lh $(APPLIANCE_OUT)/$(ARCH)
 
 ## Build kc-v2v container image
-build-kc-v2v-image: check_container_runtime build
+# No `build` prereq: the Containerfile's builder stage cross-compiles the
+# binaries from source (COPY . . + go build), and the host bin/ output is never
+# copied into the image, so a host build here would just be wasted work.
+build-kc-v2v-image: check_container_runtime
 	$(CONTAINER_CMD) build $(PLATFORM_FLAG) -t $(KC_V2V_IMAGE_LOCAL) -f build/kc-v2v/Containerfile .
 
 ## Push kc-v2v container image

@@ -78,7 +78,7 @@ Windows guests are classified into version handlers (`win2008`, `win10`, …)
 at pipeline block 1. Handlers drive virtio-win OS directory selection and
 firstboot script variants.
 
-See [guest-os-handlers.md](guest-os-handlers.md) for the full handler matrix,
+See [guest-os-handlers.md](../architecture/guest-os-handlers.md) for the full handler matrix,
 code locations, and archived driver merge details. Summary tables also appear
 below under **Driver source** and **Firstboot scripts**.
 

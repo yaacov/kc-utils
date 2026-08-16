@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // ModulesDir returns the guest's kernel modules directory. Some distros and
@@ -18,7 +18,7 @@ func ModulesDir(guestRoot string) string {
 		filepath.Join(guestRoot, "usr", "lib", "modules"),
 	}
 	for _, dir := range candidates {
-		if guest.FileIsDir(dir) {
+		if guestio.FileIsDir(dir) {
 			return dir
 		}
 	}
@@ -31,10 +31,10 @@ func ModulesDir(guestRoot string) string {
 // the guestfish daemon (see initramfs/virtio.go for rationale).
 func ProbeModules(guestRoot, version string) (hasVirtio, isXenPV bool) {
 	driversDir := filepath.Join(ModulesDir(guestRoot), version, "kernel", "drivers")
-	if !guest.FileIsDir(driversDir) {
+	if !guestio.FileIsDir(driversDir) {
 		return false, false
 	}
-	matches, err := guest.FileGlob(filepath.Join(driversDir, "*", "*.ko*"))
+	matches, err := guestio.FileGlob(filepath.Join(driversDir, "*", "*.ko*"))
 	if err != nil {
 		slog.Warn("kernel module glob failed", "dir", driversDir, "version", version, "error", err)
 		return false, false

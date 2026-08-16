@@ -11,6 +11,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var openRegistryHive = func(hivePath string) (registry.Hive, error) {
@@ -89,7 +90,7 @@ func inspectWindows(root string) (*types.InspectData, error) {
 }
 
 func findWindowsDir(root, name string) string {
-	entries, err := guest.FileReadDir(root)
+	entries, err := guestio.FileReadDir(root)
 	if err != nil {
 		return ""
 	}
@@ -105,11 +106,11 @@ func detectWindowsArch(root, systemRoot string) string {
 	sys32 := filepath.Join(root, systemRoot, "System32")
 	sysWow := filepath.Join(root, systemRoot, "SysWOW64")
 
-	if guest.FileExists(sysWow) {
+	if guestio.FileExists(sysWow) {
 		return "x86_64"
 	}
 
-	if guest.FileExists(sys32) {
+	if guestio.FileExists(sys32) {
 		return "i386"
 	}
 

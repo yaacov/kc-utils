@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Plugin struct{}
@@ -18,12 +19,12 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	dir := filepath.Join(guestRoot, "var", "lib", "wicked")
-	return guest.FileIsDir(dir)
+	return guestio.FileIsDir(dir)
 }
 
 func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) ([]nicnaming.NamingRule, error) {
 	wickedDir := filepath.Join(guestRoot, "var", "lib", "wicked")
-	files, err := guest.FileReadDir(wickedDir)
+	files, err := guestio.FileReadDir(wickedDir)
 	if err != nil {
 		return nil, nil
 	}
@@ -41,14 +42,14 @@ func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) 
 // findDeviceByIP searches wicked lease XML files for an <address> tag matching
 // the given IP. Wicked lease filenames follow the pattern:
 // lease-<interface>-dhcp-ipv4.xml
-func findDeviceByIP(dir string, files []guest.DirEntry, ip string) string {
+func findDeviceByIP(dir string, files []backend.DirEntry, ip string) string {
 	searchTag := "<address>" + ip + "</address>"
 	for _, f := range files {
 		if f.IsDir {
 			continue
 		}
 		path := filepath.Join(dir, f.Name)
-		data, err := guest.FileRead(path)
+		data, err := guestio.FileRead(path)
 		if err != nil {
 			continue
 		}

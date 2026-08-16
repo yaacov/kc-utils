@@ -33,9 +33,15 @@ func CustomizerOpts(pipeline *types.PipelineData) map[string]string {
 // as warnings so that downstream consumers (e.g. the migration controller) can
 // detect partial failures such as a failed initramfs rebuild.
 func WriteTargetMeta(path string, pipeline *types.PipelineData) error {
-	meta := pipeline.Target
 	convert := pipeline.Convert
-	if convert != nil {
+	if convert != nil && (len(convert.Warnings) > 0 || len(convert.Errors) > 0) {
+		// Target may be nil (e.g. an early-failing convert). Allocate it so the
+		// warnings are still recorded and marshaled, rather than dereferencing a
+		// nil pointer.
+		if pipeline.Target == nil {
+			pipeline.Target = &types.TargetMeta{}
+		}
+		meta := pipeline.Target
 		if len(convert.Warnings) > 0 {
 			meta.Warnings = append(meta.Warnings, convert.Warnings...)
 		}

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // DetectArch determines the guest architecture from the mounted filesystem.
@@ -15,7 +15,7 @@ func DetectArch(guestRoot string) string {
 		filepath.Join(guestRoot, "lib", "modules"),
 		filepath.Join(guestRoot, "usr", "lib", "modules"),
 	} {
-		entries, err := guest.FileReadDir(path)
+		entries, err := guestio.FileReadDir(path)
 		if err != nil {
 			continue
 		}

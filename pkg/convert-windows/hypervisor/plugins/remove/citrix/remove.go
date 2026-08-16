@@ -8,7 +8,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -24,7 +24,7 @@ func init() {
 }
 
 func (r *Remove) Detect(guestRoot string, _ registry.Hive, softwareHive registry.Hive) bool {
-	if guest.FileExists(filepath.Join(guestRoot, "Program Files", "Citrix", "XenTools")) {
+	if guestio.FileExists(filepath.Join(guestRoot, "Program Files", "Citrix", "XenTools")) {
 		return true
 	}
 	return softwareHive.KeyExists(uninstallKey)
@@ -42,8 +42,8 @@ func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive
 	}
 
 	toolsDir := filepath.Join(guestRoot, "Program Files", "Citrix", "XenTools")
-	if guest.FileExists(toolsDir) {
-		_ = guest.FileRemoveAll(toolsDir)
+	if guestio.FileExists(toolsDir) {
+		_ = guestio.FileRemoveAll(toolsDir)
 		slog.Info("removed Citrix XenTools directory", "path", toolsDir)
 	}
 

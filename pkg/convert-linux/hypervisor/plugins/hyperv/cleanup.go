@@ -7,7 +7,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -23,7 +23,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "usr", "sbin", "hv_vss_daemon"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}

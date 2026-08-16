@@ -12,7 +12,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -39,7 +39,7 @@ func Detect(guestRoot string) bool {
 	if isNetworkStackAmbiguous(guestRoot) {
 		return false
 	}
-	if guest.FileExists(filepath.Join(guestRoot, "usr", "lib", "systemd", "network", "80-ec2.network")) {
+	if guestio.FileExists(filepath.Join(guestRoot, "usr", "lib", "systemd", "network", "80-ec2.network")) {
 		return true
 	}
 	if isAmazonLinux2023(guestRoot) {
@@ -65,7 +65,7 @@ func isNetworkStackAmbiguous(guestRoot string) bool {
 // falls through to isNetworkdPrimary instead of being matched unconditionally.
 func isAmazonLinux2023(guestRoot string) bool {
 	for _, rel := range []string{"etc/os-release", "usr/lib/os-release"} {
-		data, err := guest.FileRead(filepath.Join(guestRoot, rel))
+		data, err := guestio.FileRead(filepath.Join(guestRoot, rel))
 		if err != nil {
 			continue
 		}
@@ -112,11 +112,11 @@ func InstallKubeVirtNetworking(guestRoot string) error {
 // InstallDHCP writes a persistent DHCP profile for virtio NICs on KubeVirt.
 func InstallDHCP(guestRoot string) error {
 	netDir := filepath.Join(guestRoot, "etc", "systemd", "network")
-	if err := guest.FileMkdirAll(netDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(netDir, 0o755); err != nil {
 		return fmt.Errorf("creating systemd network dir: %w", err)
 	}
 	path := filepath.Join(netDir, virtioNetworkFile)
-	if err := guest.FileWrite(path, []byte(virtioDHCPConfig), 0o644); err != nil {
+	if err := guestio.FileWrite(path, []byte(virtioDHCPConfig), 0o644); err != nil {
 		return fmt.Errorf("writing %s: %w", virtioNetworkFile, err)
 	}
 	slog.Info("installed virtio DHCP network config", "path", path)
@@ -129,7 +129,7 @@ func WriteStaticNetworks(guestRoot string, ips []types.StaticIP) error {
 		return nil
 	}
 	netDir := filepath.Join(guestRoot, "etc", "systemd", "network")
-	if err := guest.FileMkdirAll(netDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(netDir, 0o755); err != nil {
 		return fmt.Errorf("creating systemd network dir: %w", err)
 	}
 	for i := range ips {
@@ -139,7 +139,7 @@ func WriteStaticNetworks(guestRoot string, ips []types.StaticIP) error {
 		}
 		name := staticNetworkPrefix + sanitizeMAC(ips[i].MAC) + ".network"
 		path := filepath.Join(netDir, name)
-		if err := guest.FileWrite(path, []byte(content), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("writing %s: %w", name, err)
 		}
 		slog.Info("installed static network config", "path", path, "mac", ips[i].MAC)
@@ -195,11 +195,11 @@ func netmaskPrefix(mask string) (string, error) {
 func InstallWaitOnlineDropIn(guestRoot string) error {
 	dropInDir := filepath.Join(guestRoot, "etc", "systemd", "system",
 		"systemd-networkd-wait-online.service.d")
-	if err := guest.FileMkdirAll(dropInDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(dropInDir, 0o755); err != nil {
 		return fmt.Errorf("creating wait-online drop-in dir: %w", err)
 	}
 	path := filepath.Join(dropInDir, waitOnlineDropIn)
-	if err := guest.FileWrite(path, []byte(waitOnlineDropInContent), 0o644); err != nil {
+	if err := guestio.FileWrite(path, []byte(waitOnlineDropInContent), 0o644); err != nil {
 		return fmt.Errorf("writing wait-online drop-in: %w", err)
 	}
 	slog.Info("installed wait-online drop-in", "path", path)

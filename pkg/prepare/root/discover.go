@@ -64,6 +64,10 @@ func skipFSType(ft string) bool {
 	case ft == "crypto_luks" || strings.Contains(ft, "crypto_luks") || ft == "bitlocker":
 		// Locked containers are not mountable roots; unlocked mappers are probed separately.
 		return true
+	case ft == "lvm2_member" || strings.Contains(ft, "lvm2_member"):
+		// LVM physical volumes are not mountable; their logical volumes are
+		// discovered and probed separately via LVPaths.
+		return true
 	default:
 		return false
 	}

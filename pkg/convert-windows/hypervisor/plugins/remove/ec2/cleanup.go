@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -20,7 +20,7 @@ func init() {
 
 func (c *Cleanup) Detect(mountRoot string, _, _ registry.Hive) bool {
 	amazonDir := filepath.Join(mountRoot, "Program Files", "Amazon")
-	return guest.FileExists(amazonDir)
+	return guestio.FileExists(amazonDir)
 }
 
 const (
@@ -55,7 +55,7 @@ func (c *Cleanup) Remove(mountRoot string, systemHive, _ registry.Hive) error {
 		filepath.Join(mountRoot, "Windows", "System32", "Tasks", "Amazon Ec2 Launch - Sysprep"),
 	}
 	for _, tp := range ec2Tasks {
-		_ = guest.FileRemoveAll(tp)
+		_ = guestio.FileRemoveAll(tp)
 	}
 
 	removeEC2DriverFiles(mountRoot)
@@ -73,14 +73,14 @@ var nitroDriverFiles = map[string]bool{
 // Missing files are ignored; Driver Store packages are left in place.
 func removeEC2DriverFiles(mountRoot string) {
 	driversDir := filepath.Join(mountRoot, "Windows", "System32", "drivers")
-	entries, err := guest.FileReadDir(driversDir)
+	entries, err := guestio.FileReadDir(driversDir)
 	if err != nil {
 		return
 	}
 	for _, e := range entries {
 		name := strings.ToLower(e.Name)
 		if (strings.HasPrefix(name, "xen") && strings.HasSuffix(name, ".sys")) || nitroDriverFiles[name] {
-			_ = guest.FileRemove(filepath.Join(driversDir, e.Name))
+			_ = guestio.FileRemove(filepath.Join(driversDir, e.Name))
 		}
 	}
 }

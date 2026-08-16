@@ -7,7 +7,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var uninstallKeys = []string{
@@ -33,7 +33,7 @@ func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 		filepath.Join(guestRoot, "Program Files", "Amazon", "Ec2ConfigService"),
 	}
 	for _, d := range dirs {
-		if guest.FileExists(d) {
+		if guestio.FileExists(d) {
 			return true
 		}
 	}
@@ -52,7 +52,7 @@ func (r *Remove) Remove(guestRoot string, _, softwareHive registry.Hive) error {
 		filepath.Join(guestRoot, "Program Files", "Amazon", "Ec2ConfigService"),
 	}
 	for _, p := range removePaths {
-		_ = guest.FileRemoveAll(p)
+		_ = guestio.FileRemoveAll(p)
 	}
 
 	return nil

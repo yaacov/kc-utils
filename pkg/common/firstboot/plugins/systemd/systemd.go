@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/firstboot"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type SystemdFirstBoot struct{}
@@ -23,13 +23,13 @@ const scriptTail = "\nsystemctl disable kc-firstboot.service\nrm -f /etc/systemd
 
 func (s *SystemdFirstBoot) Install(guestRoot string, commands []string) error {
 	scriptDir := filepath.Join(guestRoot, "usr", "local", "bin")
-	if err := guest.FileMkdirAll(scriptDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(scriptDir, 0o755); err != nil {
 		return err
 	}
 
 	scriptPath := filepath.Join(scriptDir, "kc-firstboot.sh")
 
-	if existing, err := guest.FileRead(scriptPath); err == nil && len(existing) > 0 {
+	if existing, err := guestio.FileRead(scriptPath); err == nil && len(existing) > 0 {
 		return appendCommands(scriptPath, string(existing), commands)
 	}
 
@@ -39,7 +39,7 @@ func (s *SystemdFirstBoot) Install(guestRoot string, commands []string) error {
 		fmt.Fprintf(&script, "run_with_retry %q\n", cmd)
 	}
 	script.WriteString(scriptTail)
-	if err := guest.FileWrite(scriptPath, []byte(script.String()), 0o755); err != nil {
+	if err := guestio.FileWrite(scriptPath, []byte(script.String()), 0o755); err != nil {
 		return err
 	}
 
@@ -55,7 +55,7 @@ func appendCommands(scriptPath, existing string, commands []string) error {
 		for _, cmd := range commands {
 			fmt.Fprintf(&buf, "run_with_retry %q\n", cmd)
 		}
-		return guest.FileWrite(scriptPath, []byte(buf.String()), 0o755)
+		return guestio.FileWrite(scriptPath, []byte(buf.String()), 0o755)
 	}
 	var buf strings.Builder
 	buf.WriteString(existing[:idx])
@@ -64,7 +64,7 @@ func appendCommands(scriptPath, existing string, commands []string) error {
 		fmt.Fprintf(&buf, "run_with_retry %q\n", cmd)
 	}
 	buf.WriteString(existing[idx:])
-	return guest.FileWrite(scriptPath, []byte(buf.String()), 0o755)
+	return guestio.FileWrite(scriptPath, []byte(buf.String()), 0o755)
 }
 
 func (s *SystemdFirstBoot) installUnit(guestRoot string) error {
@@ -83,13 +83,13 @@ TimeoutStartSec=120
 WantedBy=multi-user.target
 `
 	unitPath := filepath.Join(guestRoot, "etc", "systemd", "system", "kc-firstboot.service")
-	if err := guest.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
+	if err := guestio.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
 		return err
 	}
 	symlinkDir := filepath.Join(guestRoot, "etc", "systemd", "system", "multi-user.target.wants")
-	if err := guest.FileMkdirAll(symlinkDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(symlinkDir, 0o755); err != nil {
 		return err
 	}
-	return guest.FileSymlink("/etc/systemd/system/kc-firstboot.service",
+	return guestio.FileSymlink("/etc/systemd/system/kc-firstboot.service",
 		filepath.Join(symlinkDir, "kc-firstboot.service"))
 }

@@ -57,7 +57,7 @@ Default base: `/usr/share/kc-packages` (override with `KC_PACKAGES`;
 
 Selection uses inspect `distro` + `major_version`: prefer exact `el{major}`, else nearest lower `elN` that exists. Only **one** RPM is copied into the guest.
 
-The kc-v2v image stages el8/el9/el10 x86_64 RPMs via [`build/kc-v2v/stage-linux-packages.sh`](../build/kc-v2v/stage-linux-packages.sh). Legacy flat layout `$base/rpm/$arch/` remains supported for one-off mounts.
+The kc-v2v image stages el8/el9/el10 x86_64 RPMs via [`build/kc-v2v/stage-linux-packages.sh`](../../build/kc-v2v/stage-linux-packages.sh). Legacy flat layout `$base/rpm/$arch/` remains supported for one-off mounts.
 
 Debian/SUSE guests are not covered by the baked matrix; without a matching local package, `--offline` skips agent install.
 
@@ -88,7 +88,7 @@ Block numbers match the pipeline comments in `pkg/cmd/convert-linux/pipeline.go`
 
 Distro handlers (`rhel`, `debian`, `suse`), package format/manager lookup, and
 offline QGA selection are documented in
-[guest-os-handlers.md](guest-os-handlers.md).
+[guest-os-handlers.md](../architecture/guest-os-handlers.md).
 
 ## Input
 

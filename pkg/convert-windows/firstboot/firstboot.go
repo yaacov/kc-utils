@@ -12,7 +12,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Config holds firstboot script generation parameters.
@@ -37,18 +37,18 @@ func WriteBatScript(baseDir string, priority int, name string, content string) e
 
 func writeScriptFile(baseDir string, priority int, name, content, ext string) error {
 	scriptsDir := filepath.Join(baseDir, "scripts")
-	if err := guest.FileMkdirAll(scriptsDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(scriptsDir, 0o755); err != nil {
 		return fmt.Errorf("creating scripts dir: %w", err)
 	}
 	filename := fmt.Sprintf("%04d-%s%s", priority, name, ext)
 	scriptPath := filepath.Join(scriptsDir, filename)
-	return guest.FileWrite(scriptPath, []byte(content), 0o644)
+	return guestio.FileWrite(scriptPath, []byte(content), 0o644)
 }
 
 // Configure generates firstboot scripts, launcher, and RunOnce registry entry.
 func Configure(cfg *Config, softwareHive registry.Hive) error {
 	firstbootDir := filepath.Join(cfg.MountRoot, "Program Files", "Guestfs", "Firstboot")
-	if mkErr := guest.FileMkdirAll(filepath.Join(firstbootDir, "scripts"), 0o755); mkErr != nil {
+	if mkErr := guestio.FileMkdirAll(filepath.Join(firstbootDir, "scripts"), 0o755); mkErr != nil {
 		return fmt.Errorf("creating firstboot dir: %w", mkErr)
 	}
 
@@ -113,7 +113,7 @@ func Configure(cfg *Config, softwareHive registry.Hive) error {
 
 	batContent := launcherScript(ver.FirstbootLauncher())
 	batPath := filepath.Join(firstbootDir, "firstboot.bat")
-	if batErr := guest.FileWrite(batPath, []byte(batContent), 0o644); batErr != nil {
+	if batErr := guestio.FileWrite(batPath, []byte(batContent), 0o644); batErr != nil {
 		slog.Warn("writing firstboot.bat failed", "error", batErr)
 	}
 

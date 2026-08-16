@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Copy copies VirtIO driver package files into the guest and returns copied driver names.
@@ -22,10 +22,10 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 	if len(driverFiles) == 0 {
 		return copiedDriverNames, nil
 	}
-	if mkErr := guest.FileMkdirAll(virtioDir, 0o755); mkErr != nil {
+	if mkErr := guestio.FileMkdirAll(virtioDir, 0o755); mkErr != nil {
 		return nil, fmt.Errorf("creating VirtIO driver dir: %w", mkErr)
 	}
-	if mkErr := guest.FileMkdirAll(sysDriversDir, 0o755); mkErr != nil {
+	if mkErr := guestio.FileMkdirAll(sysDriversDir, 0o755); mkErr != nil {
 		return nil, fmt.Errorf("creating system32 drivers dir: %w", mkErr)
 	}
 	for _, df := range driverFiles {
@@ -47,7 +47,7 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 				}
 			}
 			dstFile := filepath.Join(virtioDir, rel)
-			if wrErr := guest.FileUpload(srcFile, dstFile); wrErr != nil {
+			if wrErr := guestio.FileUpload(srcFile, dstFile); wrErr != nil {
 				slog.Warn("writing driver file failed", "path", dstFile, "error", wrErr)
 				continue
 			}
@@ -56,7 +56,7 @@ func Copy(mountRoot string, driverFiles []driversource.DriverFile) ([]string, er
 			lower := strings.ToLower(base)
 			if strings.HasSuffix(lower, ".sys") && BootCriticalDrivers[strings.TrimSuffix(lower, ".sys")] {
 				sysDst := filepath.Join(sysDriversDir, base)
-				if wrErr := guest.FileUpload(srcFile, sysDst); wrErr != nil {
+				if wrErr := guestio.FileUpload(srcFile, sysDst); wrErr != nil {
 					slog.Warn("writing system32 driver failed", "path", sysDst, "error", wrErr)
 				}
 			}

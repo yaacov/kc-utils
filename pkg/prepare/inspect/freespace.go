@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -69,7 +69,7 @@ func candidateMountRelPaths(mountRoot string) []string {
 	var result []string
 	for _, rel := range candidates {
 		path := filepath.Join(mountRoot, rel)
-		if guest.FileExists(path) {
+		if guestio.FileExists(path) {
 			result = append(result, rel)
 		}
 	}
@@ -79,10 +79,10 @@ func candidateMountRelPaths(mountRoot string) []string {
 
 func statfsInfo(mountRoot, rel string) (types.FreeSpaceInfo, error) {
 	path := filepath.Join(mountRoot, rel)
-	if _, err := guest.FileStat(path); err != nil {
+	if _, err := guestio.FileStat(path); err != nil {
 		return types.FreeSpaceInfo{}, err
 	}
-	freeBytes, freeInodes, err := guest.FileStatFS(path)
+	freeBytes, freeInodes, err := guestio.FileStatFS(path)
 	if err != nil {
 		return types.FreeSpaceInfo{}, err
 	}

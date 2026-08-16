@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var (
@@ -26,15 +26,15 @@ var (
 // driver (e.g. vmwgfx).
 func ConfigureXorgDriver(guestRoot string) {
 	xorgConf := filepath.Join(guestRoot, "etc", "X11", "xorg.conf")
-	if !guest.FileExists(xorgConf) {
+	if !guestio.FileExists(xorgConf) {
 		alt := filepath.Join(guestRoot, "etc", "X11", "XF86Config")
-		if !guest.FileExists(alt) {
+		if !guestio.FileExists(alt) {
 			return
 		}
 		xorgConf = alt
 	}
 
-	data, err := guest.FileRead(xorgConf)
+	data, err := guestio.FileRead(xorgConf)
 	if err != nil {
 		slog.Warn("reading xorg config failed", "path", xorgConf, "error", err)
 		return
@@ -65,7 +65,7 @@ func ConfigureXorgDriver(guestRoot string) {
 		content = strings.ReplaceAll(content, "\n\n\n", "\n\n")
 	}
 
-	if err := guest.FileWrite(xorgConf, []byte(content), 0o644); err != nil {
+	if err := guestio.FileWrite(xorgConf, []byte(content), 0o644); err != nil {
 		slog.Warn("writing xorg config failed", "path", xorgConf, "error", err)
 	} else {
 		slog.Info("updated xorg display driver to modesetting", "path", xorgConf)

@@ -71,9 +71,9 @@ implementations self-register via `init()`:
 
 | Name | Implementation | Requires |
 |------|----------------|----------|
-| **direct** | `pkg/guest/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN`; registered on Linux only |
-| **guestfs** (`--backend=guestfs`) | `pkg/guest/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC | `/dev/kvm` only; registered on Linux only |
-| **qemu** (`--backend=qemu`) | `pkg/guest/qemu/` — QEMU + shipped kernel/initramfs; `kc-agent` over a virtio-serial Unix socket | QEMU + appliance artifacts; registered on Linux and Darwin |
+| **direct** | `pkg/guest/plugins/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN`; registered on Linux only |
+| **guestfs** (`--backend=guestfs`) | `pkg/guest/plugins/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC | `/dev/kvm` only; registered on Linux only |
+| **qemu** (`--backend=qemu`) | `pkg/guest/plugins/qemu/` — QEMU + shipped kernel/initramfs; `kc-agent` over a virtio-serial Unix socket | QEMU + appliance artifacts; registered on Linux and Darwin |
 
 CLI/env: `--backend <name>` / `V2V_backend` (**required**; no default).
 Available names come from `guest.Factories.List()` at runtime after blank imports.
@@ -97,9 +97,9 @@ Rules:
 
 Converters never call `chroot` or other privileged tools directly. `kc-convert-linux` uses `guest.RunInGuest(guestRoot, cmd)` for commands like `dracut` or `grub-mkconfig`; the active backend decides how to execute:
 
-- **Direct** — real `chroot(2)` into the mounted guest root (`pkg/guest/direct/`)
-- **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/guest/guestfs/`)
-- **QEMU** — `chroot` inside the appliance via `kc-agent` (`pkg/guest/qemu/`)
+- **Direct** — real `chroot(2)` into the mounted guest root (`pkg/guest/plugins/direct/`)
+- **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/guest/plugins/guestfs/`)
+- **QEMU** — `chroot` inside the appliance via `kc-agent` (`pkg/guest/plugins/qemu/`)
 
 `kc-convert-windows` reads virtio-win drivers from the pre-extracted driver tree
 at `/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).

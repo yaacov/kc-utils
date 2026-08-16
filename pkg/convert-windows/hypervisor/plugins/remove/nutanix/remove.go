@@ -7,7 +7,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const uninstallKey = "Microsoft\\Windows\\CurrentVersion\\Uninstall\\Nutanix Guest Tools"
@@ -20,7 +20,7 @@ func init() {
 
 func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 	for _, sub := range []string{"Program Files", "Program Files (x86)"} {
-		if guest.FileExists(filepath.Join(guestRoot, sub, "Nutanix")) {
+		if guestio.FileExists(filepath.Join(guestRoot, sub, "Nutanix")) {
 			return true
 		}
 	}
@@ -29,7 +29,7 @@ func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 
 func (r *Remove) Remove(guestRoot string, _, softwareHive registry.Hive) error {
 	for _, sub := range []string{"Program Files", "Program Files (x86)"} {
-		_ = guest.FileRemoveAll(filepath.Join(guestRoot, sub, "Nutanix"))
+		_ = guestio.FileRemoveAll(filepath.Join(guestRoot, sub, "Nutanix"))
 	}
 	softwareHive.DeleteKey(uninstallKey)
 	return nil

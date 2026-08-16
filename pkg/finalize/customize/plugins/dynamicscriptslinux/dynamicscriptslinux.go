@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/firstboot"
 	"github.com/yaacov/kc-utils/pkg/finalize/customize"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var scriptRegex = regexp.MustCompile(`^([0-9]+)_linux_(run|firstboot)(([\w\-]*)\.sh)$`)
@@ -115,13 +115,13 @@ func applyScript(guestRoot string, s script) error {
 
 func runScript(guestRoot, scriptPath string) error {
 	guestScript := filepath.Join(guestRoot, "tmp", filepath.Base(scriptPath))
-	if err := guest.FileMkdirAll(filepath.Dir(guestScript), 0o755); err != nil {
+	if err := guestio.FileMkdirAll(filepath.Dir(guestScript), 0o755); err != nil {
 		return err
 	}
-	if err := guest.FileUpload(scriptPath, guestScript); err != nil {
+	if err := guestio.FileUpload(scriptPath, guestScript); err != nil {
 		return err
 	}
-	if err := guest.FileChmod(guestScript, 0o755); err != nil {
+	if err := guestio.FileChmod(guestScript, 0o755); err != nil {
 		return err
 	}
 	_, err := guest.RunInGuest(guestRoot, []string{"/bin/bash", "/tmp/" + filepath.Base(scriptPath)})
@@ -130,28 +130,26 @@ func runScript(guestRoot, scriptPath string) error {
 
 func installFirstboot(guestRoot string, s script) error {
 	destDir := filepath.Join(guestRoot, "usr", "local", "bin")
-	if err := guest.FileMkdirAll(destDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(destDir, 0o755); err != nil {
 		return err
 	}
 	destName := fmt.Sprintf("kc-dynamic-%s", s.Name)
 	destPath := filepath.Join(destDir, destName)
-	if err := guest.FileUpload(s.Path, destPath); err != nil {
+	if err := guestio.FileUpload(s.Path, destPath); err != nil {
 		return err
 	}
-	if err := guest.FileChmod(destPath, 0o755); err != nil {
+	if err := guestio.FileChmod(destPath, 0o755); err != nil {
 		return err
-	}
-
-	firstbootPath := filepath.Join(destDir, "kc-firstboot.sh")
-	cmdLine := fmt.Sprintf(`run_with_retry "bash %s"`, destPath)
-	if existing, err := guest.FileRead(firstbootPath); err == nil {
-		content := strings.TrimSuffix(string(existing), "\n") + "\n" + cmdLine + "\n"
-		return guest.FileWrite(firstbootPath, []byte(content), 0o755)
 	}
 
 	handler, ok := firstboot.Handlers.Get("systemd")
 	if !ok {
 		return fmt.Errorf("systemd firstboot handler not registered")
 	}
+	// The command runs inside the booted guest, so reference the guest-absolute
+	// path, not the host mount path (destPath). Pass the bare command: the
+	// handler adds run_with_retry wrapping and appends it before the script's
+	// self-cleanup tail (append-safe across multiple firstboot scripts).
+	cmdLine := fmt.Sprintf("bash /usr/local/bin/%s", destName)
 	return handler.Install(guestRoot, []string{cmdLine})
 }

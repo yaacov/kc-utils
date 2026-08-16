@@ -7,7 +7,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -23,7 +23,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "etc", "init.d", "ngt_guest_agent"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}
@@ -38,8 +38,8 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 	} {
 		systemd.DisableSystemdUnit(guestRoot, unit)
 	}
-	_ = guest.FileRemove(filepath.Join(guestRoot, "etc", "rc.d", "init.d", "ngt_guest_agent"))
-	_ = guest.FileRemove(filepath.Join(guestRoot, "etc", "init.d", "ngt_guest_agent"))
+	_ = guestio.FileRemove(filepath.Join(guestRoot, "etc", "rc.d", "init.d", "ngt_guest_agent"))
+	_ = guestio.FileRemove(filepath.Join(guestRoot, "etc", "init.d", "ngt_guest_agent"))
 	systemd.RemovePaths(filepath.Join(guestRoot, "usr", "local", "nutanix", "ngt"))
 	return nil
 }

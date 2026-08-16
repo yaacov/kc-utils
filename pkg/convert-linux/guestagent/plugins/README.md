@@ -55,6 +55,6 @@ Lookup picks a **single** best match: exact `el{major}` from inspect, else neare
 Pins and download script: [`build/kc-v2v/stage-linux-packages.sh`](../../../../build/kc-v2v/stage-linux-packages.sh).
 
 Note: Linux offline packages here are unrelated to VirtIO-Win drivers for Windows
-(see [`pkg/convert-windows/driversource/plugins/`](../../convert-windows/driversource/plugins/)).
+(see [`pkg/convert-windows/driversource/plugins/`](../../../convert-windows/driversource/plugins/)).
 
 Firstboot support is provided by `pkg/common/firstboot/` (shared across converters).

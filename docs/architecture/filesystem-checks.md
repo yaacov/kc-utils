@@ -77,9 +77,9 @@ used by deferred cleanup and `--teardown-only` paths (which skip fsck).
 
 Behavior depends on the guest access backend. Implementation:
 
-- Direct (host-mount): [`pkg/guest/direct/backend.go`](../../pkg/guest/direct/backend.go) `FSCheck`
-- Guestfs (libguestfs appliance): [`pkg/guest/guestfs/backend.go`](../../pkg/guest/guestfs/backend.go) `fscheckCommand`
-- QEMU appliance: [`pkg/guest/qemu/`](../../pkg/guest/qemu/) (tools run inside `kc-agent`)
+- Direct (host-mount): [`pkg/guest/plugins/direct/backend.go`](../../pkg/guest/plugins/direct/backend.go) `FSCheck`
+- Guestfs (libguestfs appliance): [`pkg/guest/plugins/guestfs/backend.go`](../../pkg/guest/plugins/guestfs/backend.go) `fscheckCommand`
+- QEMU appliance: [`pkg/guest/plugins/qemu/`](../../pkg/guest/plugins/qemu/) (tools run inside `kc-agent`)
 
 | FS type | Guestfs (`V2V_backend=guestfs`, kc-v2v image) | Direct / QEMU appliance |
 |---------|----------------------------------------------|-------------------------|

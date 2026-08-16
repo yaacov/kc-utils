@@ -16,7 +16,7 @@ Writes `PrepareOutput` JSON on success; on multiboot failure writes partial outp
 | 2 | [`pkg/prepare/guest/`](../../prepare/guest/) | strict | Open disks, scan partitions, activate LVM |
 
 Guest sub-packages include disk I/O, LUKS/LVM, overlay (kc-v2v), and device
-resolution — see [`pkg/prepare/README.md`](../../prepare/README.md#guest-sub-packages).
+resolution — see [`pkg/prepare/README.md`](../../prepare/README.md).
 
 | 3 | inline (`pkg/guest/`) | inline | LUKS decryption |
 | 4 | inline (`pkg/guest/`) | inline | Pre-conversion fsck |

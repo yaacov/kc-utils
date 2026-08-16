@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // InspectGuest determines OS type and details from a mounted guest root.
@@ -23,7 +23,7 @@ func isWindows(root string) bool {
 		filepath.Join(root, "windows", "system32"),
 		filepath.Join(root, "WINDOWS", "system32"),
 	} {
-		if guest.FileIsDir(p) {
+		if guestio.FileIsDir(p) {
 			return true
 		}
 	}

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 
-	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
 )
 
 type stubSession struct {
@@ -26,7 +26,7 @@ func (s *stubSession) Env() []string {
 	if s.pid <= 0 {
 		return nil
 	}
-	return []string{fmt.Sprintf("%s=%d", guest.EnvGuestfishPID, s.pid)}
+	return []string{fmt.Sprintf("%s=%d", backend.EnvGuestfishPID, s.pid)}
 }
 
 func TestStageCommonArgs(t *testing.T) {
@@ -73,7 +73,7 @@ func TestSetupSharedListenerClevisNetwork(t *testing.T) {
 	prev := startSharedSession
 	t.Cleanup(func() { startSharedSession = prev })
 
-	startSharedSession = func(backend string) (guest.SharedSession, error) {
+	startSharedSession = func(backend string) (backend.SharedSession, error) {
 		if backend != "guestfs" {
 			t.Fatalf("backend=%q", backend)
 		}
@@ -92,13 +92,13 @@ func TestSetupSharedListenerClevisNetwork(t *testing.T) {
 	}
 	found := false
 	for _, e := range stageEnv {
-		if e == guest.EnvGuestfsNetwork+"=1" {
+		if e == backend.EnvGuestfsNetwork+"=1" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("stageEnv missing %s=1: %v", guest.EnvGuestfsNetwork, stageEnv)
+		t.Fatalf("stageEnv missing %s=1: %v", backend.EnvGuestfsNetwork, stageEnv)
 	}
 }
 
@@ -106,7 +106,7 @@ func TestSetupSharedListenerError(t *testing.T) {
 	prev := startSharedSession
 	t.Cleanup(func() { startSharedSession = prev })
 
-	startSharedSession = func(string) (guest.SharedSession, error) {
+	startSharedSession = func(string) (backend.SharedSession, error) {
 		return nil, errors.New("boom")
 	}
 

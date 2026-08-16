@@ -10,6 +10,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // InjectVirtioModules rebuilds the initramfs for the selected kernel to ensure
@@ -33,8 +34,8 @@ func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 	}
 
 	initrdHostPath := filepath.Join(guestRoot, initrdPath)
-	if guest.FileExists(initrdHostPath) {
-		_ = guest.FileCopy(initrdHostPath, initrdHostPath+".pre-v2v")
+	if guestio.FileExists(initrdHostPath) {
+		_ = guestio.FileCopy(initrdHostPath, initrdHostPath+".pre-v2v")
 	}
 
 	virtioDrivers := strings.Join([]string{
@@ -57,7 +58,7 @@ func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 	slog.Warn("dracut failed", "kernel", kernel.Version, "error", err, "output", string(out))
 
 	initramfsToolsDir := filepath.Join(guestRoot, "etc", "initramfs-tools")
-	if !guest.FileExists(initramfsToolsDir) {
+	if !guestio.FileExists(initramfsToolsDir) {
 		return fmt.Errorf("dracut failed and no initramfs-tools found for kernel %s: %w", kernel.Version, err)
 	}
 
@@ -93,12 +94,12 @@ func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 // without a proper environment), so we verify the result.
 func verifyInitramfsRebuilt(initrdHostPath string) error {
 	backupPath := initrdHostPath + ".pre-v2v"
-	origData, err := guest.FileRead(backupPath)
+	origData, err := guestio.FileRead(backupPath)
 	if err != nil {
 		slog.Warn("could not read initramfs backup for verification", "path", backupPath, "error", err)
 		return nil
 	}
-	newData, err := guest.FileRead(initrdHostPath)
+	newData, err := guestio.FileRead(initrdHostPath)
 	if err != nil {
 		return fmt.Errorf("initramfs missing after dracut: %w", err)
 	}
@@ -123,7 +124,7 @@ func inferInitrdPath(guestRoot, version string) string {
 		"/boot/initrd-" + version,
 	}
 	for _, c := range candidates {
-		if guest.FileExists(filepath.Join(guestRoot, c)) {
+		if guestio.FileExists(filepath.Join(guestRoot, c)) {
 			return c
 		}
 	}
@@ -135,11 +136,11 @@ func inferInitrdPath(guestRoot, version string) string {
 // /etc/initramfs-tools/modules so update-initramfs includes them.
 func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) error {
 	modulesFile := filepath.Join(guestRoot, "etc", "initramfs-tools", "modules")
-	if !guest.FileExists(filepath.Dir(modulesFile)) {
+	if !guestio.FileExists(filepath.Dir(modulesFile)) {
 		return nil
 	}
 	var content string
-	if existing, err := guest.FileRead(modulesFile); err == nil {
+	if existing, err := guestio.FileRead(modulesFile); err == nil {
 		content = string(existing)
 	}
 	// Track already-listed modules by whole word. A substring check would drop
@@ -157,7 +158,7 @@ func ensureInitramfsToolsModules(guestRoot, virtioDrivers string) error {
 		}
 	}
 	if changed {
-		if err := guest.FileWrite(modulesFile, []byte(content), 0o644); err != nil {
+		if err := guestio.FileWrite(modulesFile, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("write initramfs-tools modules %s: %w", modulesFile, err)
 		}
 	}

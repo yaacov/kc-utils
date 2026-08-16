@@ -10,7 +10,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/firstboot"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const qemuGAUnit = "qemu-guest-agent.service"
@@ -115,14 +115,14 @@ func findLocalPackages(req FindRequest) []PackageFile {
 
 func copyAndInstallLocal(guestRoot string, pkgs []PackageFile, format string) ([]string, error) {
 	guestPkgDir := filepath.Join(guestRoot, "var", "lib", "kc-packages")
-	if err := guest.FileMkdirAll(guestPkgDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(guestPkgDir, 0o755); err != nil {
 		return nil, fmt.Errorf("creating guest package dir: %w", err)
 	}
 
 	var installPaths []string
 	for _, pkg := range pkgs {
 		dst := filepath.Join(guestPkgDir, pkg.FileName)
-		if err := guest.FileUpload(pkg.HostPath, dst); err != nil {
+		if err := guestio.FileUpload(pkg.HostPath, dst); err != nil {
 			return nil, fmt.Errorf("uploading %s: %w", pkg.HostPath, err)
 		}
 		installPaths = append(installPaths, "/var/lib/kc-packages/"+pkg.FileName)

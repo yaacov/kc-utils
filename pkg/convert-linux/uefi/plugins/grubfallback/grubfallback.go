@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/uefi"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type GrubFallback struct{}
@@ -39,13 +39,26 @@ var grubCandidates = []struct {
 	{"redhat", "grubaa64.efi", "bootaa64.efi"},
 }
 
+// shimSiblingGrub returns the second-stage GRUB binary a shim loads from its
+// own directory, or "" when the given binary is not a shim.
+func shimSiblingGrub(binary string) string {
+	switch binary {
+	case "shimx64.efi", "shim.efi":
+		return "grubx64.efi"
+	case "shimaa64.efi":
+		return "grubaa64.efi"
+	default:
+		return ""
+	}
+}
+
 func (g *GrubFallback) ConvertToVirtio(guestRoot, espPath string) error {
 	efiDir := filepath.Join(guestRoot, espPath, "EFI")
 	fallbackDir := filepath.Join(efiDir, "BOOT")
 
 	// Check whether a fallback already exists.
 	for _, name := range []string{"bootx64.efi", "bootaa64.efi", "BOOTX64.EFI", "BOOTAA64.EFI"} {
-		if guest.FileExists(filepath.Join(fallbackDir, name)) {
+		if guestio.FileExists(filepath.Join(fallbackDir, name)) {
 			slog.Debug("GRUB fallback already exists, skipping", "path", filepath.Join(fallbackDir, name))
 			return nil
 		}
@@ -53,19 +66,41 @@ func (g *GrubFallback) ConvertToVirtio(guestRoot, espPath string) error {
 
 	for _, c := range grubCandidates {
 		src := filepath.Join(efiDir, c.subdir, c.binary)
-		if !guest.FileExists(src) {
+		if !guestio.FileExists(src) {
 			continue
 		}
-		if err := guest.FileMkdirAll(fallbackDir, 0o755); err != nil {
+		if err := guestio.FileMkdirAll(fallbackDir, 0o755); err != nil {
 			slog.Warn("failed to create BOOT dir", "error", err)
 			return nil
 		}
 		dst := filepath.Join(fallbackDir, c.fallbackName)
-		if err := guest.FileCopy(src, dst); err != nil {
+		if err := guestio.FileCopy(src, dst); err != nil {
 			slog.Warn("failed to copy GRUB fallback", "src", src, "dst", dst, "error", err)
 			return nil
 		}
 		slog.Info("installed EFI fallback bootloader", "src", src, "dst", dst)
+
+		// A shim loads its second-stage GRUB from the same directory it was
+		// booted from. When the fallback binary is a shim, copy the sibling
+		// GRUB binary into the fallback dir under its real name so a boot via
+		// \EFI\BOOT\boot{x64,aa64}.efi (removable-media path) can chain into
+		// GRUB. Without it the fallback loads shim, finds no GRUB, and fails.
+		if grubName := shimSiblingGrub(c.binary); grubName != "" {
+			grubSrc := filepath.Join(efiDir, c.subdir, grubName)
+			grubDst := filepath.Join(fallbackDir, grubName)
+			switch {
+			case !guestio.FileExists(grubSrc):
+				slog.Warn("shim fallback installed but sibling GRUB not found; fallback boot may fail", "expected", grubSrc)
+			case guestio.FileExists(grubDst):
+				slog.Debug("GRUB second stage already present beside fallback", "path", grubDst)
+			default:
+				if err := guestio.FileCopy(grubSrc, grubDst); err != nil {
+					slog.Warn("failed to copy GRUB second stage for shim fallback", "src", grubSrc, "dst", grubDst, "error", err)
+				} else {
+					slog.Info("installed GRUB second stage beside shim fallback", "src", grubSrc, "dst", grubDst)
+				}
+			}
+		}
 		return nil
 	}
 

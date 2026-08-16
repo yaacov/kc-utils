@@ -15,14 +15,14 @@ import (
 
 	v2vserver "github.com/yaacov/kc-utils/pkg/cmd/v2v/server"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 	"github.com/yaacov/kc-utils/pkg/prepare/guest/overlay"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 	"github.com/yaacov/kc-utils/pkg/v2v/inspection/xml"
 )
 
 // startSharedSession starts a shared backend session; overridden in tests.
-var startSharedSession = guest.StartSharedSession
+var startSharedSession = backend.StartSharedSession
 
 // pipelineResult holds outputs from the kc-utils pipeline subprocesses.
 type pipelineResult = types.PipelineData
@@ -169,7 +169,7 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 
 // setupSharedListener starts a shared backend session when the backend supports it.
 // The caller owns closing the returned session.
-func setupSharedListener(cfg *env.Config) (guest.SharedSession, []string, error) {
+func setupSharedListener(cfg *env.Config) (backend.SharedSession, []string, error) {
 	listener, err := startSharedSession(cfg.Backend)
 	if err != nil {
 		return nil, nil, fmt.Errorf("shared backend session: %w", err)
@@ -179,7 +179,7 @@ func setupSharedListener(cfg *env.Config) (guest.SharedSession, []string, error)
 	}
 	stageEnv := listener.Env()
 	if cfg.NbdeClevis {
-		stageEnv = append(stageEnv, guest.EnvGuestfsNetwork+"=1")
+		stageEnv = append(stageEnv, backend.EnvGuestfsNetwork+"=1")
 		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
 	}
 	return listener, stageEnv, nil
@@ -197,7 +197,7 @@ func stageCommonArgs(cfg *env.Config, inputPath, outputPath string) []string {
 	return args
 }
 
-func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedSession, stageEnv *[]string) (*pipelineResult, error) {
+func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *backend.SharedSession, stageEnv *[]string) (*pipelineResult, error) {
 	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
 	prepareArgs := stageCommonArgs(cfg, inputPath, pipelinePath)
 
@@ -237,7 +237,7 @@ func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipe
 	return &pipeline, nil
 }
 
-func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedSession, stageEnv *[]string) error {
+func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *backend.SharedSession, stageEnv *[]string) error {
 	converter := pipeline.Prepare.Converter
 	if converter == "" {
 		if pipeline.Prepare.Inspect.Type == "windows" {
@@ -314,24 +314,24 @@ func runSubprocess(bin string, args []string, extraEnv []string) error {
 	return nil
 }
 
-func ensureSharedListener(listener *guest.SharedSession, stageEnv *[]string, stage, backend string) error {
-	if listener == nil || *listener == nil || guest.SharedListenerAlive(*listener) {
+func ensureSharedListener(listener *backend.SharedSession, stageEnv *[]string, stage, backendName string) error {
+	if listener == nil || *listener == nil || backend.SharedListenerAlive(*listener) {
 		return nil
 	}
-	slog.Warn("shared backend session died, restarting", "after", stage, "backend", backend)
+	slog.Warn("shared backend session died, restarting", "after", stage, "backend", backendName)
 	keepNetwork := false
 	for _, e := range *stageEnv {
-		if strings.HasPrefix(e, guest.EnvGuestfsNetwork+"=") {
+		if strings.HasPrefix(e, backend.EnvGuestfsNetwork+"=") {
 			keepNetwork = true
 			break
 		}
 	}
-	newListener, err := startSharedSession(backend)
+	newListener, err := startSharedSession(backendName)
 	if err != nil {
 		return fmt.Errorf("shared session restart after %s: %w", stage, err)
 	}
 	if newListener == nil {
-		return fmt.Errorf("shared session restart after %s: backend %q does not support shared sessions", stage, backend)
+		return fmt.Errorf("shared session restart after %s: backend %q does not support shared sessions", stage, backendName)
 	}
 	if closeErr := (*listener).Close(); closeErr != nil {
 		slog.Debug("closing dead shared session", "error", closeErr)
@@ -339,7 +339,7 @@ func ensureSharedListener(listener *guest.SharedSession, stageEnv *[]string, sta
 	*listener = newListener
 	*stageEnv = (*listener).Env()
 	if keepNetwork {
-		*stageEnv = append(*stageEnv, guest.EnvGuestfsNetwork+"=1")
+		*stageEnv = append(*stageEnv, backend.EnvGuestfsNetwork+"=1")
 	}
 	return nil
 }

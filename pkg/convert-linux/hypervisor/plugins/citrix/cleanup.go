@@ -11,7 +11,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -26,7 +26,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "usr", "sbin", "xe-daemon"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}
@@ -51,7 +51,7 @@ var inittabGettyComment = regexp.MustCompile(`^([1-6]):([2-5]+):respawn:(.*getty
 
 func restoreInittabGettys(guestRoot string) {
 	path := filepath.Join(guestRoot, "etc", "inittab")
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return
 	}
@@ -73,7 +73,7 @@ func restoreInittabGettys(guestRoot string) {
 		lines = append(lines, line)
 	}
 	if changed {
-		if err := guest.FileWrite(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 			slog.Warn("writing cleaned citrix inittab failed", "path", path, "error", err)
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 )
 
 func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
@@ -14,13 +14,13 @@ func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
 	t.Cleanup(func() { startSharedSession = prev })
 
 	var gotBackend string
-	startSharedSession = func(backend string) (guest.SharedSession, error) {
+	startSharedSession = func(backend string) (backend.SharedSession, error) {
 		gotBackend = backend
 		return &stubSession{pid: 4242, alive: true}, nil
 	}
 
-	var listener guest.SharedSession = &stubSession{pid: 0, alive: false}
-	stageEnv := []string{guest.EnvGuestfsNetwork + "=1"}
+	var listener backend.SharedSession = &stubSession{pid: 0, alive: false}
+	stageEnv := []string{backend.EnvGuestfsNetwork + "=1"}
 
 	if err := ensureSharedListener(&listener, &stageEnv, "prepare", "guestfs"); err != nil {
 		t.Fatalf("ensureSharedListener: %v", err)
@@ -35,12 +35,12 @@ func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
 
 	found := false
 	for _, e := range stageEnv {
-		if e == guest.EnvGuestfsNetwork+"=1" || strings.HasPrefix(e, guest.EnvGuestfsNetwork+"=") {
+		if e == backend.EnvGuestfsNetwork+"=1" || strings.HasPrefix(e, backend.EnvGuestfsNetwork+"=") {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatalf("stageEnv missing %s after restart: %v", guest.EnvGuestfsNetwork, stageEnv)
+		t.Fatalf("stageEnv missing %s after restart: %v", backend.EnvGuestfsNetwork, stageEnv)
 	}
 }

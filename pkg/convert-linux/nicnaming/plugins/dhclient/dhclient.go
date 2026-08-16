@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Plugin struct{}
@@ -19,7 +19,7 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	for _, dir := range leaseDirs(guestRoot) {
-		if guest.FileIsDir(dir) {
+		if guestio.FileIsDir(dir) {
 			return true
 		}
 	}
@@ -29,7 +29,7 @@ func (p *Plugin) Detect(guestRoot string) bool {
 func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) ([]nicnaming.NamingRule, error) {
 	var leaseFiles []string
 	for _, dir := range leaseDirs(guestRoot) {
-		matches, _ := guest.FileGlob(filepath.Join(dir, "dhclient-*"))
+		matches, _ := guestio.FileGlob(filepath.Join(dir, "dhclient-*"))
 		leaseFiles = append(leaseFiles, matches...)
 	}
 	if len(leaseFiles) == 0 {
@@ -64,7 +64,7 @@ func findDeviceInLeases(files []string, ip string) string {
 }
 
 func parseLeaseFile(path, targetIP string) string {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return ""
 	}
