@@ -27,7 +27,7 @@ const (
 	EnvFingerprint                  = config.EnvFingerprint
 	EnvCopyConcurrency              = config.EnvCopyConcurrency
 	EnvOffline                      = config.EnvOffline
-	EnvGuestfs                      = config.EnvGuestfs
+	EnvBackend                      = config.EnvBackend
 
 	DefaultCopyConcurrency      = config.DefaultCopyConcurrency
 	DefaultCaBundle             = config.DefaultCaBundle

@@ -8,7 +8,7 @@ BIN_DIR="${KC_BIN_DIR:-$SCRIPT_DIR/bin}"
 LOG_LEVEL="info"
 MOUNT_ROOT="/tmp/kc-guest"
 OFFLINE=false
-USE_GUESTFS=false
+BACKEND="direct"
 WORK_DIR=""
 GUESTFISH_OWNED=false
 
@@ -20,7 +20,7 @@ Options:
   --disk PATH          Disk image to convert (required)
   --mount-root PATH    Guest mount root (default: /tmp/kc-guest)
   --offline            Skip network-dependent operations
-  --guestfs            Use libguestfs appliance instead of privileged mount syscalls
+  --backend NAME       Guest disk backend: direct|guestfs (default: direct)
   --log-level LEVEL    debug, info, warn, error (default: info)
   --work-dir PATH      Working dir for intermediate JSON (default: auto tmpdir)
   -h, --help           Show this help
@@ -44,7 +44,7 @@ while [[ $# -gt 0 ]]; do
         --disk)       DISK="$2"; shift 2 ;;
         --mount-root) MOUNT_ROOT="$2"; shift 2 ;;
         --offline)    OFFLINE=true; shift ;;
-        --guestfs)    USE_GUESTFS=true; shift ;;
+        --backend)    BACKEND="$2"; shift 2 ;;
         --log-level)  LOG_LEVEL="$2"; shift 2 ;;
         --work-dir)   WORK_DIR="$2"; shift 2 ;;
         -h|--help)    usage ;;
@@ -67,9 +67,8 @@ cat > "$WORK_DIR/input.json" <<EOF
 }
 EOF
 
-GUESTFS_FLAG=""
-if $USE_GUESTFS; then
-    GUESTFS_FLAG="--guestfs"
+BACKEND_FLAG=(--backend "$BACKEND")
+if [ "$BACKEND" = "guestfs" ]; then
     export LIBGUESTFS_BACKEND=direct
     # Mirror Go kc-v2v: one shared guestfish --listen for prepare/convert/finalize.
     # Prefer virt-guestfish so RHEL NTFS mounts are allowlisted (argv[0]).
@@ -98,7 +97,7 @@ echo "=== kc-prepare ==="
     --output "$WORK_DIR/prepare-out.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level "$LOG_LEVEL" \
-    $GUESTFS_FLAG
+    "${BACKEND_FLAG[@]}"
 
 CONVERTER=$(jq -r '.prepare.converter' "$WORK_DIR/prepare-out.json")
 echo "Detected converter: $CONVERTER"
@@ -113,7 +112,7 @@ echo "=== $CONVERTER ==="
     --mount-root "$MOUNT_ROOT" \
     $OFFLINE_FLAG \
     --log-level "$LOG_LEVEL" \
-    $GUESTFS_FLAG
+    "${BACKEND_FLAG[@]}"
 
 echo "=== kc-finalize ==="
 "$BIN_DIR/kc-finalize" \
@@ -121,7 +120,7 @@ echo "=== kc-finalize ==="
     --output "$WORK_DIR/target-meta.json" \
     --mount-root "$MOUNT_ROOT" \
     --log-level "$LOG_LEVEL" \
-    $GUESTFS_FLAG
+    "${BACKEND_FLAG[@]}"
 
 echo "=== Conversion complete ==="
 echo "Target metadata: $WORK_DIR/target-meta.json"

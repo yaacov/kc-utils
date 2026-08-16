@@ -10,22 +10,27 @@ import (
 )
 
 func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
-	prev := startSharedListener
-	t.Cleanup(func() { startSharedListener = prev })
+	prev := startSharedSession
+	t.Cleanup(func() { startSharedSession = prev })
 
-	startSharedListener = func() (*guest.SharedListener, error) {
-		return &guest.SharedListener{PID: 4242}, nil
+	var gotBackend string
+	startSharedSession = func(backend string) (guest.SharedSession, error) {
+		gotBackend = backend
+		return &stubSession{pid: 4242, alive: true}, nil
 	}
 
-	// PID 0 is not alive; Close is a no-op — exercises the restart path only.
-	listener := &guest.SharedListener{PID: 0}
+	var listener guest.SharedSession = &stubSession{pid: 0, alive: false}
 	stageEnv := []string{guest.EnvGuestfsNetwork + "=1"}
 
-	if err := ensureSharedListener(listener, &stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(&listener, &stageEnv, "prepare", "guestfs"); err != nil {
 		t.Fatalf("ensureSharedListener: %v", err)
 	}
-	if listener.PID != 4242 {
-		t.Fatalf("listener PID=%d want 4242", listener.PID)
+	if gotBackend != "guestfs" {
+		t.Fatalf("restart backend=%q want guestfs", gotBackend)
+	}
+	stub, ok := listener.(*stubSession)
+	if !ok || stub.pid != 4242 {
+		t.Fatalf("listener=%v want stub pid 4242", listener)
 	}
 
 	found := false

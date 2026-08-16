@@ -14,6 +14,11 @@ import (
 	"github.com/yaacov/kc-utils/pkg/cmd/convert-windows"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/common/types"
+	"github.com/yaacov/kc-utils/pkg/guest"
+
+	// Guest disk backends
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 
 	// Plugin registrations: registry editor
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
@@ -64,9 +69,16 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations")
-	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
+	backend := flag.String("backend", "direct", guest.BackendFlagUsage())
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
+
+	mode, err := guest.ParseMode(*backend)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+	resolvedBackend := mode.String()
 
 	logger.Init(*logLevel)
 
@@ -98,7 +110,7 @@ func main() {
 		MountRoot:   *mountRoot,
 		OutputPath:  *outputFile,
 		Offline:     *offline,
-		UseGuestfs:  *useGuestfs,
+		Backend:     resolvedBackend,
 	}
 
 	if err := convertwindows.Run(cfg); err != nil {

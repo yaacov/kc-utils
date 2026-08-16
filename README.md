@@ -41,11 +41,13 @@ kc-v2v runs.
 
 Two guest access modes are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)):
 
-- **host-mount** (default) - mounts guest filesystems with `mount(8)` and runs
-  guest tools via `chroot` into that tree; requires root or `CAP_SYS_ADMIN`.
-- **guestfs** (`-guestfs`) - runs a minimal [libguestfs](https://libguestfs.org/)
-  appliance VM via `guestfish`; guest disks are accessed inside the appliance
-  (no host root); requires Linux with `/dev/kvm`.
+- **host-mount** (`--backend=direct`, default) - mounts guest filesystems with
+  `mount(8)` and runs guest tools via `chroot` into that tree; requires root or
+  `CAP_SYS_ADMIN`.
+- **guestfs** (`--backend=guestfs` / `V2V_backend=guestfs`) - runs a minimal
+  [libguestfs](https://libguestfs.org/) appliance VM via `guestfish`; guest disks
+  are accessed inside the appliance (no host root); requires Linux with
+  `/dev/kvm`.
 
 ## Forklift (MTV) Integration
 

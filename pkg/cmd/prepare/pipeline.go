@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -27,7 +26,7 @@ type Config struct {
 	Pipeline   *types.PipelineData
 	MountRoot  string
 	OutputPath string
-	UseGuestfs bool
+	Backend    string
 }
 
 // Run executes the prepare pipeline.
@@ -52,22 +51,18 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	mode := guest.ModeFromBool(cfg.UseGuestfs)
+	mode, err := guest.ParseMode(cfg.Backend)
+	if err != nil {
+		return err
+	}
 	slog.Info("opening guest disks", "backend", mode.String(), "disks", len(cfg.Input.Disks), "mountRoot", cfg.MountRoot)
 
-	if cfg.UseGuestfs && cfg.Input.LUKS != nil && cfg.Input.LUKS.Clevis {
-		prevNetwork, hadNetwork := os.LookupEnv(guest.EnvGuestfsNetwork)
-		if err := os.Setenv(guest.EnvGuestfsNetwork, "1"); err != nil {
-			return fmt.Errorf("enable guestfs network for Clevis: %w", err)
-		}
-		defer func() {
-			if !hadNetwork {
-				_ = os.Unsetenv(guest.EnvGuestfsNetwork)
-				return
-			}
-			_ = os.Setenv(guest.EnvGuestfsNetwork, prevNetwork)
-		}()
-		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+	clevisCleanup, err := prepareClevisEnv(cfg, mode)
+	if err != nil {
+		return err
+	}
+	if clevisCleanup != nil {
+		defer clevisCleanup()
 	}
 
 	g, err := guest.Open(cfg.Input.Disks, cfg.MountRoot, mode)
@@ -317,6 +312,27 @@ func planAndMount(g *guest.Guest, cfg *Config, chosen *types.RootCandidate, allP
 		}
 	}
 	return nil
+}
+
+// prepareClevisEnv enables backend-specific Clevis/NBDE networking when needed.
+func prepareClevisEnv(cfg *Config, mode guest.Mode) (func(), error) {
+	if cfg.Input.LUKS == nil || !cfg.Input.LUKS.Clevis {
+		return nil, nil
+	}
+	f, err := guest.LookupFactory(mode.String())
+	if err != nil {
+		return nil, nil
+	}
+	cf, ok := f.(guest.ClevisAwareFactory)
+	if !ok {
+		return nil, nil
+	}
+	cleanup, err := cf.PrepareClevisEnv()
+	if err != nil {
+		return nil, err
+	}
+	slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+	return cleanup, nil
 }
 
 func sanitizeMapper(device string) string {

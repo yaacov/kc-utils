@@ -4,18 +4,36 @@ package v2v
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/guest"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
+
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
+
+type stubSession struct {
+	pid   int
+	alive bool
+}
+
+func (s *stubSession) Close() error { return nil }
+func (s *stubSession) Alive() bool  { return s.alive && s.pid > 0 }
+func (s *stubSession) Env() []string {
+	if s.pid <= 0 {
+		return nil
+	}
+	return []string{fmt.Sprintf("%s=%d", guest.EnvGuestfishPID, s.pid)}
+}
 
 func TestStageCommonArgs(t *testing.T) {
 	cfg := &env.Config{
-		MountRoot:  "/mnt/guest",
-		LogLevel:   "debug",
-		UseGuestfs: false,
+		MountRoot: "/mnt/guest",
+		LogLevel:  "debug",
+		Backend:   "direct",
 	}
 	got := stageCommonArgs(cfg, "/in.json", "/out.json")
 	want := []string{
@@ -23,6 +41,7 @@ func TestStageCommonArgs(t *testing.T) {
 		"--output", "/out.json",
 		"--mount-root", "/mnt/guest",
 		"--log-level", "debug",
+		"--backend", "direct",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("args=%v want=%v", got, want)
@@ -33,15 +52,15 @@ func TestStageCommonArgs(t *testing.T) {
 		}
 	}
 
-	cfg.UseGuestfs = true
+	cfg.Backend = "guestfs"
 	got = stageCommonArgs(cfg, "/in.json", "/out.json")
-	if got[len(got)-1] != "--guestfs" {
-		t.Fatalf("expected trailing --guestfs, got %v", got)
+	if got[len(got)-1] != "guestfs" || got[len(got)-2] != "--backend" {
+		t.Fatalf("expected trailing --backend guestfs, got %v", got)
 	}
 }
 
 func TestSetupSharedListenerDisabled(t *testing.T) {
-	listener, stageEnv, err := setupSharedListener(&env.Config{UseGuestfs: false})
+	listener, stageEnv, err := setupSharedListener(&env.Config{Backend: "direct"})
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
@@ -51,22 +70,25 @@ func TestSetupSharedListenerDisabled(t *testing.T) {
 }
 
 func TestSetupSharedListenerClevisNetwork(t *testing.T) {
-	prev := startSharedListener
-	t.Cleanup(func() { startSharedListener = prev })
+	prev := startSharedSession
+	t.Cleanup(func() { startSharedSession = prev })
 
-	startSharedListener = func() (*guest.SharedListener, error) {
-		return &guest.SharedListener{PID: 1111}, nil
+	startSharedSession = func(backend string) (guest.SharedSession, error) {
+		if backend != "guestfs" {
+			t.Fatalf("backend=%q", backend)
+		}
+		return &stubSession{pid: 1111, alive: true}, nil
 	}
 
 	listener, stageEnv, err := setupSharedListener(&env.Config{
-		UseGuestfs: true,
+		Backend:    "guestfs",
 		NbdeClevis: true,
 	})
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
-	if listener == nil || listener.PID != 1111 {
-		t.Fatalf("listener=%v", listener)
+	if listener == nil {
+		t.Fatal("expected listener")
 	}
 	found := false
 	for _, e := range stageEnv {
@@ -81,18 +103,18 @@ func TestSetupSharedListenerClevisNetwork(t *testing.T) {
 }
 
 func TestSetupSharedListenerError(t *testing.T) {
-	prev := startSharedListener
-	t.Cleanup(func() { startSharedListener = prev })
+	prev := startSharedSession
+	t.Cleanup(func() { startSharedSession = prev })
 
-	startSharedListener = func() (*guest.SharedListener, error) {
+	startSharedSession = func(string) (guest.SharedSession, error) {
 		return nil, errors.New("boom")
 	}
 
-	_, _, err := setupSharedListener(&env.Config{UseGuestfs: true})
+	_, _, err := setupSharedListener(&env.Config{Backend: "guestfs"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "guestfish shared listener") {
+	if !strings.Contains(err.Error(), "shared backend session") {
 		t.Fatalf("error = %v", err)
 	}
 	if !strings.Contains(err.Error(), "boom") {
@@ -102,7 +124,7 @@ func TestSetupSharedListenerError(t *testing.T) {
 
 func TestEnsureSharedListenerNilNoop(t *testing.T) {
 	stageEnv := []string{"FOO=1"}
-	if err := ensureSharedListener(nil, &stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(nil, &stageEnv, "prepare", "direct"); err != nil {
 		t.Fatalf("nil listener: %v", err)
 	}
 	if len(stageEnv) != 1 || stageEnv[0] != "FOO=1" {

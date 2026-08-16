@@ -1,6 +1,6 @@
 //go:build linux
 
-package guest
+package guest_test
 
 import (
 	"os"
@@ -8,6 +8,10 @@ import (
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
+	"github.com/yaacov/kc-utils/pkg/guest"
+
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
 
 func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
@@ -17,10 +21,10 @@ func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	g, err := AttachMounted(
+	g, err := guest.AttachMounted(
 		[]types.DiskSpec{{Path: "/nonexistent.img", Format: "raw"}},
 		dir,
-		ModeGuestfs,
+		guest.ModeGuestfs,
 		[]types.DiskInfo{{Path: "/nonexistent.img", Format: "raw"}},
 	)
 	if err != nil {
@@ -29,7 +33,6 @@ func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
 	if err := g.TeardownDiscard(); err != nil {
 		t.Fatalf("TeardownDiscard: %v", err)
 	}
-	// Guestfs does not populate mountRoot; teardown does not wipe it.
 	if _, err := os.Stat(marker); err != nil {
 		t.Fatalf("expected host marker kept: %v", err)
 	}
@@ -37,10 +40,10 @@ func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
 
 func TestTeardownGuestfsSyncNoop(t *testing.T) {
 	dir := t.TempDir()
-	g, err := AttachMounted(
+	g, err := guest.AttachMounted(
 		[]types.DiskSpec{{Path: "/nonexistent.img", Format: "raw"}},
 		dir,
-		ModeGuestfs,
+		guest.ModeGuestfs,
 		[]types.DiskInfo{{Path: "/nonexistent.img", Format: "raw"}},
 	)
 	if err != nil {
@@ -59,7 +62,7 @@ func TestTeardownMountRootGuestfs(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "a"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := TeardownMountRoot(dir, ModeGuestfs); err != nil {
+	if err := guest.TeardownMountRoot(dir, guest.ModeGuestfs); err != nil {
 		t.Fatal(err)
 	}
 	entries, err := os.ReadDir(dir)

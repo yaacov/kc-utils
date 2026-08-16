@@ -60,21 +60,29 @@ Cross-stage shared code lives in:
 - `pkg/guest/` — guest disk access abstraction (the Backend interface)
 - `pkg/v2v/` — orchestrator libraries (config, env, inspection) used only by `kc-v2v`
 
-## The Two Backends: Direct vs Guestfs
+## Guest disk backend plugins
 
-`pkg/guest/` provides two `Backend` implementations:
+`pkg/guest/` provides a `Backend` interface and a `Factories` registry. Built-in
+implementations self-register via `init()`:
 
-| Mode | Implementation | Requires |
-|------|---------------|----------|
-| **Direct** (default) | `pkg/guest/direct/backend.go` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
-| **Guestfs** (`--guestfs`) | `pkg/guest/guestfs/backend.go` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | `/dev/kvm` only |
+| Name | Implementation | Requires |
+|------|----------------|----------|
+| **direct** (default) | `pkg/guest/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
+| **guestfs** (`--backend=guestfs`) | `pkg/guest/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC | `/dev/kvm` only |
+
+CLI/env: `--backend <name>` / `V2V_backend`.
+Available names come from `guest.Factories.List()` at runtime after blank imports.
+
+Shared host helpers (not domain logic) live in `pkg/guest/common`. Backend packages
+must not import each other or share mutable package state. Parent `pkg/guest`
+must not import concrete backends — binaries blank-import them.
 
 ### Backend Transparency
 
 The rest of the codebase must be **completely unaware** of which backend is active. All guest disk operations go through the `Guest` handle (`pkg/guest/guest.go`), which delegates to the active `Backend`.
 
 Rules:
-- **Never** call `guestfish`, `mount`, `umount`, `losetup`, `lvm`, `cryptsetup`, `chroot`, `fsck`, or `fstrim` for guest disks outside `pkg/guest/`. Orchestrators may call `guest.StartSharedListener` only.
+- **Never** call `guestfish`, `mount`, `umount`, `losetup`, `lvm`, `cryptsetup`, `chroot`, `fsck`, or `fstrim` for guest disks outside `pkg/guest/`. Orchestrators may call `guest.StartSharedSession` / `StartSharedListener` only.
 - Block packages use `guest.Active()` or receive a `*guest.Guest` handle — they never check which backend is running.
 - If behavior must differ by mode, that difference lives inside the `Backend` implementations, not in the calling block.
 - The `Guest` struct's methods (`ReadFile`, `WriteFile`, `Exists`, `Glob`, `RunCommand`, etc.) are the file-system API that blocks should use.

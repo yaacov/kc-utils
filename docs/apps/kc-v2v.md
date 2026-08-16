@@ -19,12 +19,12 @@ env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → v2v.Run(cfg)
       → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → DiscoverDisks
-      → if V2V_guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
-      → kc-prepare → kc-convert-* → kc-finalize
-           (stages adopt via GUESTFISH_PID / KC_GUESTFISH_PID; pkg/guest only)
+      → StartSharedSession(backend): nil when backend has no SharedSessionFactory
+      → kc-prepare → kc-convert-* → kc-finalize (--backend <name>)
+           (guestfs stages adopt via GUESTFISH_PID / KC_GUESTFISH_PID; pkg/guest only)
       → on failure after prepare may have set up guest:
-           kc-finalize --teardown-only (best-effort, no Sync)
-      → always: SharedListener.Close (guestfish --remote exit)
+           kc-finalize --teardown-only (best-effort backend teardown, no Sync)
+      → if shared session was started: SharedSession.Close
       → WriteInspectionXML
       → HTTP server (:8080) when LOCAL_MIGRATION=true
 ```
@@ -37,10 +37,14 @@ Converter selection mirrors upstream virt-v2v: `PrepareOutput.converter` (or
 
 If the pipeline fails after `kc-prepare` may have created guest state, `kc-v2v`
 best-effort runs `kc-finalize --teardown-only` to reclaim orphaned resources
-(mounts/LUKS/loops in direct mode; appliance mounts and guestfish session in
-guestfs mode — the container default). This path never Syncs guest edits back
-to disks. In guestfs mode the shared `guestfish --listen` PID is still passed
-into teardown-only, and `kc-v2v` always stops the listener afterward.
+(mounts/LUKS/loops in direct mode; appliance mounts in guestfs mode — the
+container default). That path never Syncs guest edits back to disks.
+
+`SharedSession.Close` is separate and conditional: backends without
+`SharedSessionFactory` return `nil` from `StartSharedSession`, so Close is
+skipped. When a shared session was started (guestfs), its PID is still passed
+into teardown-only, and Close runs afterward on success or failure.
+
 qcow2 overlays (when enabled) are discarded separately by `RunWithOverlay`.
 Partial PVC data and workdir JSON are left alone. Cleanup failures are logged
 as warnings and do not replace the original pipeline error.
@@ -69,7 +73,7 @@ Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under
 kc-v2v does not run fsck itself. The prepare and finalize subprocesses call
 `Guest.FSCheck()` twice per conversion: pre-fsck in `kc-prepare` (before mount)
 and post-fsck in `kc-finalize` (after unmount). With the image default
-`V2V_guestfs=true`, checks run inside the libguestfs appliance using the guestfs
+`V2V_backend=guestfs`, checks run inside the libguestfs appliance using the guestfs
 backend matrix (ext*, xfs, ntfs/ntfs3; btrfs is not fsck'd).
 
 On pipeline failure after prepare may have set up guest state, kc-v2v runs

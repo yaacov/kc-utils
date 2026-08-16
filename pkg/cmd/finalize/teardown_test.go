@@ -6,6 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
 
 func TestTeardownOnlyMountRootFallback(t *testing.T) {
@@ -14,8 +17,8 @@ func TestTeardownOnlyMountRootFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := &Config{
-		MountRoot:  dir,
-		UseGuestfs: true,
+		MountRoot: dir,
+		Backend:   "guestfs",
 	}
 	if err := TeardownOnly(cfg); err != nil {
 		t.Fatalf("TeardownOnly: %v", err)

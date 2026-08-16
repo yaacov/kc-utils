@@ -18,7 +18,7 @@ Requires Linux (`//go:build linux`).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network firstboot when no local package matches (local packages are always tried first) |
-| `--guestfs` | no | `false` | Use libguestfs appliance instead of privileged mount syscalls |
+| `--backend` | no | `direct` | Guest disk backend (`direct`\|`guestfs`; runtime list from registered plugins) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 ## qemu-guest-agent Installation
