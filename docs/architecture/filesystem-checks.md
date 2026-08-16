@@ -51,7 +51,7 @@ post-fsck in [`pkg/cmd/finalize/pipeline.go`](../../pkg/cmd/finalize/pipeline.go
 
 In guestfs mode (kc-v2v container default), finalize unmounts inside the
 libguestfs appliance before post-fsck; LUKS mappers stay open until fsck
-completes. See [privilege-model.md](privilege-model.md).
+completes. See [../backends/guestfs.md](../backends/guestfs.md).
 
 ## LUKS and encryption
 
@@ -83,7 +83,6 @@ Behavior depends on the guest access backend. Implementation:
 
 | FS type | Guestfs (`V2V_backend=guestfs`, kc-v2v image) | Direct / QEMU appliance |
 |---------|----------------------------------------------|-------------------------|
-|---------|----------------------------------------------|---------------------|
 | ext2, ext3, ext4 | guestfish `e2fsck-f` | `e2fsck -f -y` |
 | xfs | guestfish `xfs-repair` | `xfs_repair` |
 | ntfs, ntfs3 | guestfish `ntfsfix` | `ntfsfix -d` (**ntfs3 only**; plain `ntfs` skipped) |
@@ -133,6 +132,6 @@ and writes raw bytes to the block device — it is not an fsck pass.
 
 - Stage behavior: [kc-prepare.md](../apps/kc-prepare.md), [kc-finalize.md](../apps/kc-finalize.md)
 - Orchestrator: [kc-v2v.md](../apps/kc-v2v.md)
-- Backend trade-offs: [privilege-model.md](privilege-model.md)
+- Backend trade-offs: [../backends/README.md](../backends/README.md)
 - Windows convert pipeline: [kc-convert-windows.md](../apps/kc-convert-windows.md)
 - Container / guestfs default: [build/kc-v2v/README.md](../../build/kc-v2v/README.md)

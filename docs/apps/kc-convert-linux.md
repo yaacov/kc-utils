@@ -18,7 +18,7 @@ Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` ar
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network firstboot when no local package matches (local packages are always tried first) |
-| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. See [../backends/README.md](../backends/README.md). |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 ## qemu-guest-agent Installation

@@ -18,7 +18,7 @@ Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` ar
 | `--input` | yes\* | | Path to PipelineData JSON (from kc-convert-linux or kc-convert-windows; contains `prepare` and `convert` sections) |
 | `--output` | no | `target-meta.json` | Path to write PipelineData JSON (with `target` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Guest mount root (live mounts in direct mode; path key for `pkg/guest` in guestfs mode) |
-| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. See [../backends/README.md](../backends/README.md). |
 | `--teardown-only` | no | `false` | Reclaim orphaned guest resources only (no metadata) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 

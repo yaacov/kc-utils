@@ -16,7 +16,7 @@ Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` ar
 | `--input` | yes | | Path to PrepareInput JSON |
 | `--output` | no | `prepare-out.json` | Path to write PrepareOutput JSON |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory for guest filesystem mounts |
-| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. See [../backends/README.md](../backends/README.md). |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 In guestfs mode, prepare adopts the shared `guestfish --listen` session when
@@ -25,8 +25,11 @@ is dead). In qemu mode, prepare starts QEMU when `KC_AGENT_SOCK` is reserved
 but the socket is not yet listening; convert/finalize dial that socket.
 Standalone runs without those env vars start a process-local appliance.
 Prepare never exits a shared session — `kc-v2v` closes it after finalize.
-Guest filesystems are mounted inside the appliance; `--mount-root` is a path
-key for `pkg/guest` helpers, not a populated host tree.
+In guestfs and qemu modes, guest filesystems are mounted inside the appliance;
+`--mount-root` is a path key for `pkg/guest` helpers, not a populated host
+tree. Direct mode mounts guest filesystems on the host at `--mount-root`.
+For the full shared-session ownership model see [../backends/guestfs.md](../backends/guestfs.md#shared-session-ownership)
+and [../backends/qemu.md](../backends/qemu.md#shared-session-ownership).
 
 Root selection is configured in `PrepareInput.options.root` (not a CLI flag).
 

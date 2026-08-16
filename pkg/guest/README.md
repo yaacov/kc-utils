@@ -5,7 +5,9 @@ on guest disks. Callers must not invoke guestfish, mount/umount, losetup, LVM,
 cryptsetup, chroot, fsck, or fstrim for guest disks outside this package.
 
 See also: [docs/architecture/filesystem-checks.md](../../docs/architecture/filesystem-checks.md)
-for fsck timing, supported filesystem types, and check-vs-repair behavior.
+for fsck timing, supported filesystem types, and check-vs-repair behavior, and
+[docs/backends/](../../docs/backends/README.md) for the user-facing backend docs
+(selection, privilege model, the QEMU appliance, and `kc-agent`).
 
 ## Backend plugins
 
