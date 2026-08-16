@@ -94,25 +94,29 @@ A typical conversion sequence:
 kc-prepare \
   --input      /tmp/kc/prepare-input.json \
   --output     /tmp/kc/pipeline.json \
-  --mount-root /mnt/guest
+  --mount-root /mnt/guest \
+  --backend    direct
 
 # 2. Convert (orchestrator picks based on PrepareOutput.converter)
 kc-convert-linux \
   --input      /tmp/kc/pipeline.json \
   --output     /tmp/kc/pipeline.json \
-  --mount-root /mnt/guest
+  --mount-root /mnt/guest \
+  --backend    direct
 
 # or for Windows guests:
 kc-convert-windows \
   --input      /tmp/kc/pipeline.json \
   --output     /tmp/kc/pipeline.json \
-  --mount-root /mnt/guest
+  --mount-root /mnt/guest \
+  --backend    direct
 
 # 3. Finalize: unmount, trim, fsck, assign buses, emit metadata
 kc-finalize \
   --input      /tmp/kc/pipeline.json \
   --output     /tmp/kc/pipeline.json \
-  --mount-root /mnt/guest
+  --mount-root /mnt/guest \
+  --backend    direct
 ```
 
 All binaries also accept `--log-level` (`debug`, `info`, `warn`, `error`).

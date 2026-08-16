@@ -38,6 +38,7 @@ jq -n --slurpfile p "$d/prepare.json" --slurpfile c "$d/convert.json" \
     '{prepare: $p[0], convert: $c[0]}' > "$d/pipeline.json"
 
 "$BIN_DIR/kc-finalize" \
+    --backend direct \
     --input "$d/pipeline.json" \
     --output "$d/target-meta.json" \
     --mount-root "$root" \

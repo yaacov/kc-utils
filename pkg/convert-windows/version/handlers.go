@@ -32,7 +32,7 @@ var handlerUnknown VersionHandler = unknownHandler{baseHandler{name: "winunknown
 type win11 struct{ baseHandler }
 
 func (win11) Matches(i *types.InspectData) bool {
-	return i.MajorVersion >= 10 && isWindows11Product(i.ProductName)
+	return i.MajorVersion >= 10 && usesWin11DriverSet(i.ProductName)
 }
 func (win11) DriverOSPreferences() []string { return []string{"w11"} }
 func (win11) DriverOSFallbacks() []string   { return nil }
@@ -49,7 +49,7 @@ func (win11) NeedsNTFSHeadsFix() bool              { return false }
 type win10 struct{ baseHandler }
 
 func (win10) Matches(i *types.InspectData) bool {
-	return i.MajorVersion >= 10 && !isWindows11Product(i.ProductName)
+	return i.MajorVersion >= 10 && !usesWin11DriverSet(i.ProductName)
 }
 func (win10) DriverOSPreferences() []string { return []string{"w10"} }
 func (win10) DriverOSFallbacks() []string   { return nil }
@@ -149,7 +149,7 @@ func (win2008) Matches(i *types.InspectData) bool {
 	return strings.Contains(n, "server 2008") && !strings.Contains(n, "2008 r2")
 }
 func (win2008) DriverOSPreferences() []string { return []string{"2k8"} }
-func (win2008) DriverOSFallbacks() []string   { return []string{"2k8R2"} }
+func (win2008) DriverOSFallbacks() []string   { return []string{"2k8r2"} }
 func (win2008) FirstbootLauncher() LauncherKind {
 	return LauncherPSV1
 }

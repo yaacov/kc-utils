@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package convertwindows
 
@@ -204,18 +204,14 @@ func Run(cfg *Config) error {
 	slog.Debug("post-convert fixup")
 	convertoutput.FixPermissions(cfg.MountRoot)
 
-	if err := systemHive.Save(); err != nil {
+	if err := g.MergeHive(systemGuest, systemHive.PendingReg()); err != nil {
 		return fmt.Errorf("saving SYSTEM hive: %w", err)
 	}
-	if err := g.Checkin(systemGuest, systemHost); err != nil {
-		return fmt.Errorf("checkin SYSTEM hive: %w", err)
-	}
-	if err := softwareHive.Save(); err != nil {
+	g.DiscardCheckout(systemHost)
+	if err := g.MergeHive(softwareGuest, softwareHive.PendingReg()); err != nil {
 		return fmt.Errorf("saving SOFTWARE hive: %w", err)
 	}
-	if err := g.Checkin(softwareGuest, softwareHost); err != nil {
-		return fmt.Errorf("checkin SOFTWARE hive: %w", err)
-	}
+	g.DiscardCheckout(softwareHost)
 
 	slog.Debug("writing output")
 	cfg.Pipeline.Convert = output

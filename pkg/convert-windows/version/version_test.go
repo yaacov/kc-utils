@@ -19,8 +19,8 @@ func TestClassifyWin2008RegisteredProductName(t *testing.T) {
 	if prefs := h.DriverOSPreferences(); len(prefs) != 1 || prefs[0] != "2k8" {
 		t.Fatalf("prefs = %v, want [2k8]", prefs)
 	}
-	if fb := h.DriverOSFallbacks(); len(fb) != 1 || fb[0] != "2k8R2" {
-		t.Fatalf("fallbacks = %v, want [2k8R2]", fb)
+	if fb := h.DriverOSFallbacks(); len(fb) != 1 || fb[0] != "2k8r2" {
+		t.Fatalf("fallbacks = %v, want [2k8r2]", fb)
 	}
 }
 

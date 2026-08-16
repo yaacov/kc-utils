@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package guest
 
@@ -10,6 +10,16 @@ const (
 	// EnvGuestfsNetwork enables QEMU user networking in the appliance before
 	// launch. Set to "1" or "true" when Clevis/NBDE unlock is required.
 	EnvGuestfsNetwork = "KC_GUESTFS_NETWORK"
+	// EnvAgentSock is the Unix socket path for the qemu backend kc-agent.
+	EnvAgentSock = "KC_AGENT_SOCK"
+	// EnvQemuPID is the QEMU process id for the qemu shared session.
+	EnvQemuPID = "KC_QEMU_PID"
+	// EnvApplianceDir is the directory containing vmlinuz and initramfs.img.
+	EnvApplianceDir = "KC_APPLIANCE_DIR"
+	// EnvVirtioWin overrides the host virtio-win tree (same for all backends).
+	EnvVirtioWin = "KC_VIRTIO_WIN"
+	// EnvKCPackages overrides the host qemu-ga package tree.
+	EnvKCPackages = "KC_PACKAGES"
 )
 
 // StartSharedSession starts a shared backend session when the selected

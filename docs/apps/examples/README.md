@@ -46,19 +46,22 @@ sudo cp docs/apps/examples/prepare-input-linux.json /var/lib/kc/prepare-input.js
 sudo bin/kc-prepare \
   --input /var/lib/kc/prepare-input.json \
   --output /var/lib/kc/pipeline.json \
-  --mount-root /mnt/kc-guest
+  --mount-root /mnt/kc-guest \
+  --backend direct
 
 CONVERTER=$(jq -r .converter /var/lib/kc/pipeline.json)
 sudo bin/"$CONVERTER" \
   --input /var/lib/kc/pipeline.json \
   --output /var/lib/kc/pipeline.json \
   --mount-root /mnt/kc-guest \
+  --backend direct \
   --offline
 
 sudo bin/kc-finalize \
   --input /var/lib/kc/pipeline.json \
   --output /var/lib/kc/pipeline.json \
-  --mount-root /mnt/kc-guest
+  --mount-root /mnt/kc-guest \
+  --backend direct
 ```
 
 ## Multiboot
@@ -92,7 +95,8 @@ at build time and ships drivers under `/usr/share/virtio-win/drivers/by-os/`.
 | `/usr/share/virtio-win/drivers/by-os` | `directory` | Match guest arch and Windows version |
 
 For local development without the container, extract a virtio-win ISO into that
-path or install the `virtio-win` package on Fedora/RHEL (`dnf install -y virtio-win`).
+path, install the `virtio-win` package on Fedora/RHEL (`dnf install -y virtio-win`),
+or run `make stage-offline` and set `KC_VIRTIO_WIN=$PWD/build/offline/virtio-win`.
 
 ### Linux guest packages (different feature)
 
@@ -105,8 +109,9 @@ Offline `qemu-guest-agent` for **RHEL-family** guests uses host RPMs (not VirtIO
 ```
 
 The kc-v2v image stages these via [`build/kc-v2v/stage-linux-packages.sh`](../../../build/kc-v2v/stage-linux-packages.sh).
-For a local convert run without the image, populate that tree (or bind-mount it) and pass
-`kc-convert-linux --offline`. See [kc-convert-linux.md](../kc-convert-linux.md).
+For a local convert run without the image, populate that tree (`make stage-offline`
+sets `build/offline/kc-packages`) and pass `kc-convert-linux --offline`. See
+[kc-convert-linux.md](../kc-convert-linux.md).
 
 More detail: [pkg/convert-windows/driversource/plugins/README.md](../../../pkg/convert-windows/driversource/plugins/README.md).
 

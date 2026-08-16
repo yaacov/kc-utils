@@ -28,6 +28,8 @@ type Hive interface {
 
 	Save() error
 	Close() error
+	// PendingReg returns accumulated .reg text for Guest.MergeHive.
+	PendingReg() []byte
 }
 
 // ValueEntry represents a registry value.

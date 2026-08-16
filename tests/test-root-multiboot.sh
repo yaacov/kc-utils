@@ -30,6 +30,7 @@ cat > "$d/input.json" <<EOF
 EOF
 
 "$BIN_DIR/kc-prepare" \
+    --backend direct \
     --input "$d/input.json" \
     --output "$d/prepare.json" \
     --mount-root "$MOUNT_ROOT" \

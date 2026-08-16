@@ -159,5 +159,6 @@ func (h *MockHive) DeleteValue(path, name string) {
 	h.Ops = append(h.Ops, Op{"delete-value", path, name, nil})
 }
 
-func (h *MockHive) Save() error  { return nil }
-func (h *MockHive) Close() error { return nil }
+func (h *MockHive) Save() error        { return nil }
+func (h *MockHive) Close() error       { return nil }
+func (h *MockHive) PendingReg() []byte { return nil }

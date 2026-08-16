@@ -3,7 +3,7 @@
 ## Before you start
 
 - Read [architecture.md](architecture.md) before changing code structure, packages, plugins, or guest disk access.
-- All binaries target Linux (`GOOS=linux` / `//go:build linux`).
+- Stage binaries target Unix (`GOOS=linux` or `GOOS=darwin`). `kc-agent` is Linux-only.
 
 ## Directory layout
 
@@ -39,6 +39,10 @@ See [pkg/README.md](../pkg/README.md) for block maps.
 
 These are standard RHEL/Fedora packages, invoked as CLI tools at runtime.
 
+`--backend=direct` and `--backend=guestfs` run these on the Linux host (or in
+the libguestfs appliance). `--backend=qemu` runs them inside the shipped
+appliance; the host only needs QEMU and appliance files (`make appliance`).
+
 ### Required
 
 | Tool | Package | Used For |
@@ -64,9 +68,11 @@ Fsck timing, per-filesystem check-vs-repair behavior, and backend differences:
 |------|---------|----------|
 | `clevis` | clevis | Tang/TPM-bound LUKS unlock |
 | `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs mode (`--backend=guestfs` / `V2V_backend=guestfs`) |
+| `qemu-system-*` | qemu | QEMU appliance mode (`--backend=qemu`); plus `vmlinuz` / `initramfs.img` from `make appliance` |
 
-For Windows conversions, populate the VirtIO-Win driver tree on the host at
-`/usr/share/virtio-win/` for `kc-convert-windows`. On Fedora/RHEL:
+For Windows conversions with `--backend=direct` or `--backend=guestfs`, populate
+the VirtIO-Win driver tree on the host at `/usr/share/virtio-win/` for
+`kc-convert-windows`. On Fedora/RHEL:
 
 ```bash
 sudo dnf install -y virtio-win
@@ -75,6 +81,16 @@ sudo dnf install -y virtio-win
 Or extract a virtio-win ISO from the
 [Fedora People archive](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
 into that path. The kc-v2v container image does this automatically at build time.
+`--backend=qemu` uses the same host tree (`KC_VIRTIO_WIN` or `/usr/share/virtio-win`).
+
+On macOS (or any host without the `virtio-win` RPM), stage the same trees into
+the gitignored `build/offline/` directory with a Fedora container:
+
+```bash
+make stage-offline
+export KC_VIRTIO_WIN=$PWD/build/offline/virtio-win
+export KC_PACKAGES=$PWD/build/offline/kc-packages
+```
 
 Linux conversions take virtio modules from the guest kernel; no host VirtIO
 package is required. For offline qemu-guest-agent install on RHEL-family guests,
@@ -132,9 +148,11 @@ make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
 
-On macOS (and other non-Linux hosts), `make test` never compiles packages tagged
-`//go:build linux` (for example `pkg/guest/guestfs`). Use `make test-container`
-before pushing when those packages change, or rely on CI on `ubuntu-latest`.
+On macOS (and other non-Linux hosts), `make test` skips packages tagged
+`//go:build linux` (for example `pkg/guest/qemu/server` and most `*_test.go`
+files). Stage packages are `unix` and do run. Use `make test-container`
+before pushing when Linux-only packages change, or rely on CI on `ubuntu-latest`.
+Darwin `Factories` lists `qemu` only.
 
 ### `make test-e2e`
 

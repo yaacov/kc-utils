@@ -3,6 +3,7 @@ package env
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
@@ -49,12 +50,12 @@ func Load() (*Config, error) {
 	flag.StringVar(&cfg.Fingerprint, "fingerprint", os.Getenv(EnvFingerprint), "vCenter SSL thumbprint")
 	flag.IntVar(&cfg.CopyConcurrency, "copy-concurrency", cfg.CopyConcurrency, "max parallel disk copies")
 	flag.BoolVar(&cfg.Offline, "offline", getEnvBool(EnvOffline, false), "pass --offline to converters (use local packages only)")
-	flag.StringVar(&cfg.Backend, "backend", envOr(EnvBackend, "direct"), "guest disk backend (registered names; see --help)")
+	flag.StringVar(&cfg.Backend, "backend", os.Getenv(EnvBackend), "guest disk backend (required; registered names)")
 	flag.Parse()
 
 	cfg.Backend = strings.TrimSpace(cfg.Backend)
 	if cfg.Backend == "" {
-		cfg.Backend = "direct"
+		return nil, fmt.Errorf("--backend / %s is required", EnvBackend)
 	}
 
 	if err := ValidateCopyMode(cfg); err != nil {

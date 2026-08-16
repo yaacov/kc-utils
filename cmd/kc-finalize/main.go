@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // kc-finalize unmounts guest filesystems and writes target metadata.
 // Documentation: docs/apps/kc-finalize.md
@@ -19,6 +19,7 @@ import (
 	// Guest disk backends
 	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
 	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
 
 	// Plugin registrations: filesystem trimmer
 	_ "github.com/yaacov/kc-utils/pkg/finalize/fstrim/plugins/default"
@@ -36,7 +37,7 @@ func main() {
 	inputFile := flag.String("input", "", "pipeline JSON file")
 	outputFile := flag.String("output", "target-meta.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	backend := flag.String("backend", "direct", guest.BackendFlagUsage())
+	backend := flag.String("backend", "", guest.BackendFlagUsage()+" (required)")
 	teardownOnly := flag.Bool("teardown-only", false, "reclaim orphaned guest resources without Sync or metadata writes")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()

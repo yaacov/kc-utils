@@ -6,6 +6,8 @@ own README with detailed exports and mechanism.
 
 Stage-local helpers (not pipeline blocks): [`systemd/`](systemd/) — shared systemd unit mask/disable utilities used by hypervisor plugins and network handlers.
 
+**Type:** `strict` = single built-in implementation · `pluggable` = implementation chosen from a `plugins/` registry ([plugin model](../../community/architecture.md#plugin-system)) · `strict + pluggable` = registry plus built-in wiring/fallback · `inline` = handled directly by the stage orchestrator.
+
 | # | Block | Package | Type | Description |
 |---|-------|---------|------|-------------|
 | 1 | Distro | [`distro/`](distro/) | pluggable | Classify OS family |

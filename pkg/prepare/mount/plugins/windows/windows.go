@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package windows
 
@@ -51,8 +51,8 @@ func (p *Planner) Expand(_ *mount.PlanContext, _ string) ([]mount.MountSpec, err
 }
 
 func findESP(ctx *mount.PlanContext) string {
-	for _, dev := range ctx.Firmware.ESPDevices {
-		return dev
+	if len(ctx.Firmware.ESPDevices) > 0 {
+		return ctx.Firmware.ESPDevices[0]
 	}
 	di := ctx.Root.DiskIndex
 	if di < 0 || di >= len(ctx.Disks) {

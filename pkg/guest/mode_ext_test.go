@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
 	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
 )
 
 func TestParseMode(t *testing.T) {
@@ -21,9 +22,13 @@ func TestParseMode(t *testing.T) {
 	if err != nil || m != guest.ModeGuestfs {
 		t.Fatalf("ParseMode(guestfs) = %q, %v", m, err)
 	}
+	m, err = guest.ParseMode("qemu")
+	if err != nil || m != guest.ModeQemu {
+		t.Fatalf("ParseMode(qemu) = %q, %v", m, err)
+	}
 	m, err = guest.ParseMode("")
-	if err != nil || m != guest.ModeDirect {
-		t.Fatalf("ParseMode(\"\") = %q, %v", m, err)
+	if err == nil {
+		t.Fatalf("ParseMode(\"\") = %q, want error", m)
 	}
 	_, err = guest.ParseMode("nope")
 	if err == nil || !strings.Contains(err.Error(), "available:") {
@@ -32,7 +37,7 @@ func TestParseMode(t *testing.T) {
 
 	names := guest.AvailableBackends()
 	joined := strings.Join(names, ",")
-	if !strings.Contains(joined, "direct") || !strings.Contains(joined, "guestfs") {
+	if !strings.Contains(joined, "direct") || !strings.Contains(joined, "guestfs") || !strings.Contains(joined, "qemu") {
 		t.Fatalf("missing backends: %v", names)
 	}
 }

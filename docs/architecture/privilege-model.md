@@ -151,10 +151,10 @@ socket (`/tmp/.guestfish-<uid>/socket-<pid>`).
 
 ### Host-mount (`--backend=direct` / `V2V_backend=direct`)
 
-CLI default when `V2V_backend` / `--backend` is unset is `direct`. The
-conversion pod needs `privileged: true` or, at minimum, `CAP_SYS_ADMIN`
-with access to block device nodes. In Forklift deployments, the pod security
-context is set by the Forklift operator, not by kc-utils itself.
+`--backend` / `V2V_backend` is required (no CLI default). Direct is registered
+on Linux only. The conversion pod needs `privileged: true` or, at minimum,
+`CAP_SYS_ADMIN` with access to block device nodes. In Forklift deployments, the
+pod security context is set by the Forklift operator, not by kc-utils itself.
 
 ### libguestfs appliance (`--backend=guestfs` / `V2V_backend=guestfs`)
 
@@ -189,6 +189,29 @@ real host path (for example hivex on Windows registry hives) use
 `Guest.Checkout` / `Checkin` to download a single file to a temp path and
 upload it back. `guestmount` (FUSE) is not used. `Guest.Sync()` is a no-op —
 writes already hit the appliance-mounted filesystems.
+
+### QEMU appliance (`--backend=qemu` / `V2V_backend=qemu`)
+
+Registered on Linux and Darwin. The conversion host needs QEMU
+(`qemu-system-x86_64` or `qemu-system-aarch64`) and two appliance files
+from `make appliance`: `vmlinuz` and `initramfs.img`
+(`KC_APPLIANCE_DIR`). Conversion tools (`mount`, LVM, cryptsetup, fsck,
+`hivexregedit`) run inside the appliance via `kc-agent`, not on
+the host. Virtio-win and qemu-ga RPMs stay on the host
+(`/usr/share/virtio-win`, `/usr/share/kc-packages`, or `KC_VIRTIO_WIN` /
+`KC_PACKAGES` from `make stage-offline`).
+
+Shared-session ownership matches guestfs:
+
+1. **`kc-v2v` reserves** a Unix socket path (`KC_AGENT_SOCK`).
+2. **prepare Setup starts QEMU** with guest disks and `rdinit=/kc-agent`, then
+   writes `qemu.pid`. Convert/finalize dial the agent socket; they do not spawn
+   a second VM.
+3. **`kc-v2v` kills QEMU** after finalize (`KC_QEMU_PID` / pidfile).
+
+Standalone `kc-prepare` without `KC_AGENT_SOCK` starts a process-local QEMU and
+tears it down on `Release`/`Teardown`. Accel is `hvf` on Darwin, `kvm` on Linux
+when `/dev/kvm` exists, otherwise `tcg`.
 
 ### Clevis / NBDE (Forklift `V2V_NBDE_CLEVIS`)
 

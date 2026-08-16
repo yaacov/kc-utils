@@ -26,6 +26,9 @@ func (d *DirectorySource) basePath() string {
 	if d.BasePath != "" {
 		return d.BasePath
 	}
+	if p := strings.TrimSpace(os.Getenv("KC_PACKAGES")); p != "" {
+		return p
+	}
 	return DefaultBasePath
 }
 

@@ -5,6 +5,7 @@ package initramfs
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
@@ -71,6 +72,43 @@ func TestInferInitrdPathDefault(t *testing.T) {
 	want := "/boot/initramfs-5.14.0-427.img"
 	if got != want {
 		t.Errorf("inferInitrdPath() = %q, want %q (should default to RPM convention)", got, want)
+	}
+}
+
+func TestEnsureInitramfsToolsModulesWholeWord(t *testing.T) {
+	guestRoot := t.TempDir()
+
+	modDir := filepath.Join(guestRoot, "etc", "initramfs-tools")
+	if err := os.MkdirAll(modDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	modFile := filepath.Join(modDir, "modules")
+	// "bochs" is a substring of the already-listed "bochs-drm"; a substring
+	// check would wrongly skip it.
+	if err := os.WriteFile(modFile, []byte("bochs-drm\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ensureInitramfsToolsModules(guestRoot, "bochs-drm bochs virtio_blk"); err != nil {
+		t.Fatalf("ensureInitramfsToolsModules: %v", err)
+	}
+
+	data, err := os.ReadFile(modFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	modules := map[string]bool{}
+	for _, line := range strings.Fields(string(data)) {
+		modules[line] = true
+	}
+	for _, want := range []string{"bochs-drm", "bochs", "virtio_blk"} {
+		if !modules[want] {
+			t.Errorf("module %q missing from %q", want, string(data))
+		}
+	}
+	// Existing entry must not be duplicated.
+	if got := strings.Count(string(data), "bochs-drm"); got != 1 {
+		t.Errorf("bochs-drm listed %d times, want 1:\n%s", got, string(data))
 	}
 }
 

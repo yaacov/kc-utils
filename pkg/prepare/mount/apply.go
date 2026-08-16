@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package mount
 
@@ -56,13 +56,4 @@ func updateMountPoint(disks []types.DiskInfo, devicePath, guestMP, fsType string
 		MountPoint: guestMP,
 		FSType:     fsType,
 	})
-}
-
-// SortSpecs returns specs sorted by guest mount path length.
-func SortSpecs(specs []MountSpec) []MountSpec {
-	out := append([]MountSpec{}, specs...)
-	sort.Slice(out, func(i, j int) bool {
-		return len(out[i].GuestMP) < len(out[j].GuestMP)
-	})
-	return out
 }

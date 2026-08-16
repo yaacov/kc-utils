@@ -1,0 +1,42 @@
+# kc-utils QEMU appliance (kc-agent + conversion tools)
+#
+# Produces two files per architecture:
+#   vmlinuz           — Fedora kernel
+#   initramfs.img     — RAM: modules, conversion tools, kc-agent as pid 1
+#
+# Virtio-win and qemu-ga RPMs stay on the conversion host
+# (/usr/share/virtio-win, /usr/share/kc-packages), not in this image.
+#
+# Build (from repository root):
+#   make appliance
+#   make appliance-arm64
+
+# ── Stage 1: kc-agent ───────────────────────────────────────────────
+FROM docker.io/library/golang:1.24 AS builder
+ARG TARGETARCH
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -trimpath -ldflags '-s -w' -o /out/kc-agent ./cmd/kc-agent
+
+# ── Stage 2: Fedora rootfs + pack artifacts ─────────────────────────
+FROM quay.io/fedora/fedora:44 AS pack
+
+RUN dnf install -y --setopt=install_weak_deps=False \
+        kernel-core kernel-modules-core kmod \
+        bash coreutils util-linux \
+        lvm2 cryptsetup clevis clevis-luks \
+        e2fsprogs xfsprogs btrfs-progs ntfs-3g ntfsprogs \
+        hivex perl-hivex \
+        cpio gzip xz \
+        dnf-plugins-core && \
+    dnf clean all
+
+COPY --from=builder /out/kc-agent /kc-agent
+RUN chmod +x /kc-agent
+COPY build/appliance/pack.sh /tmp/pack.sh
+RUN chmod +x /tmp/pack.sh && /tmp/pack.sh
+
+FROM scratch
+COPY --from=pack /out/ /

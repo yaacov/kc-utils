@@ -3,7 +3,7 @@
 Opens source disks, inspects the guest OS, mounts guest filesystems, and
 produces metadata for downstream converters.
 
-Requires Linux (`//go:build linux`).
+Requires Unix (`//go:build unix`). `--backend=direct` and `--backend=guestfs` are Linux-only at runtime.
 
 ## Entry Point
 
@@ -16,16 +16,17 @@ Requires Linux (`//go:build linux`).
 | `--input` | yes | | Path to PrepareInput JSON |
 | `--output` | no | `prepare-out.json` | Path to write PrepareOutput JSON |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory for guest filesystem mounts |
-| `--backend` | no | `direct` | Guest disk backend (`direct`\|`guestfs`; runtime list from registered plugins) |
+| `--backend` | **yes** | | Guest disk backend (`direct`\|`guestfs`\|`qemu`; runtime list from registered plugins). No default. |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 In guestfs mode, prepare adopts the shared `guestfish --listen` session when
 `GUESTFISH_PID` / `KC_GUESTFISH_PID` is set by `kc-v2v` (and fails if that PID
-is dead). Standalone runs without a PID env start a process-local listener.
-Prepare never exits a shared listener — `kc-v2v` closes it after finalize.
+is dead). In qemu mode, prepare starts QEMU when `KC_AGENT_SOCK` is reserved
+but the socket is not yet listening; convert/finalize dial that socket.
+Standalone runs without those env vars start a process-local appliance.
+Prepare never exits a shared session — `kc-v2v` closes it after finalize.
 Guest filesystems are mounted inside the appliance; `--mount-root` is a path
-key for `pkg/guest` helpers, not a populated host tree. File I/O uses guestfish
-RPC against those appliance mounts.
+key for `pkg/guest` helpers, not a populated host tree.
 
 Root selection is configured in `PrepareInput.options.root` (not a CLI flag).
 
@@ -104,7 +105,6 @@ Example outputs: [examples/prepare-output-complete.json](examples/prepare-output
 
 | Interface | Implementations |
 |-----------|----------------|
-| `Decryptor` | `keyfile`, `clevis` |
 | `RootSelector` | `first` (default), `single`, `device` |
 | `MountPlanner` | `linux` (fstab), `windows` |
 | `FirmwareDetector` | `gpt-esp` |

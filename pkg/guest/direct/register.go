@@ -1,15 +1,19 @@
-//go:build linux
+//go:build unix
 
 package direct
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
 func init() {
+	if runtime.GOOS != "linux" {
+		return
+	}
 	guest.Factories.Register(string(guest.ModeDirect), &factory{})
 }
 

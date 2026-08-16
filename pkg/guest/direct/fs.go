@@ -1,9 +1,11 @@
-//go:build linux
+//go:build unix
 
 package direct
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -130,4 +132,33 @@ func (b *Backend) Download(guestPath, hostPath string) error {
 
 func (b *Backend) StatFS(guestPath string) (freeBytes, freeInodes int64, err error) {
 	return guestcommon.HostStatFS(b.host(guestPath))
+}
+
+func (b *Backend) LiveHostPath(guestPath string) (string, bool) {
+	return b.host(guestPath), true
+}
+
+func (b *Backend) MergeHive(guestPath string, reg []byte) error {
+	if len(reg) == 0 {
+		return nil
+	}
+	tmp, err := os.CreateTemp("", "kc-reg-*.reg")
+	if err != nil {
+		return fmt.Errorf("merge hive temp: %w", err)
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if _, err := tmp.Write(reg); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	hivePath := b.host(guestPath)
+	cmd := exec.Command("hivexregedit", "--merge", hivePath, tmpPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("hivexregedit --merge %s: %w\n%s", hivePath, err, out)
+	}
+	return nil
 }

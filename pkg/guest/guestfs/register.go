@@ -1,16 +1,20 @@
-//go:build linux
+//go:build unix
 
 package guestfs
 
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
 func init() {
+	if runtime.GOOS != "linux" {
+		return
+	}
 	guest.Factories.Register(string(guest.ModeGuestfs), &factory{})
 }
 

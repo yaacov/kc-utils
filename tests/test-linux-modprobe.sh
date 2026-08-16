@@ -36,6 +36,7 @@ output_json=$(mktemp)
 cleanup_fn rm -f "$output_json"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json" \
     --output "$output_json" \
     --mount-root "$d" \
@@ -66,6 +67,7 @@ cleanup_fn rm -f "$pipeline_json2"
 jq -n --slurpfile p "$prepare_json2" '{prepare: $p[0]}' > "$pipeline_json2"
 
 "$BIN_DIR/kc-convert-linux" \
+    --backend direct \
     --input "$pipeline_json2" \
     --output "$output_json2" \
     --mount-root "$d" \

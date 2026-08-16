@@ -41,6 +41,7 @@ EOF
 
 # Run kc-prepare.
 "$BIN_DIR/kc-prepare" \
+    --backend direct \
     --input "$d/input.json" \
     --output "$d/prepare.json" \
     --mount-root "$MOUNT_ROOT" \
@@ -77,6 +78,7 @@ EOF
 jq --slurpfile c "$d/convert.json" '. + {convert: $c[0]}' "$d/prepare.json" > "$d/pipeline.json"
 
 "$BIN_DIR/kc-finalize" \
+    --backend direct \
     --input "$d/pipeline.json" \
     --output "$d/finalize.json" \
     --mount-root "$MOUNT_ROOT" \

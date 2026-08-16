@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package bcdeditor
 
@@ -131,6 +131,14 @@ func (b *BCDEditor) removeGraphicsDisabled(bcdPath string) {
 	}
 
 	hive.DeleteKey(graphicsPath)
+	if guestPath != "" && g != nil {
+		if err := g.MergeHive(guestPath, hive.PendingReg()); err != nil {
+			slog.Warn("saving BCD hive", "error", err)
+			return
+		}
+		slog.Info("removed graphicsmodedisabled from BCD")
+		return
+	}
 	if err := hive.Save(); err != nil {
 		slog.Warn("saving BCD hive", "error", err)
 		return

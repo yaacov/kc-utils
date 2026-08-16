@@ -79,8 +79,10 @@ Behavior depends on the guest access backend. Implementation:
 
 - Direct (host-mount): [`pkg/guest/direct/backend.go`](../../pkg/guest/direct/backend.go) `FSCheck`
 - Guestfs (libguestfs appliance): [`pkg/guest/guestfs/backend.go`](../../pkg/guest/guestfs/backend.go) `fscheckCommand`
+- QEMU appliance: [`pkg/guest/qemu/`](../../pkg/guest/qemu/) (tools run inside `kc-agent`)
 
-| FS type | Guestfs (`V2V_backend=guestfs`, kc-v2v default) | Direct / host-mount |
+| FS type | Guestfs (`V2V_backend=guestfs`, kc-v2v image) | Direct / QEMU appliance |
+|---------|----------------------------------------------|-------------------------|
 |---------|----------------------------------------------|---------------------|
 | ext2, ext3, ext4 | guestfish `e2fsck-f` | `e2fsck -f -y` |
 | xfs | guestfish `xfs-repair` | `xfs_repair` |

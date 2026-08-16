@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // kc-v2v orchestrates prepare → convert → finalize for Forklift migrations.
 // Documentation: docs/apps/kc-v2v.md
@@ -15,6 +15,7 @@ import (
 	// Guest disk backends
 	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
 	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
 )
 
 func main() {

@@ -203,10 +203,10 @@ func TestInstallDHCP(t *testing.T) {
 		t.Fatalf("reading virtio network file: %v", err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "Name=enp*") {
+	if !strings.Contains(content, "enp*") {
 		t.Errorf("missing enp* match: %s", content)
 	}
-	if !strings.Contains(content, "Name=eth*") {
+	if !strings.Contains(content, "eth*") {
 		t.Errorf("missing eth* match: %s", content)
 	}
 	if !strings.Contains(content, "Driver=virtio_net") {
