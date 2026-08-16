@@ -253,11 +253,11 @@ V2V_inPlace=1 V2V_source=nutanix V2V_vmName=my-vm kc-v2v
 | `V2V_firmware` | Optional guest firmware override (`uefi` or `bios`) |
 | `V2V_fingerprint` | vCenter SSL thumbprint |
 | `V2V_vmName` | Source VM name |
-| `V2V_guestfs` | Default `true` in this image — libguestfs appliance (needs `/dev/kvm`) |
+| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`). Image default often `guestfs` |
 
-### Guestfs (default)
+### Guestfs (default in image)
 
-With `V2V_guestfs=true` (image default), `kc-v2v` starts one `guestfish --listen`
+With `V2V_backend=guestfs`, `kc-v2v` starts one `guestfish --listen`
 appliance and passes `GUESTFISH_PID` into prepare/convert/finalize so discovery,
 file I/O, trim, and fsck reuse the same QEMU. Fsck runs inside the appliance
 during `kc-prepare` (pre-fsck, before mount) and `kc-finalize` (post-fsck, after
@@ -265,7 +265,7 @@ unmount) — see
 [docs/architecture/filesystem-checks.md](../../docs/architecture/filesystem-checks.md).
 Guest filesystems stay mounted inside the appliance during convert; stages read
 and write via guestfish RPC (`Checkout` for tools that need a host path, e.g.
-hivex). Set `V2V_guestfs=false` for privileged host mounts.
+hivex). Set `V2V_backend=direct` for privileged host mounts.
 
 The UBI image omits host-side e2fsprogs, xfsprogs, btrfs-progs, and ntfs-3g
 because fsck runs in the appliance VM, not on the conversion-pod host. See

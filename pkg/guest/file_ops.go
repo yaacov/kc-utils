@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	guestcommon "github.com/yaacov/kc-utils/pkg/guest/common"
 )
 
 // FileRead reads path. Paths under the active guest RootPath go through the
@@ -173,12 +175,12 @@ func FileUpload(hostPath, guestHostStylePath string) error {
 		return err
 	}
 	if info.IsDir() {
-		return copyDir(hostPath, guestHostStylePath)
+		return guestcommon.CopyDir(hostPath, guestHostStylePath)
 	}
 	if err := os.MkdirAll(filepath.Dir(guestHostStylePath), 0o755); err != nil {
 		return err
 	}
-	return copyFile(hostPath, guestHostStylePath, info.Mode())
+	return guestcommon.CopyFile(hostPath, guestHostStylePath, info.Mode())
 }
 
 // FileStatFS returns free bytes/inodes for the filesystem containing path.
@@ -186,7 +188,7 @@ func FileStatFS(path string) (freeBytes, freeInodes int64, err error) {
 	if gp, g, ok := guestPathFromHost(path); ok {
 		return g.StatFS(gp)
 	}
-	return hostStatFS(path)
+	return guestcommon.HostStatFS(path)
 }
 
 // FileWalkDir walks a guest directory tree (host-style path under RootPath).

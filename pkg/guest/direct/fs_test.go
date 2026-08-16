@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	guestcommon "github.com/yaacov/kc-utils/pkg/guest/common"
 )
 
 func TestCopyFile(t *testing.T) {
@@ -17,7 +19,7 @@ func TestCopyFile(t *testing.T) {
 	if err := os.WriteFile(src, content, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := copyFile(src, dst, 0o600); err != nil {
+	if err := guestcommon.CopyFile(src, dst, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(dst)
@@ -49,7 +51,7 @@ func TestCopyDir(t *testing.T) {
 	}
 
 	dst := filepath.Join(t.TempDir(), "copy")
-	if err := copyDir(src, dst); err != nil {
+	if err := guestcommon.CopyDir(src, dst); err != nil {
 		t.Fatal(err)
 	}
 
@@ -65,7 +67,7 @@ func TestCopyDir(t *testing.T) {
 
 func TestHostStatFS(t *testing.T) {
 	dir := t.TempDir()
-	free, inodes, err := hostStatFS(dir)
+	free, inodes, err := guestcommon.HostStatFS(dir)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,6 +15,11 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
 	"github.com/yaacov/kc-utils/pkg/common/types"
+	"github.com/yaacov/kc-utils/pkg/guest"
+
+	// Guest disk backends
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 
 	// Plugin registrations: firmware detectors
 	_ "github.com/yaacov/kc-utils/pkg/prepare/firmware/plugins/gptesp"
@@ -40,16 +45,23 @@ func main() {
 	inputFile := flag.String("input", "", "input JSON file")
 	outputFile := flag.String("output", "prepare-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
+	backend := flag.String("backend", "direct", guest.BackendFlagUsage())
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
+
+	mode, err := guest.ParseMode(*backend)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+	resolvedBackend := mode.String()
 
 	logger.Init(*logLevel)
 	slog.Info("kc-prepare starting",
 		"input", *inputFile,
 		"output", *outputFile,
 		"mountRoot", *mountRoot,
-		"guestfs", *useGuestfs,
+		"backend", resolvedBackend,
 		"logLevel", *logLevel,
 	)
 
@@ -84,7 +96,7 @@ func main() {
 		Pipeline:   pipeline,
 		MountRoot:  *mountRoot,
 		OutputPath: *outputFile,
-		UseGuestfs: *useGuestfs,
+		Backend:    resolvedBackend,
 	}
 
 	if err := prepare.Run(cfg); err != nil {

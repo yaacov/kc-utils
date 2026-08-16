@@ -84,7 +84,7 @@ Image / `kc-v2v`-only (not Forklift `AppConfig`; image defaults or overrides):
 
 | Variable | Role |
 |----------|------|
-| `V2V_guestfs` | Image default `true` (libguestfs appliance) |
+| `V2V_backend` | Guest disk backend (`direct`\|`guestfs`; image often sets `guestfs`) |
 | `V2V_offline` | Pass `--offline` to converters |
 | `V2V_copyConcurrency` | Max parallel NFC copies (default `4`) |
 | `KC_BIN_DIR` | Stage binary dir (default `/usr/lib/kc-utils`) |

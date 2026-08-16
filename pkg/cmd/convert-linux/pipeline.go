@@ -32,14 +32,14 @@ type Config struct {
 	MountRoot   string
 	OutputPath  string
 	Offline     bool
-	UseGuestfs  bool
+	Backend     string
 }
 
 // Run executes the Linux conversion pipeline.
 func Run(cfg *Config) error {
 	slog.Debug("starting pipeline")
 
-	_, err := guest.AttachFromPrepare(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
+	_, err := guest.AttachFromPrepare(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice, cfg.MountRoot, cfg.Backend)
 	if err != nil {
 		return err
 	}

@@ -95,7 +95,7 @@ COPY --from=builder /out/kc-copy /usr/bin/kc-copy
 # only needs /dev/kvm. Guest FS access happens via guestfish RPC against
 # mounts inside the appliance VM.
 ENV LIBGUESTFS_BACKEND=direct
-ENV V2V_guestfs=true
+ENV V2V_backend=guestfs
 # qemu uid 107 has passwd HOME=/; guestfish needs a writable $HOME/.guestfish.
 ENV HOME=/var/tmp
 

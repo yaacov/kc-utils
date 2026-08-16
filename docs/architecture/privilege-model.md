@@ -149,15 +149,16 @@ socket (`/tmp/.guestfish-<uid>/socket-<pid>`).
 
 ## Pod Security Implications
 
-### Host-mount (default for CLI / unset `V2V_guestfs`)
+### Host-mount (`--backend=direct` / `V2V_backend=direct`)
 
-The conversion pod needs `privileged: true` or, at minimum, `CAP_SYS_ADMIN`
+CLI default when `V2V_backend` / `--backend` is unset is `direct`. The
+conversion pod needs `privileged: true` or, at minimum, `CAP_SYS_ADMIN`
 with access to block device nodes. In Forklift deployments, the pod security
 context is set by the Forklift operator, not by kc-utils itself.
 
-### libguestfs appliance (`--guestfs` / `V2V_guestfs=true`)
+### libguestfs appliance (`--backend=guestfs` / `V2V_backend=guestfs`)
 
-Default in the `kc-v2v` container image (`ENV V2V_guestfs=true`). The
+Default in the `kc-v2v` container image (`ENV V2V_backend=guestfs`). The
 conversion pod needs `/dev/kvm` access (typically via the KubeVirt device
 plugin `devices.kubevirt.io/kvm`). No `CAP_SYS_ADMIN`, privileged mode, or
 `/dev/fuse` is required.

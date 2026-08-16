@@ -2,22 +2,38 @@
 
 package guest
 
-import "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+// Environment variables for the guestfs shared listener and Clevis networking.
+// Defined here so callers need not import a concrete backend package.
+const (
+	EnvGuestfishPID   = "GUESTFISH_PID"
+	EnvKCGuestfishPID = "KC_GUESTFISH_PID"
+	// EnvGuestfsNetwork enables QEMU user networking in the appliance before
+	// launch. Set to "1" or "true" when Clevis/NBDE unlock is required.
+	EnvGuestfsNetwork = "KC_GUESTFS_NETWORK"
+)
 
-// SharedListener and StartSharedListener are re-exported from the guestfs
-// subpackage so callers keep importing "pkg/guest" only.
-type SharedListener = guestfs.SharedListener
-
-var StartSharedListener = guestfs.StartSharedListener
-
-// SharedListenerAlive reports whether the listener's guestfish process is
-// still running.
-func SharedListenerAlive(l *SharedListener) bool {
-	return l.Alive()
+// StartSharedSession starts a shared backend session when the selected
+// backend implements SharedSessionFactory.
+func StartSharedSession(backend string) (SharedSession, error) {
+	f, err := LookupFactory(backend)
+	if err != nil {
+		return nil, err
+	}
+	sf, ok := f.(SharedSessionFactory)
+	if !ok {
+		return nil, nil
+	}
+	return sf.StartSharedSession()
 }
 
-const (
-	EnvGuestfishPID   = guestfs.EnvGuestfishPID
-	EnvKCGuestfishPID = guestfs.EnvKCGuestfishPID
-	EnvGuestfsNetwork = guestfs.EnvGuestfsNetwork
-)
+// StartSharedListener starts a guestfs shared guestfish --listen session.
+// Orchestrators that already know the configured backend should call
+// StartSharedSession(backend) instead so restarts keep the same backend.
+func StartSharedListener() (SharedSession, error) {
+	return StartSharedSession(string(ModeGuestfs))
+}
+
+// SharedListenerAlive reports whether the session is still running.
+func SharedListenerAlive(l SharedSession) bool {
+	return l != nil && l.Alive()
+}

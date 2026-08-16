@@ -18,15 +18,17 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
 const (
-	EnvGuestfishPID   = "GUESTFISH_PID"
-	EnvKCGuestfishPID = "KC_GUESTFISH_PID"
+	EnvGuestfishPID   = guest.EnvGuestfishPID
+	EnvKCGuestfishPID = guest.EnvKCGuestfishPID
 	// EnvGuestfsNetwork enables QEMU user networking in the appliance before
 	// launch. Set to "1" or "true" when Clevis/NBDE unlock is required
 	// (Forklift V2V_NBDE_CLEVIS). Must be set before ensureLaunched / run.
-	EnvGuestfsNetwork = "KC_GUESTFS_NETWORK"
+	EnvGuestfsNetwork = guest.EnvGuestfsNetwork
 )
 
 func guestfsNetworkEnabled() bool {

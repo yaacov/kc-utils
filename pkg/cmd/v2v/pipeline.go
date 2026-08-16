@@ -21,8 +21,8 @@ import (
 	"github.com/yaacov/kc-utils/pkg/v2v/inspection/xml"
 )
 
-// startSharedListener starts a shared guestfish listener; overridden in tests.
-var startSharedListener = guest.StartSharedListener
+// startSharedSession starts a shared backend session; overridden in tests.
+var startSharedSession = guest.StartSharedSession
 
 // pipelineResult holds outputs from the kc-utils pipeline subprocesses.
 type pipelineResult = types.PipelineData
@@ -154,11 +154,11 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	}
 
 	guestSetupStarted = true
-	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, sharedListener, &stageEnv)
+	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, &sharedListener, &stageEnv)
 	if err != nil {
 		return fail(err)
 	}
-	if err := runConvertStage(cfg, pipeline, pipelinePath, sharedListener, &stageEnv); err != nil {
+	if err := runConvertStage(cfg, pipeline, pipelinePath, &sharedListener, &stageEnv); err != nil {
 		return fail(err)
 	}
 	if err := runFinalizeStage(cfg, pipelinePath, stageEnv, pipeline); err != nil {
@@ -167,15 +167,15 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	return pipeline, nil
 }
 
-// setupSharedListener starts a guestfish --listen session when guestfs mode is on.
-// The caller owns closing the returned listener.
-func setupSharedListener(cfg *env.Config) (*guest.SharedListener, []string, error) {
-	if !cfg.UseGuestfs {
-		return nil, nil, nil
-	}
-	listener, err := startSharedListener()
+// setupSharedListener starts a shared backend session when the backend supports it.
+// The caller owns closing the returned session.
+func setupSharedListener(cfg *env.Config) (guest.SharedSession, []string, error) {
+	listener, err := startSharedSession(cfg.Backend)
 	if err != nil {
-		return nil, nil, fmt.Errorf("guestfish shared listener: %w", err)
+		return nil, nil, fmt.Errorf("shared backend session: %w", err)
+	}
+	if listener == nil {
+		return nil, nil, nil
 	}
 	stageEnv := listener.Env()
 	if cfg.NbdeClevis {
@@ -192,21 +192,19 @@ func stageCommonArgs(cfg *env.Config, inputPath, outputPath string) []string {
 		"--output", outputPath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
-	}
-	if cfg.UseGuestfs {
-		args = append(args, "--guestfs")
+		"--backend", cfg.Backend,
 	}
 	return args
 }
 
-func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) (*pipelineResult, error) {
+func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedSession, stageEnv *[]string) (*pipelineResult, error) {
 	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
 	prepareArgs := stageCommonArgs(cfg, inputPath, pipelinePath)
 
 	if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
 		return nil, fmt.Errorf("kc-prepare: %w", err)
 	}
-	if err := ensureSharedListener(sharedListener, stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(sharedListener, stageEnv, "prepare", cfg.Backend); err != nil {
 		return nil, err
 	}
 
@@ -226,7 +224,7 @@ func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipe
 		if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
 			return nil, fmt.Errorf("kc-prepare retry: %w", err)
 		}
-		if err := ensureSharedListener(sharedListener, stageEnv, "prepare-retry"); err != nil {
+		if err := ensureSharedListener(sharedListener, stageEnv, "prepare-retry", cfg.Backend); err != nil {
 			return nil, err
 		}
 		if err := readJSON(pipelinePath, &pipeline); err != nil {
@@ -239,7 +237,7 @@ func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipe
 	return &pipeline, nil
 }
 
-func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) error {
+func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedSession, stageEnv *[]string) error {
 	converter := pipeline.Prepare.Converter
 	if converter == "" {
 		if pipeline.Prepare.Inspect.Type == "windows" {
@@ -256,7 +254,7 @@ func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath str
 	if err := runSubprocess(convertBin, convertArgs, *stageEnv); err != nil {
 		return fmt.Errorf("%s: %w", converter, err)
 	}
-	return ensureSharedListener(sharedListener, stageEnv, "conversion")
+	return ensureSharedListener(sharedListener, stageEnv, "conversion", cfg.Backend)
 }
 
 func runFinalizeStage(cfg *env.Config, pipelinePath string, stageEnv []string, pipeline *pipelineResult) error {
@@ -274,12 +272,10 @@ func teardownOnlyArgs(cfg *env.Config, pipelinePath string) []string {
 		"--teardown-only",
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
+		"--backend", cfg.Backend,
 	}
 	if _, err := os.Stat(pipelinePath); err == nil {
 		args = append(args, "--input", pipelinePath)
-	}
-	if cfg.UseGuestfs {
-		args = append(args, "--guestfs")
 	}
 	return args
 }
@@ -318,11 +314,11 @@ func runSubprocess(bin string, args []string, extraEnv []string) error {
 	return nil
 }
 
-func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, stage string) error {
-	if listener == nil || guest.SharedListenerAlive(listener) {
+func ensureSharedListener(listener *guest.SharedSession, stageEnv *[]string, stage, backend string) error {
+	if listener == nil || *listener == nil || guest.SharedListenerAlive(*listener) {
 		return nil
 	}
-	slog.Warn("guestfish shared listener died, restarting", "after", stage)
+	slog.Warn("shared backend session died, restarting", "after", stage, "backend", backend)
 	keepNetwork := false
 	for _, e := range *stageEnv {
 		if strings.HasPrefix(e, guest.EnvGuestfsNetwork+"=") {
@@ -330,15 +326,18 @@ func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, st
 			break
 		}
 	}
-	newListener, err := startSharedListener()
+	newListener, err := startSharedSession(backend)
 	if err != nil {
-		return fmt.Errorf("guestfish restart after %s: %w", stage, err)
+		return fmt.Errorf("shared session restart after %s: %w", stage, err)
 	}
-	if closeErr := listener.Close(); closeErr != nil {
-		slog.Debug("closing dead shared listener", "error", closeErr)
+	if newListener == nil {
+		return fmt.Errorf("shared session restart after %s: backend %q does not support shared sessions", stage, backend)
 	}
-	*listener = *newListener
-	*stageEnv = listener.Env()
+	if closeErr := (*listener).Close(); closeErr != nil {
+		slog.Debug("closing dead shared session", "error", closeErr)
+	}
+	*listener = newListener
+	*stageEnv = (*listener).Env()
 	if keepNetwork {
 		*stageEnv = append(*stageEnv, guest.EnvGuestfsNetwork+"=1")
 	}

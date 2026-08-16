@@ -21,7 +21,7 @@ type Config struct {
 	Pipeline   *types.PipelineData
 	MountRoot  string
 	OutputPath string
-	UseGuestfs bool
+	Backend    string
 }
 
 // Run executes the finalizer pipeline.
@@ -36,7 +36,7 @@ func Run(cfg *Config) error {
 		TargetFirmware: cfg.Pipeline.Prepare.Firmware.Type,
 	}
 
-	g, err := guest.AttachFromPrepare(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
+	g, err := guest.AttachFromPrepare(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice, cfg.MountRoot, cfg.Backend)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,10 @@ func Run(cfg *Config) error {
 // TeardownOnly reclaims orphaned guest resources without Sync, customize,
 // trim, or metadata writes. Used by kc-v2v on pipeline failure.
 func TeardownOnly(cfg *Config) error {
-	mode := guest.ModeFromBool(cfg.UseGuestfs)
+	mode, err := guest.ParseMode(cfg.Backend)
+	if err != nil {
+		return err
+	}
 	slog.Info("teardown-only starting", "backend", mode.String(), "mountRoot", cfg.MountRoot)
 
 	if cfg.Pipeline != nil && cfg.Pipeline.Prepare != nil && len(cfg.Pipeline.Prepare.Disks) > 0 {

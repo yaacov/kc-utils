@@ -11,6 +11,10 @@ import (
 	v2v "github.com/yaacov/kc-utils/pkg/cmd/v2v"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
+
+	// Guest disk backends
+	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
 
 func main() {

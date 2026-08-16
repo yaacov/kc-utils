@@ -1,10 +1,5 @@
 //go:build linux
 
-// Package guest is the sole boundary for privileged host and libguestfs
-// operations on guest disks. Callers must not invoke guestfish,
-// mount/umount, losetup, LVM, cryptsetup, chroot, fsck, or fstrim for guest
-// disks outside this package. Use StartSharedListener from orchestrators
-// that need a cross-stage guestfish --listen session.
 package guest
 
 import (
@@ -13,8 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
-	"github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
 
 // Guest is the high-level handle used by prepare/convert/finalize pipelines.
@@ -30,16 +23,12 @@ func Open(disks []types.DiskSpec, mountRoot string, mode Mode) (*Guest, error) {
 		return nil, fmt.Errorf("creating mount root %s: %w", mountRoot, err)
 	}
 
-	var b Backend
-	switch mode {
-	case ModeGuestfs:
-		b = guestfs.New()
-	default:
-		b = direct.New()
+	f, err := LookupFactory(mode.String())
+	if err != nil {
+		return nil, err
 	}
-
-	if err := b.Setup(disks, mountRoot); err != nil {
-		_ = b.Teardown()
+	b, err := f.Open(disks, mountRoot)
+	if err != nil {
 		return nil, fmt.Errorf("backend setup: %w", err)
 	}
 
@@ -53,8 +42,11 @@ func Open(disks []types.DiskSpec, mountRoot string, mode Mode) (*Guest, error) {
 // AttachFromPrepare sets up a guest handle from prepare output data.
 // It derives the mode, orders disks, converts specs, attaches, and sets the
 // global active handle. Callers must defer ClearActive().
-func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, useGuestfs bool) (*Guest, error) {
-	mode := ModeFromBool(useGuestfs)
+func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, backend string) (*Guest, error) {
+	mode, err := ParseMode(backend)
+	if err != nil {
+		return nil, err
+	}
 	ordered := WithRootMount(disks, rootDevice)
 	specs := types.DiskSpecsFrom(ordered)
 	g, err := AttachMounted(specs, mountRoot, mode, ordered)
@@ -69,16 +61,13 @@ func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, use
 // direct mode, or with mount specs recorded for guestfs). Convert and finalize
 // use this after prepare Release.
 func AttachMounted(disks []types.DiskSpec, mountRoot string, mode Mode, diskInfos []types.DiskInfo) (*Guest, error) {
-	var b Backend
-	switch mode {
-	case ModeGuestfs:
-		gb, err := guestfs.NewMounted(disks, mountRoot, diskInfos)
-		if err != nil {
-			return nil, fmt.Errorf("guestfs session: %w", err)
-		}
-		b = gb
-	default:
-		b = direct.NewMounted(disks, mountRoot, diskInfos)
+	f, err := LookupFactory(mode.String())
+	if err != nil {
+		return nil, err
+	}
+	b, err := f.Attach(disks, mountRoot, diskInfos)
+	if err != nil {
+		return nil, fmt.Errorf("attach backend: %w", err)
 	}
 	return &Guest{rootPath: mountRoot, mode: mode, backend: b}, nil
 }
