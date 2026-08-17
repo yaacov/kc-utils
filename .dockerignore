@@ -1,0 +1,36 @@
+# Keep the build context small. The kc-v2v Containerfile does `COPY . .` for the
+# Go build, so anything not needed to compile or stage should be excluded here.
+#
+# NOTE: build/kc-v2v/cache/ is intentionally NOT excluded — the Containerfile
+# copies cached virtio-win ISOs from it (COPY build/kc-v2v/cache/).
+
+# Version control
+.git/
+.gitignore
+
+# Compiled host binaries (rebuilt inside the container)
+bin/
+coverage.out
+
+# Test artifacts (disk images can be large)
+tests/bin/
+tests/*.log
+tests/*.img
+tests/scenarios/runs/
+tests/scenarios/.env
+
+# Host-side offline conversion assets (make stage-offline)
+build/offline/
+
+# QEMU appliance build output
+build/appliance/out/
+
+# Editor and IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Claude Code
+.claude/

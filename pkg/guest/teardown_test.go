@@ -9,9 +9,10 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 
-	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
 )
 
 func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
@@ -24,7 +25,7 @@ func TestTeardownDiscardGuestfsNoopOnHostTree(t *testing.T) {
 	g, err := guest.AttachMounted(
 		[]types.DiskSpec{{Path: "/nonexistent.img", Format: "raw"}},
 		dir,
-		guest.ModeGuestfs,
+		backend.ModeGuestfs,
 		[]types.DiskInfo{{Path: "/nonexistent.img", Format: "raw"}},
 	)
 	if err != nil {
@@ -43,7 +44,7 @@ func TestTeardownGuestfsSyncNoop(t *testing.T) {
 	g, err := guest.AttachMounted(
 		[]types.DiskSpec{{Path: "/nonexistent.img", Format: "raw"}},
 		dir,
-		guest.ModeGuestfs,
+		backend.ModeGuestfs,
 		[]types.DiskInfo{{Path: "/nonexistent.img", Format: "raw"}},
 	)
 	if err != nil {
@@ -62,7 +63,7 @@ func TestTeardownMountRootGuestfs(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "a"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := guest.TeardownMountRoot(dir, guest.ModeGuestfs); err != nil {
+	if err := guest.TeardownMountRoot(dir, backend.ModeGuestfs); err != nil {
 		t.Fatal(err)
 	}
 	entries, err := os.ReadDir(dir)

@@ -8,7 +8,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/kernel"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Scanner struct{}
@@ -19,7 +19,7 @@ func init() {
 
 func (s *Scanner) ScanKernels(guestRoot string) ([]types.KernelInfo, error) {
 	modulesDir := kernel.ModulesDir(guestRoot)
-	entries, err := guest.FileReadDir(modulesDir)
+	entries, err := guestio.FileReadDir(modulesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (s *Scanner) ScanKernels(guestRoot string) ([]types.KernelInfo, error) {
 
 // readBootNames reads /boot once and returns a set of filenames.
 func readBootNames(guestRoot string) map[string]bool {
-	entries, err := guest.FileReadDir(filepath.Join(guestRoot, "boot"))
+	entries, err := guestio.FileReadDir(filepath.Join(guestRoot, "boot"))
 	if err != nil {
 		return nil
 	}

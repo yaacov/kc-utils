@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Plugin struct{}
@@ -19,7 +19,7 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	for _, dir := range candidateDirs(guestRoot) {
-		if guest.FileIsDir(dir) {
+		if guestio.FileIsDir(dir) {
 			return true
 		}
 	}
@@ -49,7 +49,7 @@ func candidateDirs(guestRoot string) []string {
 }
 
 func findDeviceByIP(scriptsDir, ip string) string {
-	entries, err := guest.FileReadDir(scriptsDir)
+	entries, err := guestio.FileReadDir(scriptsDir)
 	if err != nil {
 		return ""
 	}
@@ -71,7 +71,7 @@ func findDeviceByIP(scriptsDir, ip string) string {
 }
 
 func fileContainsIP(path, ip string) bool {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return false
 	}
@@ -86,7 +86,7 @@ func fileContainsIP(path, ip string) bool {
 }
 
 func extractDevice(path string) string {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return ""
 	}

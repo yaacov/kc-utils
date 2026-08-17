@@ -61,5 +61,5 @@ QEMU is launched with `-kernel vmlinuz -initrd initramfs.img` and
 `-append "rdinit=/kc-agent …"`, so `kc-agent` runs as pid 1. Guest disks are
 attached as virtio-blk devices; the agent RPC channel is a virtio-serial port
 named `org.kc-utils.agent` bound to `KC_AGENT_SOCK`. See
-[`pkg/guest/qemu/cmdline.go`](../../pkg/guest/qemu/cmdline.go) for the full
+[`pkg/guest/plugins/qemu/cmdline.go`](../../pkg/guest/plugins/qemu/cmdline.go) for the full
 argv.

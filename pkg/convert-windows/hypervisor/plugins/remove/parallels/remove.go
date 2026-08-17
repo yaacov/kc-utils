@@ -8,7 +8,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -23,8 +23,8 @@ func init() {
 }
 
 func (r *Remove) Detect(guestRoot string, _ registry.Hive, softwareHive registry.Hive) bool {
-	if guest.FileExists(filepath.Join(guestRoot, "Program Files", "Parallels", "Parallels Tools")) ||
-		guest.FileExists(filepath.Join(guestRoot, "Program Files (x86)", "Parallels", "Parallels Tools")) {
+	if guestio.FileExists(filepath.Join(guestRoot, "Program Files", "Parallels", "Parallels Tools")) ||
+		guestio.FileExists(filepath.Join(guestRoot, "Program Files (x86)", "Parallels", "Parallels Tools")) {
 		return true
 	}
 	return softwareHive.KeyExists(uninstallKey)
@@ -43,8 +43,8 @@ func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive
 
 	for _, sub := range []string{"Program Files", "Program Files (x86)"} {
 		p := filepath.Join(guestRoot, sub, "Parallels", "Parallels Tools")
-		if guest.FileExists(p) {
-			_ = guest.FileRemoveAll(p)
+		if guestio.FileExists(p) {
+			_ = guestio.FileRemoveAll(p)
 			slog.Info("removed Parallels Tools directory", "path", p)
 		}
 	}

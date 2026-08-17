@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Services struct{}
@@ -30,7 +30,7 @@ func (s *Services) Detect(guestRoot string, systemHive registry.Hive, ccs string
 		filepath.Join(guestRoot, "Program Files (x86)", "Nutanix"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}

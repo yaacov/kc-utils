@@ -7,7 +7,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -17,9 +17,9 @@ func init() {
 }
 
 func (c *Cleanup) Detect(guestRoot string) bool {
-	return guest.FileExists(filepath.Join(guestRoot, "usr", "bin", "prlsrvctl")) ||
-		guest.FileExists(filepath.Join(guestRoot, "usr", "sbin", "prltoolsd")) ||
-		guest.FileExists(filepath.Join(guestRoot, "usr", "lib", "parallels-tools", "install"))
+	return guestio.FileExists(filepath.Join(guestRoot, "usr", "bin", "prlsrvctl")) ||
+		guestio.FileExists(filepath.Join(guestRoot, "usr", "sbin", "prltoolsd")) ||
+		guestio.FileExists(filepath.Join(guestRoot, "usr", "lib", "parallels-tools", "install"))
 }
 
 func (c *Cleanup) Cleanup(guestRoot string) error {

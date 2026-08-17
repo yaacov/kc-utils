@@ -15,12 +15,12 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 
 	// Guest disk backends
-	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
-	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/qemu"
 
 	// Plugin registrations: firmware detectors
 	_ "github.com/yaacov/kc-utils/pkg/prepare/firmware/plugins/gptesp"
@@ -42,11 +42,11 @@ func main() {
 	inputFile := flag.String("input", "", "input JSON file")
 	outputFile := flag.String("output", "prepare-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	backend := flag.String("backend", "", guest.BackendFlagUsage()+" (required)")
+	backendName := flag.String("backend", "", backend.BackendFlagUsage()+" (required)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
-	mode, err := guest.ParseMode(*backend)
+	mode, err := backend.ParseMode(*backendName)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)

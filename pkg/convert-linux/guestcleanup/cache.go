@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Clean removes stale blkid and LVM caches that reference old device names,
@@ -19,7 +19,7 @@ func Clean(guestRoot string) {
 		filepath.Join(guestRoot, "etc", "lvm", "cache", ".cache"),
 	}
 	for _, f := range cacheFiles {
-		if err := guest.FileRemove(f); err != nil && !os.IsNotExist(err) {
+		if err := guestio.FileRemove(f); err != nil && !os.IsNotExist(err) {
 			slog.Warn("removing cache failed", "path", f, "error", err)
 		}
 	}
@@ -27,9 +27,9 @@ func Clean(guestRoot string) {
 	// Remove stale RPM DB lock files (RHBZ#1143866). These are always
 	// stale in an offline-mounted guest and can cause rpm/dnf to hang
 	// or fail during firstboot package installation.
-	rpmLocks, _ := guest.FileGlob(filepath.Join(guestRoot, "var", "lib", "rpm", "__db.00*"))
+	rpmLocks, _ := guestio.FileGlob(filepath.Join(guestRoot, "var", "lib", "rpm", "__db.00*"))
 	for _, f := range rpmLocks {
-		if err := guest.FileRemove(f); err != nil && !os.IsNotExist(err) {
+		if err := guestio.FileRemove(f); err != nil && !os.IsNotExist(err) {
 			slog.Warn("removing RPM DB lock failed", "path", f, "error", err)
 		}
 	}

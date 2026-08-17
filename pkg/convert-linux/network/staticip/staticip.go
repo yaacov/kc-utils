@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // MacToIPLine formats a static IP entry for the macToIP mapping file.
@@ -35,10 +35,10 @@ func WriteMacToIP(guestRoot string, ips []types.StaticIP) error {
 	}
 	content := strings.Join(lines, "\n") + "\n"
 	path := filepath.Join(guestRoot, "tmp", "macToIP")
-	if err := guest.FileMkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := guestio.FileMkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return guest.FileWrite(path, []byte(content), 0o644)
+	return guestio.FileWrite(path, []byte(content), 0o644)
 }
 
 // FirstbootCommands returns shell commands to configure static IPs on first boot.

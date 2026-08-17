@@ -99,7 +99,10 @@ func (s *serverHandler) warningsHandler(w http.ResponseWriter, r *http.Request) 
 func (s *serverHandler) shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	slog.Info("shutdown request received")
 	w.WriteHeader(http.StatusNoContent)
+	// Shutdown waits for in-flight requests (including this one) to drain, so
+	// calling it inline would deadlock on this handler's own connection. Run it
+	// off the handler goroutine after the response is written.
 	if server != nil {
-		_ = server.Shutdown(context.Background())
+		go func() { _ = server.Shutdown(context.Background()) }()
 	}
 }

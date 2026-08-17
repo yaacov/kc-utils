@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/configedit/bls"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/bootloader"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type BLSHandler struct{}
@@ -20,7 +20,7 @@ func init() {
 
 func (b *BLSHandler) Detect(guestRoot string) bool {
 	entriesDir := filepath.Join(guestRoot, "boot", "loader", "entries")
-	entries, err := guest.FileReadDir(entriesDir)
+	entries, err := guestio.FileReadDir(entriesDir)
 	if err != nil {
 		return false
 	}
@@ -34,14 +34,14 @@ func (b *BLSHandler) Detect(guestRoot string) bool {
 
 func (b *BLSHandler) GetDefaultKernel(guestRoot string) (string, error) {
 	entriesDir := filepath.Join(guestRoot, "boot", "loader", "entries")
-	entries, err := guest.FileReadDir(entriesDir)
+	entries, err := guestio.FileReadDir(entriesDir)
 	if err != nil {
 		return "", err
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name < entries[j].Name })
 	for _, e := range entries {
 		if strings.HasSuffix(e.Name, ".conf") {
-			content, err := guest.FileRead(filepath.Join(entriesDir, e.Name))
+			content, err := guestio.FileRead(filepath.Join(entriesDir, e.Name))
 			if err != nil {
 				continue
 			}
@@ -56,7 +56,7 @@ func (b *BLSHandler) GetDefaultKernel(guestRoot string) (string, error) {
 
 func (b *BLSHandler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 	entriesDir := filepath.Join(guestRoot, "boot", "loader", "entries")
-	entries, err := guest.FileReadDir(entriesDir)
+	entries, err := guestio.FileReadDir(entriesDir)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (b *BLSHandler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 			continue
 		}
 		path := filepath.Join(entriesDir, e.Name)
-		content, err := guest.FileRead(path)
+		content, err := guestio.FileRead(path)
 		if err != nil {
 			continue
 		}
@@ -77,7 +77,7 @@ func (b *BLSHandler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 			return nil
 		}
 		newName := "0-" + e.Name
-		return guest.FileRename(path, filepath.Join(entriesDir, newName))
+		return guestio.FileRename(path, filepath.Join(entriesDir, newName))
 	}
 	return nil
 }
@@ -111,7 +111,7 @@ func (b *BLSHandler) RegenerateConfig(guestRoot string) error {
 
 func (b *BLSHandler) modifyEntries(guestRoot string, fn func(*bls.Entry)) error {
 	entriesDir := filepath.Join(guestRoot, "boot", "loader", "entries")
-	entries, err := guest.FileReadDir(entriesDir)
+	entries, err := guestio.FileReadDir(entriesDir)
 	if err != nil {
 		return err
 	}
@@ -120,13 +120,13 @@ func (b *BLSHandler) modifyEntries(guestRoot string, fn func(*bls.Entry)) error 
 			continue
 		}
 		path := filepath.Join(entriesDir, e.Name)
-		content, err := guest.FileRead(path)
+		content, err := guestio.FileRead(path)
 		if err != nil {
 			continue
 		}
 		entry := bls.Parse(string(content))
 		fn(entry)
-		if err := guest.FileWrite(path, []byte(entry.String()), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(entry.String()), 0o644); err != nil {
 			return err
 		}
 	}

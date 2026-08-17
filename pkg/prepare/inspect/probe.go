@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // ProbeRoot checks whether mountPath looks like an OS root filesystem.
@@ -31,7 +31,7 @@ func ProbeRoot(mountPath string) (*types.InspectData, bool) {
 
 func isLinuxRoot(root string) bool {
 	for _, rel := range LinuxRootMarkerPaths {
-		if guest.FileExists(filepath.Join(root, rel)) {
+		if guestio.FileExists(filepath.Join(root, rel)) {
 			return true
 		}
 	}

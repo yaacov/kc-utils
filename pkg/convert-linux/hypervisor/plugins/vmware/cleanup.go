@@ -10,7 +10,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -27,7 +27,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "usr", "bin", "vmware-uninstall-tools.pl"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}
@@ -56,7 +56,7 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 
 func disableVMwareRepos(guestRoot string) {
 	reposDir := filepath.Join(guestRoot, "etc", "yum.repos.d")
-	entries, err := guest.FileReadDir(reposDir)
+	entries, err := guestio.FileReadDir(reposDir)
 	if err != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func disableVMwareRepos(guestRoot string) {
 			continue
 		}
 		path := filepath.Join(reposDir, e.Name)
-		data, err := guest.FileRead(path)
+		data, err := guestio.FileRead(path)
 		if err != nil {
 			continue
 		}
@@ -88,7 +88,7 @@ func disableVMwareRepos(guestRoot string) {
 			out.WriteString(line)
 			out.WriteByte('\n')
 		}
-		if err := guest.FileWrite(path, []byte(out.String()), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(out.String()), 0o644); err != nil {
 			slog.Warn("disabling VMware yum repo failed", "path", path, "error", err)
 		}
 	}
@@ -96,7 +96,7 @@ func disableVMwareRepos(guestRoot string) {
 
 func schedulePkgRemove(guestRoot string, pkgs []string) {
 	scriptDir := filepath.Join(guestRoot, "var", "lib", "kc-firstboot")
-	if err := guest.FileMkdirAll(scriptDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(scriptDir, 0o755); err != nil {
 		slog.Warn("creating VMware pkg-remove script dir failed", "path", scriptDir, "error", err)
 	}
 	script := filepath.Join(scriptDir, "remove-vmware-pkgs.sh")
@@ -106,7 +106,7 @@ func schedulePkgRemove(guestRoot string, pkgs []string) {
 	for _, p := range pkgs {
 		b.WriteString("rpm -e --nodeps " + p + " 2>/dev/null || dpkg -r " + p + " 2>/dev/null || true\n")
 	}
-	if err := guest.FileWrite(script, []byte(b.String()), 0o755); err != nil {
+	if err := guestio.FileWrite(script, []byte(b.String()), 0o755); err != nil {
 		slog.Warn("writing VMware pkg-remove script failed", "path", script, "error", err)
 	}
 
@@ -124,10 +124,10 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 `
-	if err := guest.FileMkdirAll(filepath.Dir(unitPath), 0o755); err != nil {
+	if err := guestio.FileMkdirAll(filepath.Dir(unitPath), 0o755); err != nil {
 		slog.Warn("creating VMware pkg-remove unit dir failed", "path", filepath.Dir(unitPath), "error", err)
 	}
-	if err := guest.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
+	if err := guestio.FileWrite(unitPath, []byte(unit), 0o644); err != nil {
 		slog.Warn("writing VMware pkg-remove unit failed", "path", unitPath, "error", err)
 	}
 	if err := systemd.EnableSystemdUnit(guestRoot, "kc-remove-vmware.service"); err != nil {

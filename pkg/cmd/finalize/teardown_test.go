@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
 )
 
 func TestTeardownOnlyMountRootFallback(t *testing.T) {

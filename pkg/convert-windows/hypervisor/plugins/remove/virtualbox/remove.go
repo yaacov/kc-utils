@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const uninstallKey = `Microsoft\Windows\CurrentVersion\Uninstall\Oracle VM VirtualBox Guest Additions`
@@ -22,23 +22,23 @@ func init() {
 
 func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 	gaDir := filepath.Join(guestRoot, "Program Files", "Oracle", "VirtualBox Guest Additions")
-	return guest.FileExists(gaDir) || softwareHive.KeyExists(uninstallKey)
+	return guestio.FileExists(gaDir) || softwareHive.KeyExists(uninstallKey)
 }
 
 func (r *Remove) Remove(guestRoot string, _, softwareHive registry.Hive) error {
 	gaDir := filepath.Join(guestRoot, "Program Files", "Oracle", "VirtualBox Guest Additions")
-	_ = guest.FileRemoveAll(gaDir)
+	_ = guestio.FileRemoveAll(gaDir)
 
 	softwareHive.DeleteKey(uninstallKey)
 
 	driversDir := filepath.Join(guestRoot, "Windows", "System32", "drivers")
-	entries, err := guest.FileReadDir(driversDir)
+	entries, err := guestio.FileReadDir(driversDir)
 	if err == nil {
 		for _, e := range entries {
 			name := strings.ToLower(e.Name)
 			if strings.HasPrefix(name, "vbox") && strings.HasSuffix(name, ".sys") {
 				path := filepath.Join(driversDir, e.Name)
-				if rmErr := guest.FileRemove(path); rmErr != nil {
+				if rmErr := guestio.FileRemove(path); rmErr != nil {
 					slog.Warn("removing VBox driver", "path", path, "error", rmErr)
 				}
 			}

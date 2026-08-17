@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -29,7 +29,7 @@ func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 		return true
 	}
 	driversDir := filepath.Join(guestRoot, "Windows", "System32", "drivers")
-	entries, err := guest.FileReadDir(driversDir)
+	entries, err := guestio.FileReadDir(driversDir)
 	if err != nil {
 		return false
 	}
@@ -58,7 +58,7 @@ func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive
 	}
 
 	driversDir := filepath.Join(guestRoot, "Windows", "System32", "drivers")
-	entries, err := guest.FileReadDir(driversDir)
+	entries, err := guestio.FileReadDir(driversDir)
 	if err != nil {
 		return nil
 	}
@@ -66,7 +66,7 @@ func (r *Remove) Remove(guestRoot string, systemHive, softwareHive registry.Hive
 		name := strings.ToLower(e.Name)
 		if strings.HasPrefix(name, "xen") && strings.HasSuffix(name, ".sys") {
 			path := filepath.Join(driversDir, e.Name)
-			if rmErr := guest.FileRemove(path); rmErr != nil {
+			if rmErr := guestio.FileRemove(path); rmErr != nil {
 				slog.Warn("removing driver file", "path", path, "error", rmErr)
 			}
 		}

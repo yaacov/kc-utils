@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -24,7 +24,7 @@ var xenModules = map[string]bool{
 
 func (c *Cleanup) Detect(guestRoot string) bool {
 	path := filepath.Join(guestRoot, "etc", "sysconfig", "kernel")
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return false
 	}
@@ -39,7 +39,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 
 func (c *Cleanup) Cleanup(guestRoot string) error {
 	path := filepath.Join(guestRoot, "etc", "sysconfig", "kernel")
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return nil
 	}
@@ -79,7 +79,7 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 		out.WriteByte('\n')
 	}
 	if changed {
-		if err := guest.FileWrite(path, []byte(out.String()), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(out.String()), 0o644); err != nil {
 			slog.Warn("writing cleaned xen kernel config failed", "path", path, "error", err)
 		}
 	}

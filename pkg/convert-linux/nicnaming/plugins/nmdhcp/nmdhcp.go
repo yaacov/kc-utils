@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var leaseUUIDRe = regexp.MustCompile(`^.*-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(.+)\.lease$`)
@@ -24,12 +24,12 @@ func init() {
 
 func (p *Plugin) Detect(guestRoot string) bool {
 	dir := filepath.Join(guestRoot, "var", "lib", "NetworkManager")
-	return guest.FileIsDir(dir)
+	return guestio.FileIsDir(dir)
 }
 
 func (p *Plugin) ResolveNames(guestRoot string, entries []nicnaming.MacIPEntry) ([]nicnaming.NamingRule, error) {
 	leaseDir := filepath.Join(guestRoot, "var", "lib", "NetworkManager")
-	files, err := guest.FileGlob(filepath.Join(leaseDir, "*.lease"))
+	files, err := guestio.FileGlob(filepath.Join(leaseDir, "*.lease"))
 	if err != nil || len(files) == 0 {
 		return nil, nil
 	}
@@ -77,7 +77,7 @@ func findDeviceFromLeases(files []string, timestamps map[string]int64, ip string
 }
 
 func leaseContainsAddress(path, ip string) bool {
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return false
 	}
@@ -92,7 +92,7 @@ func leaseContainsAddress(path, ip string) bool {
 
 func readTimestamps(path string) map[string]int64 {
 	result := make(map[string]int64)
-	data, err := guest.FileRead(path)
+	data, err := guestio.FileRead(path)
 	if err != nil {
 		return result
 	}

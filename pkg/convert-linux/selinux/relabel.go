@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Relabel performs an offline SELinux relabel of the guest filesystem using
@@ -20,7 +21,7 @@ import (
 // should fall back to creating /.autorelabel.
 func Relabel(guestRoot string, mountPoints []string) (bool, error) {
 	selinuxDir := filepath.Join(guestRoot, "etc", "selinux")
-	if !guest.FileExists(selinuxDir) {
+	if !guestio.FileExists(selinuxDir) {
 		slog.Debug("no /etc/selinux, skipping SELinux relabel")
 		return false, nil
 	}
@@ -36,7 +37,7 @@ func Relabel(guestRoot string, mountPoints []string) (bool, error) {
 
 	specFile := fmt.Sprintf("/etc/selinux/%s/contexts/files/file_contexts", policy)
 	specHostPath := filepath.Join(guestRoot, specFile)
-	if !guest.FileExists(specHostPath) {
+	if !guestio.FileExists(specHostPath) {
 		return false, fmt.Errorf("SELinux spec file not found: %s", specFile)
 	}
 
@@ -61,7 +62,7 @@ func Relabel(guestRoot string, mountPoints []string) (bool, error) {
 
 	// Remove /.autorelabel so the guest doesn't redo the relabel at boot.
 	autorelabel := filepath.Join(guestRoot, ".autorelabel")
-	_ = guest.FileRemove(autorelabel)
+	_ = guestio.FileRemove(autorelabel)
 
 	return true, nil
 }
@@ -70,7 +71,7 @@ func Relabel(guestRoot string, mountPoints []string) (bool, error) {
 // (e.g., "targeted") and whether SELinux is disabled.
 func readSELinuxConfig(guestRoot string) (policy string, disabled bool, err error) {
 	configPath := filepath.Join(guestRoot, "etc", "selinux", "config")
-	data, err := guest.FileRead(configPath)
+	data, err := guestio.FileRead(configPath)
 	if err != nil {
 		return "targeted", false, err
 	}
@@ -103,7 +104,7 @@ func readSELinuxConfig(guestRoot string) (policy string, disabled bool, err erro
 // findSetfiles checks common locations for the setfiles binary in the guest.
 func findSetfiles(guestRoot string) string {
 	for _, p := range []string{"/usr/sbin/setfiles", "/sbin/setfiles"} {
-		if guest.FileExists(filepath.Join(guestRoot, p)) {
+		if guestio.FileExists(filepath.Join(guestRoot, p)) {
 			return p
 		}
 	}

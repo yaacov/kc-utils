@@ -1,29 +1,19 @@
 //go:build linux
 
+// kc-agent is the in-appliance generic runtime served over virtio-serial.
+// Documentation: docs/apps/kc-agent.md
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/yaacov/kc-utils/pkg/guest/qemu/server"
+	agent "github.com/yaacov/kc-utils/pkg/cmd/agent"
 )
 
 func main() {
-	os.Exit(run())
-}
-
-func run() int {
-	port, err := server.Bootstrap()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "kc-agent bootstrap:", err)
-		return 1
-	}
-	defer port.Close()
-	agent := server.New()
-	if err := agent.Serve(port); err != nil {
+	if err := agent.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "kc-agent:", err)
-		return 1
+		os.Exit(1)
 	}
-	return 0
 }

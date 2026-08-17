@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 func inspectLinux(root string) (*types.InspectData, error) {
@@ -19,7 +19,7 @@ func inspectLinux(root string) (*types.InspectData, error) {
 
 	for _, rel := range LinuxOSReleasePaths {
 		osRelease := filepath.Join(root, rel)
-		if guest.FileExists(osRelease) {
+		if guestio.FileExists(osRelease) {
 			if err := parseOSRelease(osRelease, data); err == nil {
 				return data, nil
 			}
@@ -27,14 +27,14 @@ func inspectLinux(root string) (*types.InspectData, error) {
 	}
 
 	redhatRelease := filepath.Join(root, "etc", "redhat-release")
-	if content, err := guest.FileRead(redhatRelease); err == nil {
+	if content, err := guestio.FileRead(redhatRelease); err == nil {
 		data.ProductName = strings.TrimSpace(string(content))
 		data.Distro = "rhel"
 		return data, nil
 	}
 
 	debianVersion := filepath.Join(root, "etc", "debian_version")
-	if content, err := guest.FileRead(debianVersion); err == nil {
+	if content, err := guestio.FileRead(debianVersion); err == nil {
 		data.ProductName = "Debian " + strings.TrimSpace(string(content))
 		data.Distro = "debian"
 		return data, nil
@@ -44,7 +44,7 @@ func inspectLinux(root string) (*types.InspectData, error) {
 }
 
 func parseOSRelease(path string, data *types.InspectData) error {
-	raw, err := guest.FileRead(path)
+	raw, err := guestio.FileRead(path)
 	if err != nil {
 		return err
 	}

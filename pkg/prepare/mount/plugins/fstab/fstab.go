@@ -10,7 +10,7 @@ import (
 
 	cfgfstab "github.com/yaacov/kc-utils/pkg/common/configedit/fstab"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 	"github.com/yaacov/kc-utils/pkg/prepare/guest/resolve"
 	"github.com/yaacov/kc-utils/pkg/prepare/mount"
 )
@@ -43,7 +43,7 @@ func (p *LinuxPlanner) Plan(ctx *mount.PlanContext) ([]mount.MountSpec, error) {
 
 func (p *LinuxPlanner) Expand(ctx *mount.PlanContext, guestRootHost string) ([]mount.MountSpec, error) {
 	fstabPath := filepath.Join(guestRootHost, "etc", "fstab")
-	data, err := guest.FileRead(fstabPath)
+	data, err := guestio.FileRead(fstabPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil

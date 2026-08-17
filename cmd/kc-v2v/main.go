@@ -13,9 +13,9 @@ import (
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 
 	// Guest disk backends
-	_ "github.com/yaacov/kc-utils/pkg/guest/direct"
-	_ "github.com/yaacov/kc-utils/pkg/guest/guestfs"
-	_ "github.com/yaacov/kc-utils/pkg/guest/qemu"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/guest/plugins/qemu"
 )
 
 func main() {

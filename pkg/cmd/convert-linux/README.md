@@ -30,7 +30,7 @@ uefi, hypervisor, guestagent, nicnaming, network handlers).
 
 **Strict:** `pkg/convert-linux/<block>/` (bootconfig, guestcleanup, initramfs, guestcaps).
 
-**Stage helpers:** [`pkg/convert-linux/systemd/`](../convert-linux/systemd/) — systemd unit mask/disable (hypervisor plugins).
+**Stage helpers:** [`pkg/convert-linux/systemd/`](../../convert-linux/systemd/) — systemd unit mask/disable (hypervisor plugins).
 
 Writes `ConverterOutput` JSON on success.
 

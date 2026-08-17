@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/yaacov/kc-utils/pkg/finalize/customize"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 var scriptRegex = regexp.MustCompile(`^([0-9]+)_win_firstboot(([\w\-]*)\.ps1)$`)
@@ -99,8 +99,8 @@ func scanScripts(dir string) ([]script, error) {
 
 func installFirstboot(guestRoot string, s script) error {
 	destDir := filepath.Join(guestRoot, "Program Files", "Guestfs", "Firstboot", "scripts")
-	if err := guest.FileMkdirAll(destDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(destDir, 0o755); err != nil {
 		return err
 	}
-	return guest.FileUpload(s.Path, filepath.Join(destDir, s.Name))
+	return guestio.FileUpload(s.Path, filepath.Join(destDir, s.Name))
 }

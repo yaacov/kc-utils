@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Services struct{}
@@ -26,7 +26,7 @@ func (s *Services) Detect(guestRoot string, systemHive registry.Hive, ccs string
 		}
 	}
 	p := filepath.Join(guestRoot, "Program Files", "Oracle", "VirtualBox Guest Additions")
-	return guest.FileExists(p)
+	return guestio.FileExists(p)
 }
 
 func (s *Services) ServiceNames() []string {

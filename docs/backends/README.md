@@ -30,7 +30,7 @@ V2V_backend=<name>    # kc-v2v orchestrator
 ```
 
 The runtime list comes from the backends registered in the binary
-(`guest.Factories.List()`). `direct` and `guestfs` register only when
+(`backend.Factories.List()`). `direct` and `guestfs` register only when
 `runtime.GOOS == "linux"`; `qemu` registers on Linux and Darwin. The `kc-v2v`
 container image sets `V2V_backend=guestfs` explicitly.
 

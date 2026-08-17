@@ -4,7 +4,7 @@ Guidelines for reviewing kc-utils changes (humans and agents). Prefer Makefile
 targets over raw Go commands. Do not run `make check` during review — it runs
 `fmt` and writes files. Use `make vet`, `make lint`, and `make test` instead.
 On non-Linux hosts, also run `make test-container` so `//go:build linux`
-packages (e.g. `pkg/guest/guestfs`) are exercised — local `make test` skips them.
+packages (e.g. `pkg/guest/plugins/guestfs`) are exercised — local `make test` skips them.
 
 Read [architecture.md](architecture.md) and the "Guest conversion conventions"
 section in [CONTRIBUTING.md](CONTRIBUTING.md) before judging structural or

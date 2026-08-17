@@ -9,8 +9,11 @@ supermin — kc-utils launches QEMU directly with a shipped kernel and initramfs
 and talks to [`kc-agent`](kc-agent.md) over a virtio-serial Unix socket. This
 is the only backend that runs on macOS.
 
-Implementation: [`pkg/guest/qemu/`](../../pkg/guest/qemu/) (host client +
-`protocol/`; the in-VM `server/` is Linux-only).
+Implementation: [`pkg/guest/plugins/qemu/`](../../pkg/guest/plugins/qemu/) (host
+client + remote runtime). Domain logic is shared with `direct` via
+[`pkg/guest/core`](../../pkg/guest/core/); the in-VM agent is
+[`pkg/agent`](../../pkg/agent/) (Linux-only) with shared RPC types in
+[`pkg/agent/protocol`](../../pkg/agent/protocol/). See [kc-agent.md](kc-agent.md).
 
 ```text
 kc-v2v / kc-prepare / kc-finalize (host, unprivileged)

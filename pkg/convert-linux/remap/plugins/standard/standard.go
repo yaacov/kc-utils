@@ -13,6 +13,7 @@ import (
 	cfggrub "github.com/yaacov/kc-utils/pkg/common/configedit/grub"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/remap"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Remapper struct{}
@@ -25,7 +26,7 @@ func (r *Remapper) Name() string { return "standard" }
 
 func (r *Remapper) Detect(guestRoot string) bool {
 	fstabPath := filepath.Join(guestRoot, "etc", "fstab")
-	return guest.FileExists(fstabPath)
+	return guestio.FileExists(fstabPath)
 }
 
 func (r *Remapper) Remap(guestRoot string) error {
@@ -54,7 +55,7 @@ func (r *Remapper) Remap(guestRoot string) error {
 
 func remapFile(guestRoot, relPath string, prefixes [][2]string) error {
 	filePath := filepath.Join(guestRoot, relPath)
-	data, err := guest.FileRead(filePath)
+	data, err := guestio.FileRead(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -65,7 +66,7 @@ func remapFile(guestRoot, relPath string, prefixes [][2]string) error {
 	for _, p := range prefixes {
 		f.RemapDevice(p[0], p[1])
 	}
-	if err := guest.FileWrite(filePath, []byte(f.String()), 0o644); err != nil {
+	if err := guestio.FileWrite(filePath, []byte(f.String()), 0o644); err != nil {
 		return err
 	}
 	slog.Info("remapped block devices to virtio", "file", relPath)
@@ -74,37 +75,58 @@ func remapFile(guestRoot, relPath string, prefixes [][2]string) error {
 
 // remapCrypttab prefers UUID= for /dev/sd* devices (virt-v2v behavior) when
 // blkid can resolve the device on the host; otherwise falls back to vd* remap.
+//
+// crypttab has its own column format ("name device keyfile options") that is
+// NOT fstab's, so it must not be round-tripped through the fstab serializer
+// (which would inject "defaults 0 0" and shift columns, making systemd read
+// the wrong keyfile and fail to unlock the root device). Only the device
+// token (column 2) of changed lines is rewritten; all other columns and
+// unchanged lines are preserved verbatim.
 func remapCrypttab(guestRoot string, prefixes [][2]string) error {
 	filePath := filepath.Join(guestRoot, "etc", "crypttab")
-	data, err := guest.FileRead(filePath)
+	data, err := guestio.FileRead(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
-	f := fstab.Parse(string(data))
-	for i := range f.Entries {
-		e := &f.Entries[i]
-		if e.Comment != "" || e.MountPoint == "" {
+	lines := strings.Split(string(data), "\n")
+	changed := false
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
 		}
-		// crypttab: name device keyfile options — device is MountPoint in our parser.
-		dev := e.MountPoint
+		fields := strings.Fields(trimmed)
+		if len(fields) < 2 {
+			continue
+		}
+		dev := fields[1]
+		newDev := dev
 		if strings.HasPrefix(dev, "/dev/sd") {
 			if uuid := blkidUUID(dev); uuid != "" {
-				e.MountPoint = "UUID=" + uuid
-				continue
+				newDev = "UUID=" + uuid
 			}
 		}
-		for _, p := range prefixes {
-			if strings.HasPrefix(dev, p[0]) {
-				e.MountPoint = p[1] + dev[len(p[0]):]
-				break
+		if newDev == dev {
+			for _, p := range prefixes {
+				if strings.HasPrefix(dev, p[0]) {
+					newDev = p[1] + dev[len(p[0]):]
+					break
+				}
 			}
+		}
+		if newDev != dev {
+			fields[1] = newDev
+			lines[i] = strings.Join(fields, " ")
+			changed = true
 		}
 	}
-	if err := guest.FileWrite(filePath, []byte(f.String()), 0o644); err != nil {
+	if !changed {
+		return nil
+	}
+	if err := guestio.FileWrite(filePath, []byte(strings.Join(lines, "\n")), 0o644); err != nil {
 		return err
 	}
 	slog.Info("remapped block devices to virtio", "file", "etc/crypttab")
@@ -117,7 +139,7 @@ func blkidUUID(device string) string {
 
 func remapGrubDefaults(guestRoot string, prefixes [][2]string) error {
 	filePath := filepath.Join(guestRoot, "etc", "default", "grub")
-	data, err := guest.FileRead(filePath)
+	data, err := guestio.FileRead(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -142,7 +164,7 @@ func remapGrubDefaults(guestRoot string, prefixes [][2]string) error {
 		return nil
 	}
 
-	if err := guest.FileWrite(filePath, []byte(cfg.String()), 0o644); err != nil {
+	if err := guestio.FileWrite(filePath, []byte(cfg.String()), 0o644); err != nil {
 		return err
 	}
 	slog.Info("remapped block devices to virtio", "file", "etc/default/grub")
@@ -151,7 +173,7 @@ func remapGrubDefaults(guestRoot string, prefixes [][2]string) error {
 
 func remapBLSEntries(guestRoot string, prefixes [][2]string) error {
 	entriesDir := filepath.Join(guestRoot, "boot", "loader", "entries")
-	entries, err := guest.FileReadDir(entriesDir)
+	entries, err := guestio.FileReadDir(entriesDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -164,7 +186,7 @@ func remapBLSEntries(guestRoot string, prefixes [][2]string) error {
 			continue
 		}
 		path := filepath.Join(entriesDir, entry.Name)
-		data, err := guest.FileRead(path)
+		data, err := guestio.FileRead(path)
 		if err != nil {
 			return err
 		}
@@ -179,7 +201,7 @@ func remapBLSEntries(guestRoot string, prefixes [][2]string) error {
 			continue
 		}
 		parsed.Set("options", strings.Join(remappedArgs, " "))
-		if err := guest.FileWrite(path, []byte(parsed.String()), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(parsed.String()), 0o644); err != nil {
 			return err
 		}
 		slog.Info("remapped block devices to virtio", "file", filepath.Join("boot", "loader", "entries", entry.Name))

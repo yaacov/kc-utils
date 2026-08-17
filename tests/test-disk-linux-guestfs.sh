@@ -6,6 +6,7 @@
 
 source "$(cd "$(dirname "$0")" && pwd)/functions.sh"
 set -e
+set -o pipefail  # so a kc-v2v.sh failure piped into `tee` is not masked
 set -x
 
 export LIBGUESTFS_BACKEND=direct

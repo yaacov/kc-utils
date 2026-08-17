@@ -5,6 +5,19 @@
 - Read [architecture.md](architecture.md) before changing code structure, packages, plugins, or guest disk access.
 - Stage binaries target Unix (`GOOS=linux` or `GOOS=darwin`). `kc-agent` is Linux-only.
 
+## AI agents and git
+
+AI agents (including Claude Code) **draft** git and GitHub content only —
+commit messages, branch names, and PR titles/bodies. They must **not** run any
+command that mutates the working tree, index, refs, or GitHub state: no `git
+add`, `git commit`, `git checkout -b`, `git push`, `gh pr create`, or similar.
+The user stages, commits, branches, pushes, and opens PRs manually.
+
+Agents may inspect changes with read-only git (`status`, `diff`, `log`, `show`,
+`branch` list, `rev-parse`, and similar) and may suggest the exact commands for
+the user to run. Commit message conventions live in [commits.md](commits.md);
+branch and PR conventions in [pull-requests.md](pull-requests.md).
+
 ## Directory layout
 
 Path pattern: `<layer>/<utility>/<semantic-name>/` — utility matches the binary;
@@ -149,7 +162,7 @@ make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
 
 On macOS (and other non-Linux hosts), `make test` skips packages tagged
-`//go:build linux` (for example `pkg/guest/qemu/server` and most `*_test.go`
+`//go:build linux` (for example `pkg/agent` and most `*_test.go`
 files). Stage packages are `unix` and do run. Use `make test-container`
 before pushing when Linux-only packages change, or rely on CI on `ubuntu-latest`.
 Darwin `Factories` lists `qemu` only.
@@ -252,7 +265,7 @@ Add new `.ps1` files with an appropriate numeric prefix (COM1
 
 ### Hypervisor cleanup uses shared helpers
 
-Linux hypervisor plugins must use `systemd.DisableSystemdUnit()` ([`pkg/convert-linux/systemd/`](../../pkg/convert-linux/systemd/)) to disable
+Linux hypervisor plugins must use `systemd.DisableSystemdUnit()` ([`pkg/convert-linux/systemd/`](../pkg/convert-linux/systemd/)) to disable
 and mask services consistently across all three directories (`multi-user.target.wants`,
 `sockets.target.wants`, `graphical.target.wants`). Do not remove symlinks
 manually.

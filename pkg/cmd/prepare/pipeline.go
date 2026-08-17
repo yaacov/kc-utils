@@ -11,6 +11,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 	"github.com/yaacov/kc-utils/pkg/prepare/converter"
 	"github.com/yaacov/kc-utils/pkg/prepare/firmware"
 	"github.com/yaacov/kc-utils/pkg/prepare/guest/resolve"
@@ -51,7 +52,7 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	mode, err := guest.ParseMode(cfg.Backend)
+	mode, err := backend.ParseMode(cfg.Backend)
 	if err != nil {
 		return err
 	}
@@ -315,15 +316,15 @@ func planAndMount(g *guest.Guest, cfg *Config, chosen *types.RootCandidate, allP
 }
 
 // prepareClevisEnv enables backend-specific Clevis/NBDE networking when needed.
-func prepareClevisEnv(cfg *Config, mode guest.Mode) (func(), error) {
+func prepareClevisEnv(cfg *Config, mode backend.Mode) (func(), error) {
 	if cfg.Input.LUKS == nil || !cfg.Input.LUKS.Clevis {
 		return nil, nil
 	}
-	f, err := guest.LookupFactory(mode.String())
+	f, err := backend.LookupFactory(mode.String())
 	if err != nil {
 		return nil, nil
 	}
-	cf, ok := f.(guest.ClevisAwareFactory)
+	cf, ok := f.(backend.ClevisAwareFactory)
 	if !ok {
 		return nil, nil
 	}

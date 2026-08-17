@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Detect derives boot device info from mounted disks and the guest root path.
@@ -18,11 +18,11 @@ func Detect(mountRoot string, disks []types.DiskInfo) types.BootDeviceInfo {
 	efiDir := filepath.Join(mountRoot, "boot", "efi", "EFI")
 
 	switch {
-	case guest.FileExists(grub2Cfg):
+	case guestio.FileExists(grub2Cfg):
 		info.BootloaderType = "grub2"
-	case guest.FileExists(grubCfg):
+	case guestio.FileExists(grubCfg):
 		info.BootloaderType = "grub"
-	case guest.FileExists(efiDir):
+	case guestio.FileExists(efiDir):
 		info.BootloaderType = "uefi"
 	}
 

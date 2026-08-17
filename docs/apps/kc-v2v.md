@@ -126,7 +126,7 @@ overrides via `env.Load()`. Full schema:
 The container image bakes Windows virtio-win drivers under
 `/usr/share/virtio-win/drivers/by-os/` and RHEL-family offline
 `qemu-guest-agent` RPMs under `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/`.
-Set `V2V_offline=true` to pass `--offline` to converters. See [build/kc-v2v/README.md](../build/kc-v2v/README.md).
+Set `V2V_offline=true` to pass `--offline` to converters. See [build/kc-v2v/README.md](../../build/kc-v2v/README.md).
 
 Disk copy settings:
 
@@ -200,7 +200,7 @@ source (EC2, CDI, Nutanix, etc.). Hypervisor cleanup runs in convert plugins
 from `V2V_source`, same as every other source.
 
 Container build and Forklift Plan configuration:
-[build/kc-v2v/README.md](../build/kc-v2v/README.md).
+[build/kc-v2v/README.md](../../build/kc-v2v/README.md).
 
 ### Avoid unsupported Forklift features
 
@@ -216,7 +216,7 @@ do not expect upstream virt-v2v:
   `Inspection` — use Plan migrations or `InPlace` conversions.
 
 Full configuration table and YAML examples:
-[build/kc-v2v/README.md — Forklift configuration for kc-v2v](../build/kc-v2v/README.md#forklift-configuration-for-kc-v2v).
+[build/kc-v2v/README.md — Forklift configuration for kc-v2v](../../build/kc-v2v/README.md#forklift-configuration-for-kc-v2v).
 
 ## Supported vs Unsupported
 

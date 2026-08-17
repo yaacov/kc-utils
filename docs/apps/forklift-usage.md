@@ -154,14 +154,14 @@ The plan status reaches `Completed` or `Succeeded` when the migration finishes.
 
 ## Configuration Reference
 
-See [build/kc-v2v/README.md](../build/kc-v2v/README.md#forklift-configuration-for-kc-v2v)
+See [build/kc-v2v/README.md](../../build/kc-v2v/README.md#forklift-configuration-for-kc-v2v)
 for full details on cluster settings, Plan fields, Conversion CR types, and
 features that kc-v2v does not handle.
 
 ## Cluster tests
 
 Manual MTV scenario tests live under
-[tests/scenarios/](../tests/scenarios/README.md) (not run in CI).
+[tests/scenarios/](../../tests/scenarios/README.md) (not run in CI).
 
 ```bash
 # Build, push, then benchmark (logs + mem/CPU/net + pod logs + HTML)

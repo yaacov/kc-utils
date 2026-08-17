@@ -8,22 +8,23 @@ import (
 	"path/filepath"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 )
 
 // Guest is the high-level handle used by prepare/convert/finalize pipelines.
 type Guest struct {
 	rootPath string
-	mode     Mode
-	backend  Backend
+	mode     backend.Mode
+	backend  backend.Backend
 }
 
 // Open sets up disk access for the given mode and runs backend Setup.
-func Open(disks []types.DiskSpec, mountRoot string, mode Mode) (*Guest, error) {
+func Open(disks []types.DiskSpec, mountRoot string, mode backend.Mode) (*Guest, error) {
 	if err := os.MkdirAll(mountRoot, 0o755); err != nil {
 		return nil, fmt.Errorf("creating mount root %s: %w", mountRoot, err)
 	}
 
-	f, err := LookupFactory(mode.String())
+	f, err := backend.LookupFactory(mode.String())
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +43,8 @@ func Open(disks []types.DiskSpec, mountRoot string, mode Mode) (*Guest, error) {
 // AttachFromPrepare sets up a guest handle from prepare output data.
 // It derives the mode, orders disks, converts specs, attaches, and sets the
 // global active handle. Callers must defer ClearActive().
-func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, backend string) (*Guest, error) {
-	mode, err := ParseMode(backend)
+func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, backendName string) (*Guest, error) {
+	mode, err := backend.ParseMode(backendName)
 	if err != nil {
 		return nil, err
 	}
@@ -60,8 +61,8 @@ func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, bac
 // AttachMounted returns a handle for a guest already prepared (mounted in
 // direct mode, or with mount specs recorded for guestfs). Convert and finalize
 // use this after prepare Release.
-func AttachMounted(disks []types.DiskSpec, mountRoot string, mode Mode, diskInfos []types.DiskInfo) (*Guest, error) {
-	f, err := LookupFactory(mode.String())
+func AttachMounted(disks []types.DiskSpec, mountRoot string, mode backend.Mode, diskInfos []types.DiskInfo) (*Guest, error) {
+	f, err := backend.LookupFactory(mode.String())
 	if err != nil {
 		return nil, err
 	}
@@ -72,9 +73,9 @@ func AttachMounted(disks []types.DiskSpec, mountRoot string, mode Mode, diskInfo
 	return &Guest{rootPath: mountRoot, mode: mode, backend: b}, nil
 }
 
-func (g *Guest) Mode() Mode       { return g.mode }
-func (g *Guest) Backend() Backend { return g.backend }
-func (g *Guest) RootPath() string { return g.rootPath }
+func (g *Guest) Mode() backend.Mode       { return g.mode }
+func (g *Guest) Backend() backend.Backend { return g.backend }
+func (g *Guest) RootPath() string         { return g.rootPath }
 
 // HostPath joins guestPath onto the mount root. In direct mode this is a live
 // mount path. In guestfs mode it is only a path key for File* helpers and
@@ -147,7 +148,7 @@ func (g *Guest) Mkdir(guestPath string, perm os.FileMode) error {
 	return g.backend.MkdirAll(normalizeGuestPath(guestPath), perm)
 }
 
-func (g *Guest) ReadDir(guestPath string) ([]DirEntry, error) {
+func (g *Guest) ReadDir(guestPath string) ([]backend.DirEntry, error) {
 	return g.backend.ReadDir(normalizeGuestPath(guestPath))
 }
 

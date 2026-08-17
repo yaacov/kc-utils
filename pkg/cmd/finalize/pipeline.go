@@ -14,6 +14,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/finalize/metadata"
 	"github.com/yaacov/kc-utils/pkg/finalize/target"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/backend"
 )
 
 // Config holds finalizer pipeline configuration.
@@ -130,7 +131,7 @@ func Run(cfg *Config) error {
 // TeardownOnly reclaims orphaned guest resources without Sync, customize,
 // trim, or metadata writes. Used by kc-v2v on pipeline failure.
 func TeardownOnly(cfg *Config) error {
-	mode, err := guest.ParseMode(cfg.Backend)
+	mode, err := backend.ParseMode(cfg.Backend)
 	if err != nil {
 		return err
 	}

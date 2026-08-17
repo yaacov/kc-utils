@@ -11,7 +11,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/firstboot"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/hypervisor"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 const (
@@ -30,12 +30,12 @@ func init() {
 
 func (r *Remove) Detect(guestRoot string, _, softwareHive registry.Hive) bool {
 	toolsDir := filepath.Join(guestRoot, "Program Files", "VMware", "VMware Tools")
-	return guest.FileExists(toolsDir) || softwareHive.KeyExists(uninstallKey)
+	return guestio.FileExists(toolsDir) || softwareHive.KeyExists(uninstallKey)
 }
 
 func (r *Remove) Remove(guestRoot string, _, softwareHive registry.Hive) error {
 	toolsDir := filepath.Join(guestRoot, "Program Files", "VMware", "VMware Tools")
-	_ = guest.FileRemoveAll(toolsDir)
+	_ = guestio.FileRemoveAll(toolsDir)
 	softwareHive.DeleteKey(uninstallKey)
 
 	guids := removeMSIProducts(softwareHive)

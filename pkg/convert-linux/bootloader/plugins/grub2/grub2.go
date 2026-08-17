@@ -9,6 +9,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/configedit/grub"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/bootloader"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Grub2Handler struct{}
@@ -24,7 +25,7 @@ func (g *Grub2Handler) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "boot", "grub", "grub.cfg"),
 	}
 	for _, p := range paths {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}
@@ -32,7 +33,7 @@ func (g *Grub2Handler) Detect(guestRoot string) bool {
 }
 
 func (g *Grub2Handler) GetDefaultKernel(guestRoot string) (string, error) {
-	content, err := guest.FileRead(filepath.Join(guestRoot, "etc", "default", "grub"))
+	content, err := guestio.FileRead(filepath.Join(guestRoot, "etc", "default", "grub"))
 	if err != nil {
 		return "", err
 	}
@@ -42,7 +43,7 @@ func (g *Grub2Handler) GetDefaultKernel(guestRoot string) (string, error) {
 
 func (g *Grub2Handler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 	path := filepath.Join(guestRoot, "etc", "default", "grub")
-	content, err := guest.FileRead(path)
+	content, err := guestio.FileRead(path)
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func (g *Grub2Handler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 	if kernelVersion != "" {
 		cfg.Set("DEFAULTKERNEL", "kernel-"+kernelVersion)
 	}
-	if err := guest.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
+	if err := guestio.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
 		return err
 	}
 	return g.RegenerateConfig(guestRoot)
@@ -60,13 +61,13 @@ func (g *Grub2Handler) SetDefaultKernel(guestRoot, kernelVersion string) error {
 
 func (g *Grub2Handler) AddKernelArg(guestRoot, arg string) error {
 	path := filepath.Join(guestRoot, "etc", "default", "grub")
-	content, err := guest.FileRead(path)
+	content, err := guestio.FileRead(path)
 	if err != nil {
 		return err
 	}
 	cfg := grub.Parse(string(content))
 	cfg.AddKernelArg(arg)
-	if err := guest.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
+	if err := guestio.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
 		return err
 	}
 	return g.RegenerateConfig(guestRoot)
@@ -74,13 +75,13 @@ func (g *Grub2Handler) AddKernelArg(guestRoot, arg string) error {
 
 func (g *Grub2Handler) RemoveKernelArg(guestRoot, prefix string) error {
 	path := filepath.Join(guestRoot, "etc", "default", "grub")
-	content, err := guest.FileRead(path)
+	content, err := guestio.FileRead(path)
 	if err != nil {
 		return err
 	}
 	cfg := grub.Parse(string(content))
 	cfg.RemoveKernelArg(prefix)
-	if err := guest.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
+	if err := guestio.FileWrite(path, []byte(cfg.String()), 0o644); err != nil {
 		return err
 	}
 	return g.RegenerateConfig(guestRoot)
@@ -96,7 +97,7 @@ func (g *Grub2Handler) RegenerateConfig(guestRoot string) error {
 	}
 	var outPath string
 	for _, rel := range outCandidates {
-		if guest.FileExists(filepath.Join(guestRoot, rel)) {
+		if guestio.FileExists(filepath.Join(guestRoot, rel)) {
 			outPath = rel
 			break
 		}

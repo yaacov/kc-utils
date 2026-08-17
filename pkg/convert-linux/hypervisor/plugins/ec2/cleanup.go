@@ -9,7 +9,7 @@ import (
 
 	"github.com/yaacov/kc-utils/pkg/convert-linux/hypervisor"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/systemd"
-	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 type Cleanup struct{}
@@ -27,7 +27,7 @@ func (c *Cleanup) Detect(guestRoot string) bool {
 		filepath.Join(guestRoot, "usr", "bin", "ec2-instance-connect"),
 	}
 	for _, p := range indicators {
-		if guest.FileExists(p) {
+		if guestio.FileExists(p) {
 			return true
 		}
 	}
@@ -57,23 +57,23 @@ func (c *Cleanup) Cleanup(guestRoot string) error {
 
 func patchCloudInitDatasources(guestRoot string) error {
 	for _, path := range cloudInitConfigsWithEc2(guestRoot) {
-		data, err := guest.FileRead(path)
+		data, err := guestio.FileRead(path)
 		if err != nil {
 			return err
 		}
 		patched := patchDatasourceListInContent(string(data))
-		if err := guest.FileWrite(path, []byte(patched), 0o644); err != nil {
+		if err := guestio.FileWrite(path, []byte(patched), 0o644); err != nil {
 			return err
 		}
 	}
 
 	cloudCfgDir := filepath.Join(guestRoot, "etc", "cloud", "cloud.cfg.d")
-	if err := guest.FileMkdirAll(cloudCfgDir, 0o755); err != nil {
+	if err := guestio.FileMkdirAll(cloudCfgDir, 0o755); err != nil {
 		return err
 	}
 
 	disableCfg := filepath.Join(cloudCfgDir, "99-kc-disable-ec2.cfg")
-	return guest.FileWrite(disableCfg, []byte(disableDatasourceList), 0o644)
+	return guestio.FileWrite(disableCfg, []byte(disableDatasourceList), 0o644)
 }
 
 // cloudInitConfigsWithEc2 returns the host paths of cloud-init config files
@@ -85,13 +85,13 @@ func cloudInitConfigsWithEc2(guestRoot string) []string {
 	var matches []string
 
 	cloudCfg := filepath.Join(cloudDir, "cloud.cfg")
-	if guest.FileExists(cloudCfg) {
-		if data, err := guest.FileRead(cloudCfg); err == nil && strings.Contains(string(data), "Ec2") {
+	if guestio.FileExists(cloudCfg) {
+		if data, err := guestio.FileRead(cloudCfg); err == nil && strings.Contains(string(data), "Ec2") {
 			matches = append(matches, cloudCfg)
 		}
 	}
 
-	entries, err := guest.FileReadDir(filepath.Join(cloudDir, "cloud.cfg.d"))
+	entries, err := guestio.FileReadDir(filepath.Join(cloudDir, "cloud.cfg.d"))
 	if err != nil {
 		return matches
 	}
@@ -100,7 +100,7 @@ func cloudInitConfigsWithEc2(guestRoot string) []string {
 			continue
 		}
 		path := filepath.Join(cloudDir, "cloud.cfg.d", e.Name)
-		data, err := guest.FileRead(path)
+		data, err := guestio.FileRead(path)
 		if err != nil {
 			continue
 		}

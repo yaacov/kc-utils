@@ -8,7 +8,7 @@ running all filesystem operations inside a lightweight QEMU virtual machine
 called the "appliance." The conversion pod needs `/dev/kvm` access only — no
 `CAP_SYS_ADMIN`, privileged mode, or `/dev/fuse`.
 
-Implementation: [`pkg/guest/guestfs/`](../../pkg/guest/guestfs/README.md).
+Implementation: [`pkg/guest/plugins/guestfs/`](../../pkg/guest/plugins/guestfs/README.md).
 
 ## How it works
 
@@ -151,7 +151,7 @@ restriction; plain `guestfish` can mount NTFS there.
 ```
 
 The upstream Fedora `kc-v2v` image does not need this; plain `guestfish` mounts
-NTFS there. `pkg/guest/guestfs` prefers `virt-guestfish` via `guestfishBinary()`
+NTFS there. `pkg/guest/plugins/guestfs` prefers `virt-guestfish` via `guestfishBinary()`
 when present (for `--listen`, `--remote`, and scripts), so `argv[0]` satisfies
 the RHEL allowlist. No `set-program` call is required when every process is
 started as `virt-guestfish`.

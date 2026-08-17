@@ -23,6 +23,7 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-linux/remap"
 	"github.com/yaacov/kc-utils/pkg/convert-linux/selinux"
 	"github.com/yaacov/kc-utils/pkg/guest"
+	"github.com/yaacov/kc-utils/pkg/guest/guestio"
 )
 
 // Config holds linux converter pipeline configuration.
@@ -248,7 +249,7 @@ func fixupUEFI(mountRoot string, firmware types.FirmwareInfo) []types.BlockError
 		return nil
 	}
 	efiPath := filepath.Join(mountRoot, "boot", "efi")
-	if _, freeInodes, err := guest.FileStatFS(efiPath); err == nil && freeInodes >= 0 && freeInodes < 10 {
+	if _, freeInodes, err := guestio.FileStatFS(efiPath); err == nil && freeInodes >= 0 && freeInodes < 10 {
 		slog.Warn("EFI partition has insufficient free inodes, skipping UEFI fixup", "path", efiPath, "freeInodes", freeInodes)
 		return []types.BlockError{
 			{Block: "uefi/pre-check", Message: fmt.Sprintf("EFI partition has %d free inodes", freeInodes)},
