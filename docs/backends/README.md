@@ -52,6 +52,7 @@ For the full privilege breakdown (which operations need which capabilities), see
 
 - [appliance.md](appliance.md) — the QEMU appliance artifacts and how they are built
 - [kc-agent.md](kc-agent.md) — the in-appliance agent and its RPC protocol
+- [../apps/kc-agent-sh.md](../apps/kc-agent-sh.md) — interactive debug shell into a running QEMU appliance
 - [clevis-nbde.md](clevis-nbde.md) — Clevis/NBDE LUKS unlock per backend
 - [../architecture/filesystem-checks.md](../architecture/filesystem-checks.md) —
   per-backend `FSCheck` command matrix and check-vs-repair semantics

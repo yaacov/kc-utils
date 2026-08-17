@@ -8,6 +8,7 @@ package agent
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/yaacov/kc-utils/pkg/agent"
 )
@@ -19,6 +20,11 @@ func Run() error {
 		return fmt.Errorf("bootstrap: %w", err)
 	}
 	defer port.Close()
+	go func() {
+		if err := agent.ServeShell(); err != nil {
+			fmt.Fprintln(os.Stderr, "kc-agent shell:", err)
+		}
+	}()
 	if err := agent.New().Serve(port); err != nil {
 		return fmt.Errorf("serve: %w", err)
 	}

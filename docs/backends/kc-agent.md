@@ -19,7 +19,9 @@ on a [`runtime`](../../pkg/guest/runtime/) transport that is host-local for
 
 It is not invoked by users directly and has no CLI flags — the qemu backend
 starts QEMU with `kc-agent` as its init, and the host client talks to it over
-RPC.
+RPC. For an interactive debug shell into a running appliance, use
+[`kc-agent-sh`](../apps/kc-agent-sh.md); that helper uses a **second**
+virtio-serial port and does not take over the RPC socket.
 
 ## Where the code lives
 
@@ -30,6 +32,8 @@ RPC.
 | [`pkg/agent/`](../../pkg/agent/) | Generic runtime: primitive-op dispatch (exec, file/device I/O, stat) | linux only |
 | [`pkg/agent/protocol/`](../../pkg/agent/protocol/protocol.go) | RPC framing and op/arg/result types | none (shared) |
 | [`pkg/guest/plugins/qemu/`](../../pkg/guest/plugins/qemu/) | Host-side client, remote runtime, session, QEMU cmdline | `//go:build unix` |
+| [`cmd/kc-agent-sh/main.go`](../../cmd/kc-agent-sh/main.go) | Host debug-shell helper | `//go:build unix` |
+| [`pkg/cmd/agentsh/`](../../pkg/cmd/agentsh/) | Dial shell.sock, raw TTY, copy | `//go:build unix` |
 
 The `protocol` package has **no OS build tag** so the host client (unix) and
 the in-VM agent (linux) share types without importing each other. The host
@@ -45,6 +49,23 @@ Built as a static binary: `CGO_ENABLED=0 GOOS=linux go build ./cmd/kc-agent`
 (`virtio_*`, `ext4`, `xfs`, `btrfs`, `vfat`, `ntfs3`, `dm_mod`, `dm_crypt`),
 then opens the virtio-serial port `/dev/virtio-ports/org.kc-utils.agent`. That
 port is the RPC channel; on the host it is the `KC_AGENT_SOCK` Unix socket.
+A second goroutine opens `/dev/virtio-ports/org.kc-utils.shell` (best-effort)
+and serves a PTY bash whenever a host client is connected.
+
+## Debug shell
+
+[`kc-agent-sh`](../apps/kc-agent-sh.md) attaches while conversion RPC is in
+use. QEMU binds a sibling Unix socket `shell.sock` next to `agent.sock`
+(`protocol.ShellSock`) to virtio-serial port `org.kc-utils.shell`. The agent
+starts `/bin/bash` on a PTY when sysfs `host_connected` is 1, and tears the
+session down when the host disconnects.
+
+The helper writes a one-line JSON [`ShellConfig`](../../pkg/agent/protocol/protocol.go)
+header (`chroot`, `argv`, `term`, window size) then copies raw PTY bytes. An
+empty object starts interactive bash in the appliance namespace. This channel
+is not part of the RPC opcode set.
+
+Rebuild the appliance (`make appliance`) so pid 1 includes the shell listener.
 
 ## RPC protocol
 

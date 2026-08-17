@@ -8,8 +8,8 @@
 #
 # Filesystem tools (e2fsprogs, xfsprogs, btrfs-progs, ntfs-3g) are omitted
 # because the guestfs backend runs fsck inside the appliance VM, not on the host.
-# CentOS Stream 10 repos are added for libguestfs-winsupport, which is the
-# only runtime package outside standard UBI repos.
+# CentOS Stream 10 repos are added for packages outside standard UBI repos
+# (libguestfs-winsupport, mingw-srvany-redistributable).
 #
 # Disk copy uses govmomi NFC export (pure Go, no VDDK required).
 #
@@ -78,7 +78,8 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 # repos and a virt-guestfish symlink so argv[0] passes the NTFS allowlist.
 COPY build/kc-v2v/ubi/el10-repos.sh /tmp/el10-repos.sh
 RUN chmod +x /tmp/el10-repos.sh && /tmp/el10-repos.sh && rm -f /tmp/el10-repos.sh && \
-    dnf install -y --setopt=install_weak_deps=False libguestfs-winsupport && \
+    dnf install -y --setopt=install_weak_deps=False \
+        libguestfs-winsupport mingw-srvany-redistributable && \
     dnf clean all
 RUN ln -sf guestfish /usr/bin/virt-guestfish
 

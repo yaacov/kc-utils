@@ -98,6 +98,7 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-finalize` | Unmount, trim, fsck, assign bus slots, determine firmware, emit TargetMeta JSON |
 | `kc-v2v` | V2V orchestrator for Forklift: runs the pipeline + inspection HTTP (optional NFC disk copy for blank PVCs) |
 | `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
+| `kc-agent-sh` | Debug helper: interactive bash in a running QEMU appliance (does not use the RPC socket) |
 
 Stage binaries are Unix (`//go:build unix` / `GOOS=linux` or `GOOS=darwin`).
 `kc-agent` is Linux-only (QEMU appliance pid 1). `direct` and `guestfs` register
@@ -119,10 +120,12 @@ dependencies, build, test, and PR guidance.
 - [docs/apps/README.md](docs/apps/README.md) - Complete conversion flow
 - [docs/apps/kc-v2v.md](docs/apps/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
 - [docs/apps/kc-copy.md](docs/apps/kc-copy.md) - NFC disk copy stage CLI
+- [docs/apps/kc-agent-sh.md](docs/apps/kc-agent-sh.md) - Interactive debug shell into a running QEMU appliance
 - [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
 - [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
 - [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
 - [docs/apps/examples/](docs/apps/examples/README.md) - JSON samples and runnable example
+- [docs/apps/macos-local.md](docs/apps/macos-local.md) - Local vSphere Linux conversion on macOS (qemu backend)
 - [docs/apps/kc-prepare.md](docs/apps/kc-prepare.md) - kc-prepare pipeline
 - [docs/apps/kc-convert-linux.md](docs/apps/kc-convert-linux.md) - Linux converter pipeline
 - [docs/apps/kc-convert-windows.md](docs/apps/kc-convert-windows.md) - Windows converter pipeline

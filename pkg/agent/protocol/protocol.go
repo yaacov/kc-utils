@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 const (
@@ -36,7 +37,46 @@ const (
 	OpStatFS      = "statfs"
 )
 
-const PortName = "org.kc-utils.agent"
+const (
+	PortName      = "org.kc-utils.agent"
+	ShellPortName = "org.kc-utils.shell"
+	shellSockName = "shell.sock"
+)
+
+// ShellConfig is the one-line JSON header kc-agent-sh writes before the raw
+// PTY byte stream. An empty object starts interactive /bin/bash in the
+// appliance namespace. socat users can send "{}\n" first, or wait briefly
+// for the agent to fall back to that default.
+type ShellConfig struct {
+	Chroot string   `json:"chroot,omitempty"`
+	Argv   []string `json:"argv,omitempty"`
+	TERM   string   `json:"term,omitempty"`
+	Rows   uint16   `json:"rows,omitempty"`
+	Cols   uint16   `json:"cols,omitempty"`
+}
+
+// Command returns the argv to exec in the appliance: optional chroot prefix
+// plus Argv, defaulting to /bin/bash.
+func (c ShellConfig) Command() []string {
+	argv := c.Argv
+	if len(argv) == 0 {
+		argv = []string{"/bin/bash"}
+	}
+	if c.Chroot == "" {
+		return argv
+	}
+	out := make([]string, 0, 2+len(argv))
+	return append(append(out, "chroot", c.Chroot), argv...)
+}
+
+// ShellSock returns the debug-shell Unix socket path next to the agent RPC
+// socket (sibling shell.sock). The qemu backend binds this to ShellPortName.
+func ShellSock(agentSock string) string {
+	if agentSock == "" {
+		return ""
+	}
+	return filepath.Join(filepath.Dir(agentSock), shellSockName)
+}
 
 // Request is a length-prefixed JSON RPC request. A binary payload (write/device
 // write) follows the JSON frame when Size > 0.

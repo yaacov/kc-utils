@@ -70,7 +70,27 @@ EOF
 kc-copy --input copy-input.json
 ```
 
-`source_disks` / `--disk-path` selects which NFC lease disks to copy (required).
+`source_disks` / `--disk-path` selects which NFC lease disks to copy. When
+omitted, all VM disks from the NFC lease are copied.
+
+### Local raw-file output
+
+Use `--output-dir` to write raw images directly to a local directory instead of
+requiring PVC mounts. Useful on macOS or for offline workflows:
+
+```bash
+kc-copy \
+  --host vcenter.example.com \
+  --insecure \
+  --vm-name my-vm \
+  --fingerprint "AB:CD:..." \
+  --secret-dir ./secret \
+  --output-dir ./disks \
+  --output copy-progress.json
+```
+
+The output files (`disk0.img`, `disk1.img`, …) can be referenced directly in
+the `kc-prepare` input JSON.
 
 ## Configuration
 
@@ -82,18 +102,20 @@ kc-copy --input copy-input.json
 | `--ca-cert` / `ca_cert` | — | PEM custom CA path; error if set but file missing |
 | `--vm-name` / `vm_name` | (required) | Source VM name |
 | `--fingerprint` / `fingerprint` | (required) | vCenter SSL thumbprint fallback for SDK TLS |
-| `--disk-path` / `source_disks` | (required) | VMDKs to select from the NFC lease |
+| `--disk-path` / `source_disks` | — | VMDKs to select from the NFC lease (omit to copy all) |
+| `--output-dir` / `output_dir` | — | Write raw images to this directory (`disk0.img`, `disk1.img`, …); bypasses PVC target discovery |
+| `--secret-dir` / `secret_dir` | `/etc/secret` | Directory containing `accessKeyId` and `secretKey` credential files |
 | `--work-dir` / `workdir` | `/var/tmp/v2v` | Working directory |
 | `--output` / `output_path` | `copy-progress.json` | Progress output file |
 | `--copy-concurrency` / `copy_concurrency` | `4` | Max parallel disk copies (capped at disk count; `1` = sequential) |
 | `--log-level` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
-vSphere credentials (read at connect time, not part of `CopyInput`):
+vSphere credentials — two plain files in the secret directory:
 
-| Path | Purpose |
+| File | Purpose |
 |------|---------|
-| `/etc/secret/accessKeyId` | vSphere username |
-| `/etc/secret/secretKey` | vSphere password |
+| `accessKeyId` | vSphere username |
+| `secretKey` | vSphere password |
 
 ### TLS modes
 
@@ -117,17 +139,26 @@ omitted in JSON input, falls back to `$WORKDIR/copy-progress.json`).
 
 ## Copy Flow
 
-For each selected source disk → empty PVC target (up to `copy_concurrency` disks in parallel):
+Target resolution has two modes:
+
+- **`--output-dir`** — creates one `diskN.img` file per selected source disk
+  in the given directory. No pre-existing targets required.
+- **PVC mode** (default) — discovers empty PVC targets (`/dev/blockN` or
+  `/mnt/disks/diskN/disk.img`). The number of empty targets must equal the
+  number of selected source disks.
+
+For each selected source disk → target (up to `copy_concurrency` disks in parallel):
 
 1. Connect to vCenter via govmomi, export VM via NFC lease
 2. Filter lease URLs to disks matching `source_disks` (normalized path; list order preserved)
-3. Require selected count equals empty target count
+3. Resolve targets (output-dir file targets or empty PVC targets); require counts match
 4. Per disk (worker pool): govmomi NFC download (ESXi thumbprint from lease) → `StreamToRaw` VMDK-to-raw converter → direct write to target
 5. On first disk failure, cancel remaining in-flight copies
 6. For block device targets, `fsync` the device before closing
 7. Complete NFC lease
 
-Count gate: `len(FilterDiskURLs(...))` must equal empty PVC count.
+Count gate: `len(FilterDiskURLs(...))` must equal target count (file targets or
+empty PVC targets).
 
 ### Disk selection and PVC ordering
 
@@ -162,6 +193,7 @@ Target paths (typical pod mounts):
 |----------------|------------|
 | Block | `/dev/block{N}` |
 | Filesystem | `/mnt/disks/disk{N}/disk.img` |
+| `--output-dir` | `<dir>/disk{N}.img` |
 
 ## Install paths
 

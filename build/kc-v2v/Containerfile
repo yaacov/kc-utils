@@ -57,6 +57,10 @@ RUN chmod +x /tmp/stage-linux-packages.sh && \
     /tmp/stage-linux-packages.sh /usr/share/kc-packages && \
     rm -f /tmp/stage-linux-packages.sh
 
+# rhsrvany.exe — Windows service wrapper for firstboot (runs at boot without login).
+RUN dnf install -y --setopt=install_weak_deps=False mingw-srvany-redistributable && \
+    dnf clean all
+
 # ── Stage 3: runtime ─────────────────────────────────────────────────
 FROM quay.io/fedora/fedora:44
 
@@ -69,6 +73,7 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 
 COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/
 COPY --from=downloader /usr/share/kc-packages/ /usr/share/kc-packages/
+COPY --from=downloader /usr/share/virt-tools/ /usr/share/virt-tools/
 
 RUN mkdir -p /usr/lib/kc-utils
 COPY --from=builder /out/kc-prepare /out/kc-finalize /out/kc-convert-linux /out/kc-convert-windows /out/kc-copy /usr/lib/kc-utils/

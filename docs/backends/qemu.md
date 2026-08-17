@@ -21,7 +21,8 @@ kc-v2v / kc-prepare / kc-finalize (host, unprivileged)
         ├── kernel + initramfs from KC_APPLIANCE_DIR (see appliance.md)
         ├── rdinit=/kc-agent  (pid 1 inside the VM; see kc-agent.md)
         │     mount, LVM, LUKS, fsck, hivexregedit ...
-        └── virtio-serial (org.kc-utils.agent) ←→ KC_AGENT_SOCK RPC
+        ├── virtio-serial (org.kc-utils.agent) ←→ KC_AGENT_SOCK RPC
+        └── virtio-serial (org.kc-utils.shell) ←→ sibling shell.sock (kc-agent-sh)
 ```
 
 ## Requirements
@@ -43,7 +44,7 @@ Accel is `hvf` on Darwin, `kvm` on Linux when `/dev/kvm` exists, otherwise
 
 | Variable | Purpose |
 |----------|---------|
-| `KC_AGENT_SOCK` | Unix socket for `kc-agent` (set by `kc-v2v` shared session) |
+| `KC_AGENT_SOCK` | Unix socket for `kc-agent` RPC (set by `kc-v2v` shared session). Debug shell is the sibling `shell.sock`. |
 | `KC_QEMU_PID` | QEMU pid after prepare Setup (liveness) |
 | `KC_APPLIANCE_DIR` | Directory with `vmlinuz` and `initramfs.img` for host `GOARCH` |
 | `KC_VIRTIO_WIN` | Host virtio-win tree (same as other backends; not packed in the appliance) |
@@ -73,9 +74,13 @@ Install Homebrew QEMU. virtio-win and qemu-ga RPMs stay on the host
 (Fedora container → gitignored `build/offline/`). The Mac does not need hivex,
 libguestfs, or LVM — those run inside the appliance via `kc-agent`.
 
+End-to-end local flow (NFC copy → qemu backend → boot the converted x86 guest):
+[macos-local.md](../apps/macos-local.md).
+
 ## See also
 
 - [appliance.md](appliance.md) — building the `vmlinuz` + `initramfs.img` artifacts
 - [kc-agent.md](kc-agent.md) — the in-appliance agent and RPC protocol
+- [../apps/kc-agent-sh.md](../apps/kc-agent-sh.md) — interactive debug shell into a running appliance
 - [clevis-nbde.md](clevis-nbde.md) — Clevis/NBDE unlock
 - [filesystem-checks.md](../architecture/filesystem-checks.md) — `FSCheck` matrix

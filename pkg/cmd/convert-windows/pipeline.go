@@ -171,7 +171,7 @@ func Run(cfg *Config) error {
 	slog.Debug("disabling crash auto-reboot")
 	crashcontrol.Disable(systemHive, ccs)
 
-	// Blocks 10–12: Firstboot scripts
+	// Blocks 10–12: Firstboot scripts (registered as a Windows service via rhsrvany.exe)
 	slog.Debug("generating firstboot scripts")
 	if err := firstboot.Configure(&firstboot.Config{
 		MountRoot:   cfg.MountRoot,
@@ -180,7 +180,7 @@ func Run(cfg *Config) error {
 		StaticIPs:   cfg.StaticIPs,
 		Options:     cfg.PrepareData.Options,
 		Version:     versionHandler,
-	}, softwareHive); err != nil {
+	}, systemHive, ccs); err != nil {
 		output.Errors = append(output.Errors, types.BlockError{
 			Block: "firstboot", Message: err.Error(),
 		})

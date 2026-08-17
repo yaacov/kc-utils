@@ -10,7 +10,9 @@ CLI reference, pipeline block tables, usage guides, and runnable examples:
 - [apps/README.md](apps/README.md) — conversion flow overview
 - [apps/kc-prepare.md](apps/kc-prepare.md), [apps/kc-convert-linux.md](apps/kc-convert-linux.md), [apps/kc-convert-windows.md](apps/kc-convert-windows.md), [apps/kc-finalize.md](apps/kc-finalize.md) — pipeline binaries
 - [apps/kc-v2v.md](apps/kc-v2v.md), [apps/kc-copy.md](apps/kc-copy.md), [apps/forklift-usage.md](apps/forklift-usage.md) — V2V orchestration and Forklift integration
+- [apps/kc-agent-sh.md](apps/kc-agent-sh.md) — interactive debug shell into a running QEMU appliance
 - [apps/examples/](apps/examples/README.md) — JSON samples and runnable example
+- [apps/macos-local.md](apps/macos-local.md) — copy a vSphere Linux VM on a Mac, convert with `--backend qemu`, boot with `qemu-system-x86_64`
 
 ## Backends
 

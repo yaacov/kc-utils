@@ -36,7 +36,13 @@ func sdkURL(libvirtURL string) (*url.URL, bool, error) {
 	return sdk, insecure, nil
 }
 
-func credentials(libvirtURL string) (user, password string, err error) {
+// DefaultSecretDir is the default directory for vSphere credential files.
+const DefaultSecretDir = "/etc/secret"
+
+func credentials(libvirtURL, secretDir string) (user, password string, err error) {
+	if secretDir == "" {
+		secretDir = DefaultSecretDir
+	}
 	if libvirtURL != "" {
 		u, parseErr := url.Parse(libvirtURL)
 		if parseErr != nil {
@@ -44,12 +50,12 @@ func credentials(libvirtURL string) (user, password string, err error) {
 		}
 		user = u.User.Username()
 	}
-	if userBytes, readErr := os.ReadFile("/etc/secret/accessKeyId"); readErr == nil {
+	if userBytes, readErr := os.ReadFile(secretDir + "/accessKeyId"); readErr == nil {
 		if fromSecret := strings.TrimSpace(string(userBytes)); fromSecret != "" {
 			user = fromSecret
 		}
 	}
-	passBytes, err := os.ReadFile("/etc/secret/secretKey")
+	passBytes, err := os.ReadFile(secretDir + "/secretKey")
 	if err != nil {
 		return "", "", fmt.Errorf("read vSphere password: %w", err)
 	}
@@ -63,8 +69,8 @@ func credentials(libvirtURL string) (user, password string, err error) {
 // connectSDK dials the vCenter SOAP API. TLS uses CA policy; optional fingerprint
 // is a govmomi fallback when CA verification fails. ESXi NFC downloads reuse this
 // client and inherit ESXi thumbprints registered during lease.Wait().
-func connectSDK(ctx context.Context, sdk *url.URL, policy v2vtls.Policy, fingerprint, libvirtURL string) (*govmomi.Client, error) {
-	user, password, err := credentials(libvirtURL)
+func connectSDK(ctx context.Context, sdk *url.URL, policy v2vtls.Policy, fingerprint, libvirtURL, secretDir string) (*govmomi.Client, error) {
+	user, password, err := credentials(libvirtURL, secretDir)
 	if err != nil {
 		return nil, err
 	}
@@ -105,17 +111,18 @@ func connect(ctx context.Context, libvirtURL string, fingerprint string) (*govmo
 	if err != nil {
 		return nil, err
 	}
-	return connectSDK(ctx, sdk, policy, fingerprint, libvirtURL)
+	return connectSDK(ctx, sdk, policy, fingerprint, libvirtURL, "")
 }
 
-// ConnectHost connects to https://host/sdk using Forklift secret credentials and TLS policy.
-func ConnectHost(ctx context.Context, host string, policy v2vtls.Policy, fingerprint string) (*govmomi.Client, error) {
+// ConnectHost connects to https://host/sdk using secret credentials and TLS policy.
+// secretDir overrides the default credential directory (/etc/secret).
+func ConnectHost(ctx context.Context, host string, policy v2vtls.Policy, fingerprint, secretDir string) (*govmomi.Client, error) {
 	sdk := &url.URL{
 		Scheme: "https",
 		Host:   host,
 		Path:   "/sdk",
 	}
-	return connectSDK(ctx, sdk, policy, fingerprint, "")
+	return connectSDK(ctx, sdk, policy, fingerprint, "", secretDir)
 }
 
 func datacenterName(libvirtURL string) string {

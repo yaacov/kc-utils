@@ -78,6 +78,11 @@ That creates a test disk, runs all four binaries, and prints output JSON paths.
 See [examples/README.md](examples/README.md) for individual input/output samples,
 multiboot recovery, and Windows virtio-win setup.
 
+On a Mac, `direct` and `guestfs` are unavailable. Use
+[macos-local.md](macos-local.md) to `kc-copy` a vSphere disk, run prepare /
+convert-linux / finalize with `--backend qemu`, then boot the raw image with
+`qemu-system-x86_64`.
+
 ## Data Types
 
 | Type | Produced By | Consumed By | Contents |
@@ -191,6 +196,7 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 
 - [kc-v2v.md](kc-v2v.md) — Forklift conversion pod entrypoint (copy + pipeline + HTTP)
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
+- [kc-agent-sh.md](kc-agent-sh.md) — interactive debug shell into a running QEMU appliance
 - [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
 - [../../tests/scenarios/README.md](../../tests/scenarios/README.md) — Cluster benchmark tests (manual)
 

@@ -5,6 +5,7 @@ package firstboot
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -13,6 +14,13 @@ import (
 	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
 	"github.com/yaacov/kc-utils/pkg/guest/guestio"
+)
+
+const (
+	defaultVirtToolsDir = "/usr/share/virt-tools"
+	envVirtTools        = "KC_VIRT_TOOLS"
+	srvanyBinary        = "rhsrvany.exe"
+	serviceName         = "kcfirstboot"
 )
 
 // Config holds firstboot script generation parameters.
@@ -45,8 +53,10 @@ func writeScriptFile(baseDir string, priority int, name, content, ext string) er
 	return guestio.FileWrite(scriptPath, []byte(content), 0o644)
 }
 
-// Configure generates firstboot scripts, launcher, and RunOnce registry entry.
-func Configure(cfg *Config, softwareHive registry.Hive) error {
+// Configure generates firstboot scripts, launcher, and registers a Windows
+// service (via rhsrvany.exe) that runs firstboot.bat at boot as SYSTEM without
+// requiring user login.
+func Configure(cfg *Config, systemHive registry.Hive, ccs string) error {
 	firstbootDir := filepath.Join(cfg.MountRoot, "Program Files", "Guestfs", "Firstboot")
 	if mkErr := guestio.FileMkdirAll(filepath.Join(firstbootDir, "scripts"), 0o755); mkErr != nil {
 		return fmt.Errorf("creating firstboot dir: %w", mkErr)
@@ -117,12 +127,51 @@ func Configure(cfg *Config, softwareHive registry.Hive) error {
 		slog.Warn("writing firstboot.bat failed", "error", batErr)
 	}
 
-	runOncePath := `Microsoft\Windows\CurrentVersion\RunOnce`
-	softwareHive.CreateKey(runOncePath)
-	softwareHive.SetString(runOncePath, "kcfirstboot",
-		`C:\Program Files\Guestfs\Firstboot\firstboot.bat`)
+	if err := copySrvany(firstbootDir); err != nil {
+		return fmt.Errorf("copying rhsrvany.exe: %w", err)
+	}
+	registerService(systemHive, ccs)
 
 	return nil
+}
+
+// copySrvany copies rhsrvany.exe from the host into the guest Firstboot directory.
+func copySrvany(firstbootDir string) error {
+	hostPath := srvanyHostPath()
+	if _, err := os.Stat(hostPath); err != nil {
+		return fmt.Errorf("rhsrvany.exe not found at %s: %w", hostPath, err)
+	}
+	dst := filepath.Join(firstbootDir, srvanyBinary)
+	return guestio.FileCopy(hostPath, dst)
+}
+
+// srvanyHostPath returns the host path of rhsrvany.exe.
+func srvanyHostPath() string {
+	if p := os.Getenv(envVirtTools); p != "" {
+		return filepath.Join(p, srvanyBinary)
+	}
+	return filepath.Join(defaultVirtToolsDir, srvanyBinary)
+}
+
+// registerService creates a Windows service in the SYSTEM hive that auto-starts
+// rhsrvany.exe at boot, which in turn launches firstboot.bat as SYSTEM.
+func registerService(systemHive registry.Hive, ccs string) {
+	svcPath := ccs + `\Services\` + serviceName
+	systemHive.CreateKey(svcPath)
+	systemHive.SetDWORD(svcPath, "Type", 0x10)
+	systemHive.SetDWORD(svcPath, "Start", 0x02)
+	systemHive.SetDWORD(svcPath, "ErrorControl", 0x01)
+	systemHive.SetString(svcPath, "ImagePath",
+		`C:\Program Files\Guestfs\Firstboot\rhsrvany.exe -s `+serviceName)
+	systemHive.SetString(svcPath, "DisplayName", "KC firstboot service")
+	systemHive.SetString(svcPath, "ObjectName", "LocalSystem")
+
+	paramsPath := svcPath + `\Parameters`
+	systemHive.CreateKey(paramsPath)
+	systemHive.SetString(paramsPath, "CommandLine",
+		`cmd /c "C:\Program Files\Guestfs\Firstboot\firstboot.bat"`)
+	systemHive.SetString(paramsPath, "PWD",
+		`C:\Program Files\Guestfs\Firstboot`)
 }
 
 func launcherScript(kind version.LauncherKind) string {
@@ -174,9 +223,10 @@ func scriptLoop(ext, invocation string) string {
 }
 
 func cleanupFooter() string {
-	// Schedule reboot before deleting Firstboot: cmd.exe stops executing a
-	// .bat once its own file is removed, even after cd'ing away.
-	return "C:\\Windows\\System32\\shutdown.exe /r /t 5 /f\r\n" +
+	// Uninstall the firstboot service, then schedule reboot before deleting
+	// Firstboot: cmd.exe stops executing a .bat once its own file is removed.
+	return "\"C:\\Program Files\\Guestfs\\Firstboot\\rhsrvany.exe\" -s " + serviceName + " uninstall\r\n" +
+		"C:\\Windows\\System32\\shutdown.exe /r /t 5 /f\r\n" +
 		"cd /d \"%TEMP%\"\r\n" +
 		"rmdir /s /q \"C:\\Program Files\\Guestfs\\Firstboot\" 2>nul\r\n" +
 		"rmdir \"C:\\Program Files\\Guestfs\" 2>nul\r\n"

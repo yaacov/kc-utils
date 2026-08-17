@@ -33,9 +33,10 @@ func isSixDigits(s string) bool {
 
 // FilterDiskURLs returns lease disks matching sources, in source order.
 // Paths are compared after normalizeDiskPath. Lease disks not listed are skipped.
+// When sources is empty, all lease disks are returned in lease order.
 func FilterDiskURLs(lease []DiskURL, sources []string) ([]DiskURL, error) {
 	if len(sources) == 0 {
-		return nil, fmt.Errorf("source_disks is required")
+		return lease, nil
 	}
 	byPath := make(map[string]DiskURL, len(lease))
 	for _, d := range lease {

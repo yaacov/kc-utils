@@ -9,10 +9,10 @@ MODULE  := github.com/yaacov/kc-utils
 #   PLATFORM=linux/amd64        Container build platform (linux/amd64 or linux/arm64)
 #   CONTAINER_RUNTIME=          Force docker or podman (auto-detected if empty)
 
-# Stage binaries are unix (linux or darwin). kc-agent is linux-only (appliance pid 1).
+# Stage binaries and kc-agent-sh are unix (linux or darwin). kc-agent is linux-only (appliance pid 1).
 # Default GOOS=linux for container images; use GOOS=darwin for a Mac host CLI.
 GOOS ?= linux
-BINS := kc-prepare kc-finalize kc-v2v kc-copy kc-convert-linux kc-convert-windows
+BINS := kc-prepare kc-finalize kc-v2v kc-copy kc-convert-linux kc-convert-windows kc-agent-sh
 BIN_DIR    := bin
 
 GO      := go

@@ -32,6 +32,8 @@ func TestBuildQEMUArgsAmd64(t *testing.T) {
 		"-kernel /k/vmlinuz",
 		"rdinit=/kc-agent",
 		"org.kc-utils.agent",
+		"org.kc-utils.shell",
+		"path=/tmp/shell.sock",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("missing %q in %s", want, joined)
@@ -65,6 +67,9 @@ func TestBuildQEMUArgsArm64(t *testing.T) {
 	}
 	if !strings.Contains(joined, "virtio-serial-device") {
 		t.Fatalf("want virtio-serial-device: %s", joined)
+	}
+	if !strings.Contains(joined, "org.kc-utils.shell") {
+		t.Fatalf("want shell port: %s", joined)
 	}
 }
 

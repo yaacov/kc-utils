@@ -24,6 +24,17 @@ import (
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/firstboot/plugins/vmwarecleanup"
 )
 
+// setupFakeSrvany creates a temp directory with a dummy rhsrvany.exe and sets
+// KC_VIRT_TOOLS to point there. Returns a cleanup function.
+func setupFakeSrvany(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "rhsrvany.exe"), []byte("FAKE_EXE"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("KC_VIRT_TOOLS", dir)
+}
+
 func TestWriteScript(t *testing.T) {
 	tmpDir := t.TempDir()
 	content := "# test script\r\necho hello\r\n"
@@ -51,6 +62,7 @@ func TestWriteScript(t *testing.T) {
 }
 
 func TestConfigureOfflineStillAddsQemuGAScript(t *testing.T) {
+	setupFakeSrvany(t)
 	root := t.TempDir()
 	hive := regmock.NewMockHive()
 
@@ -67,7 +79,7 @@ func TestConfigureOfflineStillAddsQemuGAScript(t *testing.T) {
 			Name:    "qemu-ga",
 			InfPath: "/usr/share/virtio-win/guest-agent/qemu-ga-x86_64.msi",
 		}},
-	}, hive)
+	}, hive, "ControlSet001")
 	if err != nil {
 		t.Fatalf("Configure returned error: %v", err)
 	}
@@ -87,6 +99,7 @@ func TestConfigureOfflineStillAddsQemuGAScript(t *testing.T) {
 }
 
 func TestConfigureWin2008UsesPSV1Launcher(t *testing.T) {
+	setupFakeSrvany(t)
 	root := t.TempDir()
 	hive := regmock.NewMockHive()
 
@@ -104,7 +117,7 @@ func TestConfigureWin2008UsesPSV1Launcher(t *testing.T) {
 			Name:    "viostor",
 			InfPath: "viostor.inf",
 		}},
-	}, hive)
+	}, hive, "ControlSet001")
 	if err != nil {
 		t.Fatalf("Configure returned error: %v", err)
 	}
@@ -128,6 +141,7 @@ func TestConfigureWin2008UsesPSV1Launcher(t *testing.T) {
 }
 
 func TestConfigureModernLauncherRebootsAfterCleanup(t *testing.T) {
+	setupFakeSrvany(t)
 	root := t.TempDir()
 	hive := regmock.NewMockHive()
 
@@ -145,7 +159,7 @@ func TestConfigureModernLauncherRebootsAfterCleanup(t *testing.T) {
 			Name:    "viostor",
 			InfPath: "viostor.inf",
 		}},
-	}, hive)
+	}, hive, "ControlSet001")
 	if err != nil {
 		t.Fatalf("Configure returned error: %v", err)
 	}
@@ -175,6 +189,7 @@ func TestConfigureModernLauncherRebootsAfterCleanup(t *testing.T) {
 }
 
 func TestConfigureXPWritesBatchSignalScript(t *testing.T) {
+	setupFakeSrvany(t)
 	root := t.TempDir()
 	hive := regmock.NewMockHive()
 
@@ -189,7 +204,7 @@ func TestConfigureXPWritesBatchSignalScript(t *testing.T) {
 		Offline:   true,
 		Version:   h,
 		Options:   types.PrepareOptions{WaitForGuestReboot: true},
-	}, hive)
+	}, hive, "ControlSet001")
 	if err != nil {
 		t.Fatalf("Configure returned error: %v", err)
 	}
@@ -205,5 +220,145 @@ func TestConfigureXPWritesBatchSignalScript(t *testing.T) {
 	psPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "scripts", "99999-signal-conversion-done.ps1")
 	if _, err := os.Stat(psPath); err == nil {
 		t.Fatal("XP must not write PowerShell signal script")
+	}
+}
+
+func TestConfigureRegistersWindowsService(t *testing.T) {
+	setupFakeSrvany(t)
+	root := t.TempDir()
+	hive := regmock.NewMockHive()
+
+	h := version.Classify(&types.InspectData{
+		MajorVersion: 10,
+		ProductName:  "Windows Server 2022",
+	})
+
+	err := firstboot.Configure(&firstboot.Config{
+		MountRoot: root,
+		Offline:   true,
+		Version:   h,
+		DriverFiles: []driversource.DriverFile{{
+			Name:    "viostor",
+			InfPath: "viostor.inf",
+		}},
+	}, hive, "ControlSet001")
+	if err != nil {
+		t.Fatalf("Configure returned error: %v", err)
+	}
+
+	svcPath := `ControlSet001\Services\kcfirstboot`
+	if !hive.KeyExists(svcPath) {
+		t.Fatal("expected kcfirstboot service key to exist")
+	}
+
+	typ, err := hive.GetDWORD(svcPath, "Type")
+	if err != nil || typ != 0x10 {
+		t.Fatalf("expected Type=0x10, got %d err=%v", typ, err)
+	}
+	start, err := hive.GetDWORD(svcPath, "Start")
+	if err != nil || start != 0x02 {
+		t.Fatalf("expected Start=0x02, got %d err=%v", start, err)
+	}
+	errCtl, err := hive.GetDWORD(svcPath, "ErrorControl")
+	if err != nil || errCtl != 0x01 {
+		t.Fatalf("expected ErrorControl=0x01, got %d err=%v", errCtl, err)
+	}
+	imgPath, err := hive.GetString(svcPath, "ImagePath")
+	if err != nil {
+		t.Fatalf("GetString ImagePath: %v", err)
+	}
+	if !strings.Contains(imgPath, "rhsrvany.exe") || !strings.Contains(imgPath, "kcfirstboot") {
+		t.Fatalf("unexpected ImagePath: %s", imgPath)
+	}
+	objName, err := hive.GetString(svcPath, "ObjectName")
+	if err != nil || objName != "LocalSystem" {
+		t.Fatalf("expected ObjectName=LocalSystem, got %q err=%v", objName, err)
+	}
+
+	paramsPath := svcPath + `\Parameters`
+	cmdLine, err := hive.GetString(paramsPath, "CommandLine")
+	if err != nil {
+		t.Fatalf("GetString CommandLine: %v", err)
+	}
+	if !strings.Contains(cmdLine, "firstboot.bat") {
+		t.Fatalf("expected CommandLine to reference firstboot.bat, got: %s", cmdLine)
+	}
+	pwd, err := hive.GetString(paramsPath, "PWD")
+	if err != nil {
+		t.Fatalf("GetString PWD: %v", err)
+	}
+	if !strings.Contains(pwd, "Guestfs") {
+		t.Fatalf("expected PWD in Guestfs dir, got: %s", pwd)
+	}
+}
+
+func TestConfigureCopiesRhsrvanyToGuest(t *testing.T) {
+	setupFakeSrvany(t)
+	root := t.TempDir()
+	hive := regmock.NewMockHive()
+
+	h := version.Classify(&types.InspectData{
+		MajorVersion: 10,
+		ProductName:  "Windows 10 Enterprise",
+	})
+
+	err := firstboot.Configure(&firstboot.Config{
+		MountRoot: root,
+		Offline:   true,
+		Version:   h,
+		DriverFiles: []driversource.DriverFile{{
+			Name:    "viostor",
+			InfPath: "viostor.inf",
+		}},
+	}, hive, "ControlSet001")
+	if err != nil {
+		t.Fatalf("Configure returned error: %v", err)
+	}
+
+	srvanyPath := filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "rhsrvany.exe")
+	data, err := os.ReadFile(srvanyPath)
+	if err != nil {
+		t.Fatalf("expected rhsrvany.exe in guest Firstboot dir: %v", err)
+	}
+	if string(data) != "FAKE_EXE" {
+		t.Fatalf("unexpected rhsrvany.exe content: %s", data)
+	}
+}
+
+func TestConfigureLauncherUninstallsService(t *testing.T) {
+	setupFakeSrvany(t)
+	root := t.TempDir()
+	hive := regmock.NewMockHive()
+
+	h := version.Classify(&types.InspectData{
+		MajorVersion: 10,
+		ProductName:  "Windows Server 2022",
+	})
+
+	err := firstboot.Configure(&firstboot.Config{
+		MountRoot: root,
+		Offline:   true,
+		Version:   h,
+		DriverFiles: []driversource.DriverFile{{
+			Name:    "viostor",
+			InfPath: "viostor.inf",
+		}},
+	}, hive, "ControlSet001")
+	if err != nil {
+		t.Fatalf("Configure returned error: %v", err)
+	}
+
+	bat, err := os.ReadFile(filepath.Join(root, "Program Files", "Guestfs", "Firstboot", "firstboot.bat"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(bat)
+	if !strings.Contains(content, "rhsrvany.exe") || !strings.Contains(content, "uninstall") {
+		t.Fatalf("expected service uninstall in launcher footer, got: %s", content)
+	}
+	uninstallIdx := strings.Index(content, "uninstall")
+	rebootIdx := strings.Index(content, "shutdown.exe")
+	if uninstallIdx > rebootIdx {
+		t.Fatalf("service uninstall must come before reboot: %s", content)
 	}
 }

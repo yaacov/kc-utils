@@ -17,7 +17,9 @@ domain code runs whether the runtime is host-local (`direct`) or in the VM here.
 The appliance agent is a generic runtime with no domain knowledge — it only runs
 commands and reads/writes files and devices on absolute paths. It lives in
 [`pkg/agent`](../../../agent/) (served by `cmd/kc-agent`); the wire protocol is
-[`pkg/agent/protocol`](../../../agent/protocol/).
+[`pkg/agent/protocol`](../../../agent/protocol/). QEMU also binds a second
+virtio-serial port (`org.kc-utils.shell` / sibling `shell.sock`) for the
+[`kc-agent-sh`](../../../../docs/apps/kc-agent-sh.md) debug PTY.
 
 Disks get a `serial=kc-disk-<index>` on the QEMU command line
 ([`cmdline.go`](cmdline.go)); `discover` reads those serials back via `lsblk` to

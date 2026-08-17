@@ -59,7 +59,11 @@ The backend locates the artifacts through `KC_APPLIANCE_DIR`:
 
 QEMU is launched with `-kernel vmlinuz -initrd initramfs.img` and
 `-append "rdinit=/kc-agent …"`, so `kc-agent` runs as pid 1. Guest disks are
-attached as virtio-blk devices; the agent RPC channel is a virtio-serial port
-named `org.kc-utils.agent` bound to `KC_AGENT_SOCK`. See
-[`pkg/guest/plugins/qemu/cmdline.go`](../../pkg/guest/plugins/qemu/cmdline.go) for the full
-argv.
+attached as virtio-blk devices. Two virtio-serial ports are bound:
+
+- `org.kc-utils.agent` → `KC_AGENT_SOCK` (RPC)
+- `org.kc-utils.shell` → sibling `shell.sock` (debug PTY; see
+  [`kc-agent-sh`](../apps/kc-agent-sh.md))
+
+See [`pkg/guest/plugins/qemu/cmdline.go`](../../pkg/guest/plugins/qemu/cmdline.go)
+for the full argv.

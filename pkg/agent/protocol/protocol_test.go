@@ -37,6 +37,32 @@ func TestBlobRoundTrip(t *testing.T) {
 	}
 }
 
+func TestShellSock(t *testing.T) {
+	got := protocol.ShellSock("/tmp/kc-qemu-xxx/agent.sock")
+	if got != "/tmp/kc-qemu-xxx/shell.sock" {
+		t.Fatalf("got %q", got)
+	}
+	if protocol.ShellSock("") != "" {
+		t.Fatal("empty agent sock should yield empty shell sock")
+	}
+}
+
+func TestShellConfigCommand(t *testing.T) {
+	if got := (protocol.ShellConfig{}).Command(); len(got) != 1 || got[0] != "/bin/bash" {
+		t.Fatalf("default %v", got)
+	}
+	got := protocol.ShellConfig{Chroot: "/mnt/guest", Argv: []string{"ls", "/"}}.Command()
+	want := []string{"chroot", "/mnt/guest", "ls", "/"}
+	if len(got) != len(want) {
+		t.Fatalf("got %v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v want %v", got, want)
+		}
+	}
+}
+
 func TestReadBlobEmpty(t *testing.T) {
 	var buf bytes.Buffer
 	if err := protocol.WriteBlob(&buf, nil); err != nil {

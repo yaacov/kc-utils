@@ -7,6 +7,7 @@
 #   $DEST/virtio-win/drivers/by-os/<arch>/<os>/
 #   $DEST/virtio-win/guest-agent/
 #   $DEST/kc-packages/rpm/el{8,9,10}/x86_64/qemu-guest-agent-*.rpm
+#   $DEST/virt-tools/rhsrvany.exe
 #
 # Usage (from repository root):
 #   make stage-offline
@@ -15,6 +16,7 @@
 # Then:
 #   export KC_VIRTIO_WIN=$PWD/build/offline/virtio-win
 #   export KC_PACKAGES=$PWD/build/offline/kc-packages
+#   export KC_VIRT_TOOLS=$PWD/build/offline/virt-tools
 #
 # Environment:
 #   KC_OFFLINE_DIR       output root (default: <repo>/build/offline)
@@ -30,6 +32,7 @@ CACHE="$ROOT/build/kc-v2v/cache"
 IMAGE="${KC_OFFLINE_IMAGE:-quay.io/fedora/fedora:44}"
 VIRTIO="$DEST/virtio-win"
 PACKAGES="$DEST/kc-packages"
+VIRT_TOOLS="$DEST/virt-tools"
 
 if [ -n "${CONTAINER_RUNTIME:-}" ]; then
     CTR="$(command -v "$CONTAINER_RUNTIME" || true)"
@@ -48,7 +51,7 @@ populated() {
     local byos="$VIRTIO/drivers/by-os"
     local rpms
     rpms="$(find "$PACKAGES" -type f -name 'qemu-guest-agent*.rpm' 2>/dev/null | head -1 || true)"
-    [ -d "$byos" ] && [ -n "$(find "$byos" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | head -1)" ] && [ -n "$rpms" ]
+    [ -d "$byos" ] && [ -n "$(find "$byos" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | head -1)" ] && [ -n "$rpms" ] && [ -f "$VIRT_TOOLS/rhsrvany.exe" ]
 }
 
 print_exports() {
@@ -56,6 +59,7 @@ print_exports() {
     echo "Offline assets: $DEST"
     echo "  export KC_VIRTIO_WIN=$VIRTIO"
     echo "  export KC_PACKAGES=$PACKAGES"
+    echo "  export KC_VIRT_TOOLS=$VIRT_TOOLS"
 }
 
 if [ "${FORCE:-0}" != "1" ] && populated; then
@@ -64,7 +68,10 @@ if [ "${FORCE:-0}" != "1" ] && populated; then
     exit 0
 fi
 
-mkdir -p "$VIRTIO" "$PACKAGES" "$CACHE"
+# Remove stale trees so read-only files from a previous bsdtar extract
+# do not block the new run (common on Docker Desktop bind mounts).
+rm -rf "$VIRTIO" "$PACKAGES" "$VIRT_TOOLS"
+mkdir -p "$VIRTIO" "$PACKAGES" "$VIRT_TOOLS" "$CACHE"
 
 echo "Staging offline drivers via $CTR ($IMAGE)..."
 "$CTR" run --rm \
@@ -81,14 +88,16 @@ echo "Staging offline drivers via $CTR ($IMAGE)..."
     "$IMAGE" \
     bash -c '
         set -euo pipefail
-        dnf install -y --setopt=install_weak_deps=False curl bsdtar
-        chmod +x /tmp/stage-virtio-win.sh /tmp/stage-linux-packages.sh
+        dnf install -y --setopt=install_weak_deps=False curl bsdtar mingw-srvany-redistributable
+        # Scripts are bind-mounted :ro; invoke with bash (no chmod on ro mounts).
         # Empty override from the host must not wipe stage-virtio-win.sh defaults.
         [ -n "${VIRTIO_WIN_MODERN_URL:-}" ] || unset VIRTIO_WIN_MODERN_URL
         [ -n "${VIRTIO_WIN_LEGACY_URL:-}" ] || unset VIRTIO_WIN_LEGACY_URL
-        /tmp/stage-virtio-win.sh
-        /tmp/stage-linux-packages.sh /out/kc-packages
-        chown -R "${HOST_UID}:${HOST_GID}" /out
+        bash /tmp/stage-virtio-win.sh
+        bash /tmp/stage-linux-packages.sh /out/kc-packages
+        cp /usr/share/virt-tools/rhsrvany.exe /out/virt-tools/rhsrvany.exe
+        # Best-effort: bind mounts on Docker Desktop may reject chown on some files.
+        chown -R "${HOST_UID}:${HOST_GID}" /out 2>/dev/null || true
     '
 
 print_exports

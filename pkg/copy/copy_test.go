@@ -1,6 +1,7 @@
 package copy
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -125,5 +126,35 @@ func TestClampConcurrency(t *testing.T) {
 	}
 	if got := ClampConcurrency(2, 0); got != 1 {
 		t.Fatalf("empty disks: got %d want 1", got)
+	}
+}
+
+func TestFileTargets(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "out")
+	targets, err := FileTargets(dir, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(targets) != 3 {
+		t.Fatalf("got %d targets, want 3", len(targets))
+	}
+	for i, tgt := range targets {
+		if tgt.Index != i {
+			t.Errorf("target[%d].Index = %d, want %d", i, tgt.Index, i)
+		}
+		if tgt.IsBlockDev {
+			t.Errorf("target[%d] should not be block device", i)
+		}
+		want := filepath.Join(dir, fmt.Sprintf("disk%d.img", i))
+		if tgt.Path != want {
+			t.Errorf("target[%d].Path = %q, want %q", i, tgt.Path, want)
+		}
+	}
+	info, err := os.Stat(dir)
+	if err != nil {
+		t.Fatalf("output dir not created: %v", err)
+	}
+	if !info.IsDir() {
+		t.Fatal("output path is not a directory")
 	}
 }

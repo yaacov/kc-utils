@@ -179,16 +179,19 @@ func BuildQEMUArgs(cfg *LaunchConfig) (string, []string, error) {
 		"-initrd", cfg.Initrd,
 		"-append", "rdinit=/kc-agent console=" + consoleFor(cfg.Arch) + " quiet",
 		"-chardev", "socket,id=agent,path=" + cfg.Socket + ",server=on,wait=off",
+		"-chardev", "socket,id=shell,path=" + protocol.ShellSock(cfg.Socket) + ",server=on,wait=off",
 	}
 	if cfg.Arch == "arm64" {
 		args = append(args,
 			"-device", "virtio-serial-device",
 			"-device", "virtserialport,chardev=agent,name="+protocol.PortName,
+			"-device", "virtserialport,chardev=shell,name="+protocol.ShellPortName,
 		)
 	} else {
 		args = append(args,
 			"-device", "virtio-serial-pci",
 			"-device", "virtserialport,chardev=agent,name="+protocol.PortName,
+			"-device", "virtserialport,chardev=shell,name="+protocol.ShellPortName,
 		)
 	}
 

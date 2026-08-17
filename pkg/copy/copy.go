@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 
@@ -27,9 +29,11 @@ type CopyInput struct {
 	CaCert          string   `json:"ca_cert,omitempty"`
 	VMName          string   `json:"vm_name"`
 	Fingerprint     string   `json:"fingerprint"`
-	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
+	SourceDisks     []string `json:"source_disks,omitempty"` // VMDK paths to copy; filters NFC lease (empty = all disks)
 	Workdir         string   `json:"workdir"`
 	OutputPath      string   `json:"output_path,omitempty"`
+	OutputDir       string   `json:"output_dir,omitempty"` // Write raw images to this dir (disk0.img, disk1.img, …); bypasses PVC target discovery
+	SecretDir       string   `json:"secret_dir,omitempty"` // Directory with accessKeyId and secretKey files (default /etc/secret)
 	CopyConcurrency int      `json:"copy_concurrency,omitempty"`
 }
 
@@ -71,33 +75,13 @@ func Run(input *CopyInput) error {
 	if input.Fingerprint == "" {
 		return fmt.Errorf("fingerprint is required")
 	}
-	if len(input.SourceDisks) == 0 {
-		return fmt.Errorf("source_disks is required")
-	}
-
-	allTargets, err := DiscoverTargets()
-	if err != nil {
-		return err
-	}
-	if err := logDiscoveredTargets(allTargets); err != nil {
-		return err
-	}
-
-	targets, err := EmptyTargets()
-	if err != nil {
-		return err
-	}
-	if len(targets) == 0 {
-		return fmt.Errorf("no empty PVC targets found")
-	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	slog.Info("NFC disk copy starting",
-		"source_disks", len(input.SourceDisks),
-		"empty_targets", len(targets),
 		"vm", input.VMName,
+		"output_dir", input.OutputDir,
 	)
 
 	outputPath := input.OutputPath
@@ -110,7 +94,7 @@ func Run(input *CopyInput) error {
 		return err
 	}
 
-	lease, err := ExportVM(ctx, input.Host, input.Datacenter, policy, input.Fingerprint, input.VMName)
+	lease, err := ExportVM(ctx, input.Host, input.Datacenter, policy, input.Fingerprint, input.VMName, input.SecretDir)
 	if err != nil {
 		return fmt.Errorf("NFC export: %w", err)
 	}
@@ -119,6 +103,12 @@ func Run(input *CopyInput) error {
 	if err != nil {
 		_ = lease.Abort(ctx)
 		return fmt.Errorf("filter NFC disks: %w", err)
+	}
+
+	targets, err := resolveTargets(input.OutputDir, len(selected))
+	if err != nil {
+		_ = lease.Abort(ctx)
+		return err
 	}
 	if len(selected) != len(targets) {
 		_ = lease.Abort(ctx)
@@ -236,4 +226,45 @@ func logDiscoveredTargets(targets []Target) error {
 		)
 	}
 	return nil
+}
+
+// resolveTargets returns the write targets. When outputDir is set, it creates
+// file targets (disk0.img, disk1.img, …) in that directory. Otherwise it
+// discovers PVC targets and filters to empty ones.
+func resolveTargets(outputDir string, diskCount int) ([]Target, error) {
+	if outputDir != "" {
+		return FileTargets(outputDir, diskCount)
+	}
+	allTargets, err := DiscoverTargets()
+	if err != nil {
+		return nil, err
+	}
+	if err := logDiscoveredTargets(allTargets); err != nil {
+		return nil, err
+	}
+	targets, err := EmptyTargets()
+	if err != nil {
+		return nil, err
+	}
+	if len(targets) == 0 {
+		return nil, fmt.Errorf("no empty PVC targets found")
+	}
+	return targets, nil
+}
+
+// FileTargets creates n file targets (disk0.img, disk1.img, …) in dir.
+func FileTargets(dir string, n int) ([]Target, error) {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, fmt.Errorf("create output dir: %w", err)
+	}
+	targets := make([]Target, n)
+	for i := range targets {
+		targets[i] = Target{
+			Path:       filepath.Join(dir, fmt.Sprintf("disk%d.img", i)),
+			IsBlockDev: false,
+			Index:      i,
+		}
+	}
+	slog.Info("file targets", "dir", dir, "count", n)
+	return targets, nil
 }

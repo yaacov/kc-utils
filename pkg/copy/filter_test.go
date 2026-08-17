@@ -49,8 +49,18 @@ func TestFilterDiskURLsMissing(t *testing.T) {
 }
 
 func TestFilterDiskURLsEmptySources(t *testing.T) {
-	_, err := FilterDiskURLs(nil, nil)
-	if err == nil || !strings.Contains(err.Error(), "required") {
-		t.Fatalf("expected required error, got %v", err)
+	lease := []DiskURL{
+		{URL: "http://lease/a", DiskPath: "[ds] vm/a.vmdk", Size: 1},
+		{URL: "http://lease/b", DiskPath: "[ds] vm/b.vmdk", Size: 2},
+	}
+	got, err := FilterDiskURLs(lease, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2 (all lease disks)", len(got))
+	}
+	if got[0].URL != "http://lease/a" || got[1].URL != "http://lease/b" {
+		t.Fatalf("expected all lease disks in order: %+v", got)
 	}
 }

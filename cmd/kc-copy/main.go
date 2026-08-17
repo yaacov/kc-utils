@@ -25,13 +25,15 @@ func main() {
 	fingerprint := flag.String("fingerprint", "", "vCenter SSL thumbprint")
 	diskPath := flag.String("disk-path", "", "comma-separated source vmdk paths to copy")
 	workdir := flag.String("work-dir", kccopy.DefaultWorkdir, "working directory")
+	outputDir := flag.String("output-dir", "", "write raw images to this directory (disk0.img, disk1.img, …); bypasses PVC target discovery")
+	secretDir := flag.String("secret-dir", "", "directory containing accessKeyId and secretKey files (default /etc/secret)")
 	copyConcurrency := flag.Int("copy-concurrency", kccopy.DefaultCopyConcurrency, "max parallel disk copies")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
 	logger.Init(*logLevel)
 
-	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *caCert, *vmName, *fingerprint, *diskPath, *workdir, *outputFile, *copyConcurrency)
+	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *caCert, *vmName, *fingerprint, *diskPath, *workdir, *outputFile, *outputDir, *secretDir, *copyConcurrency)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -47,7 +49,7 @@ func main() {
 	}
 }
 
-func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName, fingerprint, diskPath, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
+func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName, fingerprint, diskPath, workdir, outputPath, outputDir, secretDir string, copyConcurrency int) (kccopy.CopyInput, error) {
 	if inputFile != "" {
 		data, err := os.ReadFile(inputFile)
 		if err != nil {
@@ -66,6 +68,12 @@ func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName
 		if input.OutputPath == "" {
 			input.OutputPath = outputPath
 		}
+		if input.OutputDir == "" {
+			input.OutputDir = outputDir
+		}
+		if input.SecretDir == "" {
+			input.SecretDir = secretDir
+		}
 		if err := validateInput(&input); err != nil {
 			return kccopy.CopyInput{}, err
 		}
@@ -82,6 +90,8 @@ func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName
 		SourceDisks:     kccopy.SplitDiskPath(diskPath),
 		Workdir:         workdir,
 		OutputPath:      outputPath,
+		OutputDir:       outputDir,
+		SecretDir:       secretDir,
 		CopyConcurrency: copyConcurrency,
 	}
 	if err := validateInput(&input); err != nil {
@@ -99,9 +109,6 @@ func validateInput(input *kccopy.CopyInput) error {
 	}
 	if input.Fingerprint == "" {
 		return fmt.Errorf("--fingerprint is required (or use --input)")
-	}
-	if len(input.SourceDisks) == 0 {
-		return fmt.Errorf("--disk-path is required (or use --input with source_disks)")
 	}
 	return nil
 }
