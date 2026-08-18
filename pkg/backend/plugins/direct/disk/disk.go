@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -33,9 +35,21 @@ func Setup(path string) (*DiskSetup, error) {
 		return nil, fmt.Errorf("stat %s: %w", path, err)
 	}
 
+	mode := info.Mode()
+	switch {
+	case mode&os.ModeCharDevice != 0:
+		return nil, fmt.Errorf("%s: character devices are not supported", path)
+	case mode&os.ModeDevice != 0:
+		// block device
+	case mode.IsRegular():
+		// disk image file for losetup
+	default:
+		return nil, fmt.Errorf("%s: path must be a block device or regular file", path)
+	}
+
 	ds := &DiskSetup{Path: path}
 
-	if info.Mode()&os.ModeDevice != 0 {
+	if mode&os.ModeDevice != 0 {
 		ds.LoopDevice = path
 		if err := ds.scanPartitions(); err != nil {
 			return nil, err
@@ -82,16 +96,44 @@ func (ds *DiskSetup) scanPartitions() error {
 		matches, _ = filepath.Glob(pattern)
 	}
 
-	for i, m := range matches {
+	type part struct {
+		index int
+		path  string
+	}
+	var parts []part
+	for _, m := range matches {
 		if m == ds.LoopDevice {
 			continue
 		}
+		idx := partitionIndex(m, ds.LoopDevice)
+		if idx <= 0 {
+			continue
+		}
+		parts = append(parts, part{index: idx, path: m})
+	}
+	sort.Slice(parts, func(i, j int) bool { return parts[i].index < parts[j].index })
+	for _, p := range parts {
 		ds.Partitions = append(ds.Partitions, PartitionDevice{
-			Index:      i + 1,
-			DevicePath: m,
+			Index:      p.index,
+			DevicePath: p.path,
 		})
 	}
 	return nil
+}
+
+func partitionIndex(devicePath, loopDevice string) int {
+	suffix := strings.TrimPrefix(devicePath, loopDevice)
+	if suffix == "" || suffix == devicePath {
+		return 0
+	}
+	if strings.HasPrefix(suffix, "p") && len(suffix) > 1 {
+		suffix = suffix[1:]
+	}
+	n, err := strconv.Atoi(suffix)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
 }
 
 // Close detaches the loop device if one was created.

@@ -63,7 +63,7 @@ Fsck timing, per-filesystem check-vs-repair behavior, and backend differences:
 | Tool | Package | Used For |
 |------|---------|----------|
 | `clevis` | clevis | Tang/TPM-bound LUKS unlock |
-| `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs mode (`--guestfs` / `V2V_guestfs=true`) |
+| `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs backend (`--backend guestfs` / `V2V_backend=guestfs`) |
 
 For Windows conversions, populate the VirtIO-Win driver tree on the host at
 `/usr/share/virtio-win/` for `kc-convert-windows`. On Fedora/RHEL:
@@ -133,7 +133,7 @@ make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
 
 On macOS (and other non-Linux hosts), `make test` never compiles packages tagged
-`//go:build linux` (for example `pkg/guest/guestfs`). Use `make test-container`
+`//go:build linux` (for example `pkg/backend/plugins/guestfs`). Use `make test-container`
 before pushing when those packages change, or rely on CI on `ubuntu-latest`.
 
 ### `make test-e2e`

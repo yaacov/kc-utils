@@ -12,52 +12,48 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
-	"github.com/yaacov/kc-utils/pkg/guest/guestfs"
 )
 
 // Guest is the high-level handle used by prepare/convert/finalize pipelines.
 type Guest struct {
-	rootPath string
-	mode     Mode
-	backend  Backend
+	rootPath    string
+	backendName string
+	backend     Backend
 }
 
-// Open sets up disk access for the given mode and runs backend Setup.
-func Open(disks []types.DiskSpec, mountRoot string, mode Mode) (*Guest, error) {
+// Open sets up disk access for the named backend and runs backend Setup.
+func Open(disks []types.DiskSpec, mountRoot, backendName string) (*Guest, error) {
 	if err := os.MkdirAll(mountRoot, 0o755); err != nil {
 		return nil, fmt.Errorf("creating mount root %s: %w", mountRoot, err)
 	}
 
-	var b Backend
-	switch mode {
-	case ModeGuestfs:
-		b = guestfs.New()
-	default:
-		b = direct.New()
+	plugin, err := backend.Resolve(backendName)
+	if err != nil {
+		return nil, err
 	}
 
+	b := plugin.New()
 	if err := b.Setup(disks, mountRoot); err != nil {
 		_ = b.Teardown()
 		return nil, fmt.Errorf("backend setup: %w", err)
 	}
 
 	return &Guest{
-		rootPath: mountRoot,
-		mode:     mode,
-		backend:  b,
+		rootPath:    mountRoot,
+		backendName: backendName,
+		backend:     b,
 	}, nil
 }
 
 // AttachFromPrepare sets up a guest handle from prepare output data.
-// It derives the mode, orders disks, converts specs, attaches, and sets the
-// global active handle. Callers must defer ClearActive().
-func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, useGuestfs bool) (*Guest, error) {
-	mode := ModeFromBool(useGuestfs)
+// It orders disks, converts specs, attaches, and sets the global active handle.
+// Callers must defer ClearActive().
+func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot, backendName string) (*Guest, error) {
 	ordered := WithRootMount(disks, rootDevice)
 	specs := types.DiskSpecsFrom(ordered)
-	g, err := AttachMounted(specs, mountRoot, mode, ordered)
+	g, err := AttachMounted(specs, mountRoot, backendName, ordered)
 	if err != nil {
 		return nil, fmt.Errorf("attach guest: %w", err)
 	}
@@ -68,24 +64,21 @@ func AttachFromPrepare(disks []types.DiskInfo, rootDevice, mountRoot string, use
 // AttachMounted returns a handle for a guest already prepared (mounted in
 // direct mode, or with mount specs recorded for guestfs). Convert and finalize
 // use this after prepare Release.
-func AttachMounted(disks []types.DiskSpec, mountRoot string, mode Mode, diskInfos []types.DiskInfo) (*Guest, error) {
-	var b Backend
-	switch mode {
-	case ModeGuestfs:
-		gb, err := guestfs.NewMounted(disks, mountRoot, diskInfos)
-		if err != nil {
-			return nil, fmt.Errorf("guestfs session: %w", err)
-		}
-		b = gb
-	default:
-		b = direct.NewMounted(disks, mountRoot, diskInfos)
+func AttachMounted(disks []types.DiskSpec, mountRoot, backendName string, diskInfos []types.DiskInfo) (*Guest, error) {
+	plugin, err := backend.Resolve(backendName)
+	if err != nil {
+		return nil, err
 	}
-	return &Guest{rootPath: mountRoot, mode: mode, backend: b}, nil
+	b, err := plugin.NewMounted(disks, mountRoot, diskInfos)
+	if err != nil {
+		return nil, fmt.Errorf("backend %s attach: %w", backendName, err)
+	}
+	return &Guest{rootPath: mountRoot, backendName: backendName, backend: b}, nil
 }
 
-func (g *Guest) Mode() Mode       { return g.mode }
-func (g *Guest) Backend() Backend { return g.backend }
-func (g *Guest) RootPath() string { return g.rootPath }
+func (g *Guest) BackendName() string { return g.backendName }
+func (g *Guest) Backend() Backend    { return g.backend }
+func (g *Guest) RootPath() string    { return g.rootPath }
 
 // HostPath joins guestPath onto the mount root. In direct mode this is a live
 // mount path. In guestfs mode it is only a path key for File* helpers and

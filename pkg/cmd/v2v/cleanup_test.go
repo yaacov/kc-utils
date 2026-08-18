@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 )
 
@@ -17,17 +18,17 @@ func TestTeardownOnlyArgsIncludesPrepareWhenPresent(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := &env.Config{
-		MountRoot:  "/tmp/kc-guest",
-		LogLevel:   "info",
-		UseGuestfs: true,
+		MountRoot: "/tmp/kc-guest",
+		LogLevel:  "info",
+		Backend:   backend.NameGuestfs,
 	}
 	args := teardownOnlyArgs(cfg, prepareOut)
 	want := []string{
 		"--teardown-only",
 		"--mount-root", "/tmp/kc-guest",
 		"--log-level", "info",
+		"--backend", backend.NameGuestfs,
 		"--input", prepareOut,
-		"--guestfs",
 	}
 	if len(args) != len(want) {
 		t.Fatalf("args=%v want=%v", args, want)
@@ -41,15 +42,16 @@ func TestTeardownOnlyArgsIncludesPrepareWhenPresent(t *testing.T) {
 
 func TestTeardownOnlyArgsOmitsMissingPrepare(t *testing.T) {
 	cfg := &env.Config{
-		MountRoot:  "/tmp/kc-guest",
-		LogLevel:   "debug",
-		UseGuestfs: false,
+		MountRoot: "/tmp/kc-guest",
+		LogLevel:  "debug",
+		Backend:   backend.NameDirect,
 	}
 	args := teardownOnlyArgs(cfg, filepath.Join(t.TempDir(), "missing.json"))
 	want := []string{
 		"--teardown-only",
 		"--mount-root", "/tmp/kc-guest",
 		"--log-level", "debug",
+		"--backend", backend.NameDirect,
 	}
 	if len(args) != len(want) {
 		t.Fatalf("args=%v want=%v", args, want)

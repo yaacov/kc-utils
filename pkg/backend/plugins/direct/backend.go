@@ -10,12 +10,12 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/disk"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/fstype"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/luks"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/lvm"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/mount"
 	"github.com/yaacov/kc-utils/pkg/common/types"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/disk"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/fstype"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/luks"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/lvm"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/mount"
 )
 
 // Backend mounts guest disks on the host via mount(8) and requires CAP_SYS_ADMIN.

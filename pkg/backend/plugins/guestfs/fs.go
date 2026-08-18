@@ -312,6 +312,9 @@ func (b *Backend) Upload(hostPath, guestPath string) error {
 		body.WriteByte('\n')
 	}
 	if info.IsDir() {
+		body.WriteString("rm -rf ")
+		body.WriteString(quoteGuestfish(guestPath))
+		body.WriteByte('\n')
 		body.WriteString("copy-in ")
 		body.WriteString(quoteGuestfish(hostPath))
 		body.WriteByte(' ')

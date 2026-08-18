@@ -34,7 +34,7 @@ func guestfsNetworkEnabled() bool {
 	return v == "1" || strings.EqualFold(v, "true")
 }
 
-var guestfishPIDRE = regexp.MustCompile(`GUESTFISH_PID=(\d+)`)
+var guestfishPIDRE = regexp.MustCompile(`GUESTFISH_PID=(\d+)(?:[;\r\n]|$)`)
 
 type guestfishSession struct {
 	pid             int
@@ -329,11 +329,13 @@ func drainGuestfishListenStdout(r io.Reader, pidCh chan<- int) (int, error) {
 		if n > 0 {
 			if !sent {
 				buf = append(buf, tmp[:n]...)
-				if p, perr := parseListenOutput(string(buf)); perr == nil {
-					pid = p
-					sent = true
-					pidCh <- p
-					buf = nil
+				if strings.Contains(string(buf), "\n") {
+					if p, perr := parseListenOutput(string(buf)); perr == nil {
+						pid = p
+						sent = true
+						pidCh <- p
+						buf = nil
+					}
 				}
 			}
 		}
@@ -508,6 +510,12 @@ func (s *guestfishSession) checkAlive() error {
 func (s *guestfishSession) restart(diskPaths []string) error {
 	oldPid := s.pid
 	slog.Warn("guestfish session restart", "oldPid", oldPid)
+	if oldPid > 0 {
+		_, _ = runGuestfsCmd(guestfishBinary(), fmt.Sprintf("--remote=%d", oldPid), "--", "exit")
+		if sessionAlive(oldPid) {
+			_ = syscall.Kill(oldPid, syscall.SIGTERM)
+		}
+	}
 	pid, err := startGuestfishListen()
 	if err != nil {
 		return fmt.Errorf("guestfish restart: %w", err)

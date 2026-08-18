@@ -60,7 +60,7 @@ func (b *Backend) discoverLVs() ([]string, error) {
 	}
 	out, err := b.session.remoteScript("-lvs\n")
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	var lvs []string
 	for _, line := range strings.Split(string(out), "\n") {

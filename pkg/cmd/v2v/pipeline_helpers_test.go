@@ -4,18 +4,32 @@ package v2v
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/guest"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 )
 
+type stubSharedListener struct {
+	pid int
+}
+
+func (s *stubSharedListener) Env() []string {
+	return []string{fmt.Sprintf("%s=%d", guest.EnvGuestfishPID, s.pid)}
+}
+
+func (s *stubSharedListener) Alive() bool { return s.pid > 0 }
+
+func (s *stubSharedListener) Close() error { return nil }
+
 func TestStageCommonArgs(t *testing.T) {
 	cfg := &env.Config{
-		MountRoot:  "/mnt/guest",
-		LogLevel:   "debug",
-		UseGuestfs: false,
+		MountRoot: "/mnt/guest",
+		LogLevel:  "debug",
+		Backend:   backend.NameDirect,
 	}
 	got := stageCommonArgs(cfg, "/in.json", "/out.json")
 	want := []string{
@@ -23,6 +37,7 @@ func TestStageCommonArgs(t *testing.T) {
 		"--output", "/out.json",
 		"--mount-root", "/mnt/guest",
 		"--log-level", "debug",
+		"--backend", backend.NameDirect,
 	}
 	if len(got) != len(want) {
 		t.Fatalf("args=%v want=%v", got, want)
@@ -33,15 +48,15 @@ func TestStageCommonArgs(t *testing.T) {
 		}
 	}
 
-	cfg.UseGuestfs = true
+	cfg.Backend = backend.NameGuestfs
 	got = stageCommonArgs(cfg, "/in.json", "/out.json")
-	if got[len(got)-1] != "--guestfs" {
-		t.Fatalf("expected trailing --guestfs, got %v", got)
+	if got[len(got)-1] != backend.NameGuestfs || got[len(got)-2] != "--backend" {
+		t.Fatalf("expected trailing --backend guestfs, got %v", got)
 	}
 }
 
 func TestSetupSharedListenerDisabled(t *testing.T) {
-	listener, stageEnv, err := setupSharedListener(&env.Config{UseGuestfs: false})
+	listener, stageEnv, err := setupSharedListener(&env.Config{Backend: backend.NameDirect})
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
@@ -54,18 +69,18 @@ func TestSetupSharedListenerClevisNetwork(t *testing.T) {
 	prev := startSharedListener
 	t.Cleanup(func() { startSharedListener = prev })
 
-	startSharedListener = func() (*guest.SharedListener, error) {
-		return &guest.SharedListener{PID: 1111}, nil
+	startSharedListener = func() (guest.SharedListener, error) {
+		return &stubSharedListener{pid: 1111}, nil
 	}
 
 	listener, stageEnv, err := setupSharedListener(&env.Config{
-		UseGuestfs: true,
+		Backend:    backend.NameGuestfs,
 		NbdeClevis: true,
 	})
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
-	if listener == nil || listener.PID != 1111 {
+	if listener == nil || !listener.Alive() {
 		t.Fatalf("listener=%v", listener)
 	}
 	found := false
@@ -84,11 +99,11 @@ func TestSetupSharedListenerError(t *testing.T) {
 	prev := startSharedListener
 	t.Cleanup(func() { startSharedListener = prev })
 
-	startSharedListener = func() (*guest.SharedListener, error) {
+	startSharedListener = func() (guest.SharedListener, error) {
 		return nil, errors.New("boom")
 	}
 
-	_, _, err := setupSharedListener(&env.Config{UseGuestfs: true})
+	_, _, err := setupSharedListener(&env.Config{Backend: backend.NameGuestfs})
 	if err == nil {
 		t.Fatal("expected error")
 	}

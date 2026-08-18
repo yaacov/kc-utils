@@ -16,7 +16,7 @@ Requires Linux (`//go:build linux`).
 | `--input` | yes | | Path to PrepareInput JSON |
 | `--output` | no | `prepare-out.json` | Path to write PrepareOutput JSON |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory for guest filesystem mounts |
-| `--guestfs` | no | `false` | Use libguestfs appliance instead of privileged mounts |
+| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 In guestfs mode, prepare adopts the shared `guestfish --listen` session when

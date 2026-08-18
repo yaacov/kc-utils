@@ -13,7 +13,9 @@ func TestMountOptions(t *testing.T) {
 	}{
 		{"rw default", "vfat", false, "nodev,nosuid,noexec"},
 		{"ro default", "vfat", true, "nodev,nosuid,noexec,ro"},
-		{"rw ext4", "ext4", false, "nodev,nosuid,noexec,norecovery"},
+		{"rw ext4", "ext4", false, "nodev,nosuid,noexec"},
+		{"ro ext4", "ext4", true, "nodev,nosuid,noexec,ro,norecovery"},
+		{"rw xfs", "xfs", false, "nodev,nosuid,noexec"},
 		{"ro xfs", "xfs", true, "nodev,nosuid,noexec,ro,norecovery"},
 		{"ro ntfs3", "ntfs3", true, "nodev,nosuid,noexec,ro,force"},
 	}

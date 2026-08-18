@@ -97,18 +97,19 @@ func mountOptions(fstype string, readOnly bool) string {
 	if readOnly {
 		parts = append(parts, "ro")
 	}
-	if fs := fsOptions(fstype); fs != "" {
+	if fs := fsOptions(fstype, readOnly); fs != "" {
 		parts = append(parts, fs)
 	}
 	return strings.Join(parts, ",")
 }
 
-func fsOptions(fstype string) string {
+func fsOptions(fstype string, readOnly bool) string {
 	switch fstype {
-	case "ext4", "ext3", "ext2":
-		return "norecovery"
-	case "xfs":
-		return "norecovery"
+	case "ext4", "ext3", "ext2", "xfs":
+		if readOnly {
+			return "norecovery"
+		}
+		return ""
 	case "ntfs3":
 		return "force"
 	default:

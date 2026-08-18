@@ -318,18 +318,35 @@ func (b *Backend) Decrypt(device, keyFile, mapperName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("read LUKS keyfile %s: %w", keyFile, err)
 	}
-	// Passphrases from Forklift /etc/luks files are typically newline-terminated text.
 	keyData = bytes.TrimRight(keyData, "\r\n")
 	keyData = append(keyData, '\n')
 
 	mapped := "/dev/mapper/" + mapperName
-	_, err = runGuestfsCmdWithStdin(keyData, guestfishBinary(),
-		b.session.remoteFlag(),
-		"--keys-from-stdin",
-		"--",
-		"cryptsetup-open", device, mapperName,
-	)
+	keyHost, err := os.CreateTemp("", "kc-luks-key-*")
 	if err != nil {
+		return "", err
+	}
+	keyHostPath := keyHost.Name()
+	defer os.Remove(keyHostPath)
+	if _, err := keyHost.Write(keyData); err != nil {
+		keyHost.Close()
+		return "", err
+	}
+	keyHost.Close()
+
+	applianceKey := "/tmp/.kc-luks-key-" + mapperName
+	var script strings.Builder
+	script.WriteString("upload ")
+	script.WriteString(quoteGuestfish(keyHostPath))
+	script.WriteByte(' ')
+	script.WriteString(quoteGuestfish(applianceKey))
+	script.WriteByte('\n')
+	script.WriteString("-cryptsetup-open ")
+	script.WriteString(quoteGuestfish(device))
+	script.WriteByte(' ')
+	script.WriteString(quoteGuestfish(mapperName))
+	script.WriteByte('\n')
+	if _, err := b.session.remoteScriptSoft(script.String()); err != nil {
 		return "", fmt.Errorf("cryptsetup-open %s: %w", device, err)
 	}
 	if !b.dmDevicePresent(mapped) {
@@ -440,15 +457,7 @@ func (b *Backend) unmountVirtualFS() {
 // making failures invisible to the caller.
 // Virtual filesystems (/proc, /sys, /dev) are mounted before the
 // command runs and unmounted afterwards, matching virt-v2v behaviour.
-func (b *Backend) RunCommand(_ string, cmd []string) ([]byte, error) {
-	if err := b.ensureMounted(); err != nil {
-		return nil, err
-	}
-	if err := b.mountVirtualFS(); err != nil {
-		slog.Warn("failed to mount virtual filesystems for guest command", "error", err)
-	}
-	defer b.unmountVirtualFS()
-
+func shCommandScript(cmd []string) string {
 	var shell strings.Builder
 	for i, arg := range cmd {
 		if i > 0 {
@@ -462,7 +471,19 @@ func (b *Backend) RunCommand(_ string, cmd []string) ([]byte, error) {
 	script.WriteString("sh ")
 	script.WriteString(quoteGuestfish(shell.String()))
 	script.WriteByte('\n')
-	s := script.String()
+	return script.String()
+}
+
+func (b *Backend) RunCommand(_ string, cmd []string) ([]byte, error) {
+	if err := b.ensureMounted(); err != nil {
+		return nil, err
+	}
+	if err := b.mountVirtualFS(); err != nil {
+		slog.Warn("failed to mount virtual filesystems for guest command", "error", err)
+	}
+	defer b.unmountVirtualFS()
+
+	s := shCommandScript(cmd)
 	return b.withRecovery(func() ([]byte, error) {
 		return b.session.remoteScript(s)
 	})
@@ -476,14 +497,16 @@ func (b *Backend) DeviceRead(device string, offset int64, size int) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	data := out
-	if cleaned, herr := hex.DecodeString(strings.TrimSpace(string(out))); herr == nil && len(cleaned) == size {
-		data = cleaned
+	if cleaned, herr := hex.DecodeString(strings.TrimSpace(string(out))); herr == nil {
+		if len(cleaned) != size {
+			return nil, fmt.Errorf("pread-device %s: decoded %d bytes, want %d", device, len(cleaned), size)
+		}
+		return cleaned, nil
 	}
-	if len(data) > size {
-		data = data[:size]
+	if len(out) != size {
+		return nil, fmt.Errorf("pread-device %s: got %d bytes, want %d", device, len(out), size)
 	}
-	return data, nil
+	return out, nil
 }
 
 func (b *Backend) DeviceWrite(device string, offset int64, data []byte) error {
@@ -524,7 +547,7 @@ func (b *Backend) Sync() error {
 }
 
 func (b *Backend) Release() error {
-	return b.teardown()
+	return nil
 }
 
 func (b *Backend) Teardown() error {

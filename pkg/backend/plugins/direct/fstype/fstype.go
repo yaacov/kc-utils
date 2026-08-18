@@ -53,11 +53,24 @@ func detect(buf []byte) string {
 	}
 
 	// swap: magic "SWAPSPACE2" or "SWAP-SPACE" at offset 0xFF6 (4K page) or 0x1FF6 (8K page)
-	if len(buf) > 0x1000 {
-		if string(buf[0xFF6:0x1000]) == "SWAPSPACE2" || string(buf[0xFF6:0x1000]) == "SWAP-SPACE" {
+	if len(buf) >= 0x1000 {
+		if swapLabel(buf[0xFF6:0x1000]) {
+			return "swap"
+		}
+	}
+	if len(buf) >= 0x2000 {
+		if swapLabel(buf[0x1FF6:0x2000]) {
 			return "swap"
 		}
 	}
 
 	return "unknown"
+}
+
+func swapLabel(label []byte) bool {
+	if len(label) < 10 {
+		return false
+	}
+	s := string(label[:10])
+	return s == "SWAPSPACE2" || s == "SWAP-SPACE"
 }

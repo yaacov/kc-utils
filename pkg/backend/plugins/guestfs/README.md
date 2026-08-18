@@ -1,10 +1,10 @@
-# pkg/guest/guestfs — libguestfs backend
+# pkg/backend/plugins/guestfs — libguestfs backend
 
 Guestfs backend for guest disk operations using a libguestfs appliance.
 Guest filesystems stay inside the appliance VM; all I/O uses guestfish RPC.
 Suitable for unprivileged pods with /dev/kvm access.
 
-See also: [docs/architecture/filesystem-checks.md](../../../docs/architecture/filesystem-checks.md)
+See also: [docs/architecture/filesystem-checks.md](../../../../docs/architecture/filesystem-checks.md)
 for `FSCheck` command mapping and check-vs-repair semantics.
 
 ## Exports
@@ -39,8 +39,9 @@ and `ntfsfix` on unmounted block devices (prepare before mount; finalize after
 
 On RHEL/UBI, prefer `virt-guestfish` when present (symlink) so NTFS mounts pass
 the winsupport allowlist; Fedora uses plain `guestfish` — see
-[docs/architecture/privilege-model.md](../../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
+[docs/architecture/privilege-model.md](../../../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
 
-Import path: `github.com/yaacov/kc-utils/pkg/guest/guestfs`
+Import path: `github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs`
 
-Only imported by the parent `pkg/guest` package — never by code outside `pkg/guest/`.
+`register.go` registers the plugin with `pkg/backend`; stage binaries blank-import
+this package and resolve backends through the plugin registry.

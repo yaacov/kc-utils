@@ -8,7 +8,7 @@ func TestSetActiveAndClear(t *testing.T) {
 	if Active() != nil {
 		t.Fatal("expected nil before SetActive")
 	}
-	g := &Guest{rootPath: "/tmp/test", mode: ModeDirect}
+	g := &Guest{rootPath: "/tmp/test", backendName: BackendDirect}
 	SetActive(g)
 	if Active() != g {
 		t.Fatal("Active() should return the set guest")

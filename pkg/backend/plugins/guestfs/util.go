@@ -33,8 +33,10 @@ func guestfishBinary() string {
 }
 
 func quoteGuestfish(path string) string {
-	if strings.ContainsAny(path, " \t\"'") {
-		return `"` + strings.ReplaceAll(path, `"`, `\"`) + `"`
+	if strings.ContainsAny(path, " \t\"'\\") {
+		escaped := strings.ReplaceAll(path, `\`, `\\`)
+		escaped = strings.ReplaceAll(escaped, `"`, `\"`)
+		return `"` + escaped + `"`
 	}
 	return path
 }
@@ -79,22 +81,31 @@ func runGuestfsCmdWithStdin(stdin []byte, name string, args ...string) ([]byte, 
 	if stdin != nil {
 		cmd.Stdin = bytes.NewReader(stdin)
 	}
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	duration := time.Since(start).Round(time.Millisecond)
-	msg := strings.TrimSpace(string(out))
+	stdoutBytes := stdout.Bytes()
+	errMsg := strings.TrimSpace(stderr.String())
 	if err != nil {
-		slog.Error("guestfs exec failed", "bin", name, "duration", duration, "error", err, "output", msg)
-		if msg != "" {
-			return out, fmt.Errorf("%s: %w\n%s", name, err, msg)
+		slog.Error("guestfs exec failed", "bin", name, "duration", duration, "error", err, "stderr", errMsg)
+		if errMsg != "" {
+			return stdoutBytes, fmt.Errorf("%s: %w\n%s", name, err, errMsg)
 		}
-		return out, fmt.Errorf("%s: %w", name, err)
+		return stdoutBytes, fmt.Errorf("%s: %w", name, err)
 	}
-	if errMsg := extractGuestfsError(msg); errMsg != "" {
-		slog.Error("guestfs exec failed", "bin", name, "duration", duration, "error", errMsg, "output", msg)
-		return out, fmt.Errorf("%s: %s", name, errMsg)
+	combined := stdoutBytes
+	if errMsg != "" {
+		combined = append(append([]byte(nil), stdoutBytes...), '\n')
+		combined = append(combined, stderr.Bytes()...)
 	}
-	slog.Info("guestfs exec ok", "bin", name, "duration", duration, "outputBytes", len(out), "output", truncateLog(msg, 512))
-	return out, nil
+	if msg := extractGuestfsError(strings.TrimSpace(string(combined))); msg != "" {
+		slog.Error("guestfs exec failed", "bin", name, "duration", duration, "error", msg, "stderr", errMsg)
+		return stdoutBytes, fmt.Errorf("%s: %s", name, msg)
+	}
+	slog.Info("guestfs exec ok", "bin", name, "duration", duration, "outputBytes", len(stdoutBytes))
+	return stdoutBytes, nil
 }
 
 func runGuestfishScript(args []string, script string) ([]byte, error) {

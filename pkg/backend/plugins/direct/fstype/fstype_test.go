@@ -48,3 +48,19 @@ func TestDetectSmallBuffer(t *testing.T) {
 		t.Errorf("got %q, want unknown", got)
 	}
 }
+
+func TestDetectSwap4K(t *testing.T) {
+	buf := make([]byte, 0x10100)
+	copy(buf[0xFF6:0x1000], "SWAPSPACE2")
+	if got := detect(buf); got != "swap" {
+		t.Errorf("got %q, want swap", got)
+	}
+}
+
+func TestDetectSwap8K(t *testing.T) {
+	buf := make([]byte, 0x2100)
+	copy(buf[0x1FF6:0x2000], "SWAP-SPACE")
+	if got := detect(buf); got != "swap" {
+		t.Errorf("got %q, want swap", got)
+	}
+}

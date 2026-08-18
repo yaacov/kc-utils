@@ -57,17 +57,27 @@ Each stage binary has its own:
 
 Cross-stage shared code lives in:
 - `pkg/common/` — types (contracts), logger, plugin registry, config editors, compression, Windows registry access
-- `pkg/guest/` — guest disk access abstraction (the Backend interface)
+- `pkg/backend/` — guest disk backend plugin registry and `Backend` interface
+- `pkg/guest/` — guest disk access facade (the `Guest` handle)
 - `pkg/v2v/` — orchestrator libraries (config, env, inspection) used only by `kc-v2v`
+
+`pkg/guest/` delegates to registered backends in `pkg/backend/plugins/`:
+
+| Backend | Requirements | Selection |
+|---------|--------------|-----------|
+| `direct` (default) | Linux, root / `CAP_SYS_ADMIN` | `--backend direct` / `V2V_backend=direct` |
+| `guestfs` | Linux, `/dev/kvm` | `--backend guestfs` / `V2V_backend=guestfs` |
+
+Stage binaries blank-import backend plugins in `cmd/kc-*/main.go`. `backend.Resolve(name)` validates registration and runtime availability before `Guest.Open`.
 
 ## The Two Backends: Direct vs Guestfs
 
-`pkg/guest/` provides two `Backend` implementations:
+`pkg/backend/plugins/` provides two `Backend` implementations (selected explicitly, not auto-detected):
 
 | Mode | Implementation | Requires |
 |------|---------------|----------|
-| **Direct** (default) | `pkg/guest/direct/backend.go` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | root / `CAP_SYS_ADMIN` |
-| **Guestfs** (`--guestfs`) | `pkg/guest/guestfs/backend.go` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | `/dev/kvm` only |
+| **Direct** (default) | `pkg/backend/plugins/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | Linux, root / `CAP_SYS_ADMIN` |
+| **Guestfs** (`--backend guestfs`) | `pkg/backend/plugins/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | Linux, `/dev/kvm` |
 
 ### Backend Transparency
 
@@ -83,8 +93,8 @@ Rules:
 
 Converters never call `chroot` or other privileged tools directly. `kc-convert-linux` uses `guest.RunInGuest(guestRoot, cmd)` for commands like `dracut` or `grub-mkconfig`; the active backend decides how to execute:
 
-- **Direct** — real `chroot(2)` into the mounted guest root (`pkg/guest/direct/`)
-- **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/guest/guestfs/`)
+- **Direct** — real `chroot(2)` into the mounted guest root (`pkg/backend/plugins/direct/`)
+- **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/backend/plugins/guestfs/`)
 
 `kc-convert-windows` reads virtio-win drivers from the pre-extracted driver tree
 at `/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).
@@ -147,7 +157,7 @@ Test: *If this binary were run standalone with only JSON input, would this sente
 - **Don't share implementation prematurely.** Duplicate before extracting. Shared helpers within a stage belong at stage level; shared code across stages belongs in `pkg/common/`. Types are always shared — they are the contracts.
 - **Don't inline trivial plugin files.** A plugin that is "just 10 lines" still serves the architectural purpose of being independently addable/removable via blank imports.
 - **Don't add cross-block dependencies.** If block B needs something from block A, pass it through the pipeline orchestrator as an explicit parameter — don't import block A from block B.
-- **Don't check which backend is active outside `pkg/guest/`.** No `if mode == ModeGuestfs` in block code.
+- **Don't check which backend is active outside `pkg/guest/`.** No `if backend == "guestfs"` in block code.
 - **Don't add side effects to blocks.** A block should not write global state, modify environment variables, or communicate with other blocks except through its return values.
 
 ## File Organization Conventions

@@ -18,7 +18,7 @@ Requires Linux (`//go:build linux`).
 | `--input` | yes\* | | Path to PipelineData JSON (from kc-convert-linux or kc-convert-windows; contains `prepare` and `convert` sections) |
 | `--output` | no | `target-meta.json` | Path to write PipelineData JSON (with `target` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Guest mount root (live mounts in direct mode; path key for `pkg/guest` in guestfs mode) |
-| `--guestfs` | no | `false` | Use libguestfs appliance instead of privileged mounts (adopts shared `GUESTFISH_PID` from `kc-v2v`; does not exit it) |
+| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`; guestfs adopts shared `GUESTFISH_PID` from `kc-v2v`) |
 | `--teardown-only` | no | `false` | Reclaim orphaned guest resources only (no metadata) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 

@@ -11,10 +11,15 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/cmd/prepare"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	_ "github.com/yaacov/kc-utils/pkg/common/registry/hivex"
 	"github.com/yaacov/kc-utils/pkg/common/types"
+
+	// Backend plugins
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
 
 	// Plugin registrations: firmware detectors
 	_ "github.com/yaacov/kc-utils/pkg/prepare/firmware/plugins/gptesp"
@@ -40,7 +45,7 @@ func main() {
 	inputFile := flag.String("input", "", "input JSON file")
 	outputFile := flag.String("output", "prepare-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
+	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
@@ -49,13 +54,17 @@ func main() {
 		"input", *inputFile,
 		"output", *outputFile,
 		"mountRoot", *mountRoot,
-		"guestfs", *useGuestfs,
+		"backend", *backendName,
 		"logLevel", *logLevel,
 	)
 
 	if *inputFile == "" {
 		fmt.Fprintln(os.Stderr, "error: --input is required")
 		flag.Usage()
+		os.Exit(1)
+	}
+	if err := backend.ValidateName(*backendName); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
 
@@ -84,7 +93,7 @@ func main() {
 		Pipeline:   pipeline,
 		MountRoot:  *mountRoot,
 		OutputPath: *outputFile,
-		UseGuestfs: *useGuestfs,
+		Backend:    *backendName,
 	}
 
 	if err := prepare.Run(cfg); err != nil {

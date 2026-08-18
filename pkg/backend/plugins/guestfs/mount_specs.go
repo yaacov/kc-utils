@@ -23,6 +23,9 @@ func (b *Backend) effectiveMountSpecs() ([]gfsMountSpec, error) {
 		specs = mountSpecsFromDiskInfos(b.diskInfos)
 	}
 	if !b.inspectDone {
+		if b.session == nil {
+			return sortedMountSpecs(specs), nil
+		}
 		extra, err := b.discoverMountpoints(preferredRoot(specs))
 		if err != nil {
 			return nil, err

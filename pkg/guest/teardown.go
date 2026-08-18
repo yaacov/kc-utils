@@ -3,17 +3,15 @@
 package guest
 
 import (
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
-	"github.com/yaacov/kc-utils/pkg/guest/guestfs"
+	"github.com/yaacov/kc-utils/pkg/backend"
 )
 
 // TeardownMountRoot best-effort cleans orphaned guest resources under
 // mountRoot when prepare-out data is unavailable. Never Syncs.
-func TeardownMountRoot(mountRoot string, mode Mode) error {
-	switch mode {
-	case ModeGuestfs:
-		return guestfs.TeardownMountRoot(mountRoot)
-	default:
-		return direct.TeardownMountRoot(mountRoot)
+func TeardownMountRoot(mountRoot, backendName string) error {
+	plugin, err := backend.Lookup(backendName)
+	if err != nil {
+		return err
 	}
+	return plugin.TeardownMountRoot(mountRoot)
 }
