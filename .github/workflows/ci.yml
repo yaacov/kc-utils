@@ -15,8 +15,6 @@ jobs:
         with:
           go-version: "1.24"
       - run: make lint
-        env:
-          GOOS: linux
 
   test:
     runs-on: ubuntu-latest

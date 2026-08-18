@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // Package systemd provides shared stage-local helpers for guest systemd unit
 // management during Linux conversion. Not a pipeline block — used by hypervisor

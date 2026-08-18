@@ -4,7 +4,7 @@ Converts a Windows guest to run on KVM/virtio. Installs virtio-win drivers,
 registers them in the Windows registry, disables hypervisor-specific services,
 and generates firstboot scripts for post-reboot setup.
 
-Requires Linux (`//go:build linux`).
+Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
 
 ## Entry Point
 

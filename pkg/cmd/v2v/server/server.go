@@ -33,13 +33,6 @@ func SetWarnings(msgs []string) {
 	}
 }
 
-// AddWarning appends a warning message.
-func AddWarning(reason, message string) {
-	mu.Lock()
-	defer mu.Unlock()
-	warnings = append(warnings, Warning{Reason: reason, Message: message})
-}
-
 // Start serves Forklift-compatible HTTP endpoints on :8080.
 func Start(cfg *env.Config) error {
 	mux := http.NewServeMux()

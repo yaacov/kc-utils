@@ -5,6 +5,10 @@ full in-place conversion pipeline inside the conversion pod: optional NFC disk
 copy, then `kc-prepare` → `kc-convert-{linux,windows}` → `kc-finalize`, then
 Forklift-compatible inspection XML and HTTP API.
 
+Compiles on any Unix host. The NFC copy stage runs on any Unix; prepare/convert/finalize
+stages require a guest disk backend and therefore Linux at runtime (see
+[privilege model](../architecture/privilege-model.md)).
+
 ## Entry Point
 
 `cmd/kc-v2v/main.go` — bootstrap via `pkg/v2v/env/`; orchestration in

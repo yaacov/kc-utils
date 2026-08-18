@@ -11,5 +11,4 @@ Container package grouping parse-edit-serialize libraries for common Linux confi
 | [bls/](bls/) | Boot Loader Specification entry parser/editor |
 | [fstab/](fstab/) | `/etc/fstab` and similar tabular file parser/editor |
 | [grub/](grub/) | `/etc/default/grub` parser/editor with kernel argument helpers |
-| [keyvalue/](keyvalue/) | Generic `key=value` INI-style config file editor |
 | [modprobe/](modprobe/) | `modprobe.d` config file editor for aliases, options, and blacklists |

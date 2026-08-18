@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 // Package guest is the sole boundary for privileged host and libguestfs
 // operations on guest disks. Callers must not invoke guestfish,

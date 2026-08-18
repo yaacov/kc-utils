@@ -8,6 +8,8 @@ Runs [`pkg/copy/`](../../pkg/copy/) via `copy.Run(CopyInput)`.
 
 **Entry:** `cmd/kc-copy/main.go` — flags or `--input` JSON; no subcommands.
 
+Compiles and runs on any Unix host (no guest disk backend).
+
 ## CLI
 
 Two input modes:
