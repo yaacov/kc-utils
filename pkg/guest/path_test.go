@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
 )
 
 func TestFileHelpersWithoutActive(t *testing.T) {
@@ -27,7 +27,7 @@ func TestFileHelpersWithoutActive(t *testing.T) {
 
 func TestFileHelpersWithActiveDirect(t *testing.T) {
 	dir := t.TempDir()
-	g := &Guest{rootPath: dir, mode: ModeDirect, backend: direct.NewMounted(nil, dir, nil)}
+	g := &Guest{rootPath: dir, backendName: BackendDirect, backend: direct.NewMounted(nil, dir, nil)}
 	SetActive(g)
 	defer ClearActive()
 

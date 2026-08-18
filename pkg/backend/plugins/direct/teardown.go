@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/yaacov/kc-utils/pkg/guest/direct/luks"
-	"github.com/yaacov/kc-utils/pkg/guest/direct/mount"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/luks"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/mount"
 )
 
 func (b *Backend) UnmountFilesystems() error {

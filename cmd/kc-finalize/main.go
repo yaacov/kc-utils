@@ -11,9 +11,14 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/cmd/finalize"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/common/types"
+
+	// Backend plugins
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
 
 	// Plugin registrations: filesystem trimmer
 	_ "github.com/yaacov/kc-utils/pkg/finalize/fstrim/plugins/default"
@@ -31,17 +36,21 @@ func main() {
 	inputFile := flag.String("input", "", "pipeline JSON file")
 	outputFile := flag.String("output", "target-meta.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	useGuestfs := flag.Bool("guestfs", false, "use libguestfs appliance instead of privileged mount syscalls")
+	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs)")
 	teardownOnly := flag.Bool("teardown-only", false, "reclaim orphaned guest resources without Sync or metadata writes")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
 	logger.Init(*logLevel)
+	if err := backend.ValidateName(*backendName); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
 
 	if *teardownOnly {
 		cfg := &finalize.Config{
-			MountRoot:  *mountRoot,
-			UseGuestfs: *useGuestfs,
+			MountRoot: *mountRoot,
+			Backend:   *backendName,
 		}
 		if *inputFile != "" {
 			data, err := os.ReadFile(*inputFile)
@@ -89,7 +98,7 @@ func main() {
 		Pipeline:   &pipeline,
 		MountRoot:  *mountRoot,
 		OutputPath: *outputFile,
-		UseGuestfs: *useGuestfs,
+		Backend:    *backendName,
 	}
 
 	if err := finalize.Run(cfg); err != nil {

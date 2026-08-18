@@ -31,14 +31,18 @@ type Config struct {
 	OutputPath  string
 	Offline     bool
 	StaticIPs   []types.StaticIP
-	UseGuestfs  bool
+	Backend     string
 }
 
 // Run executes the Windows conversion pipeline.
 func Run(cfg *Config) error {
 	slog.Debug("starting pipeline")
 
-	g, err := guest.AttachFromPrepare(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
+	if cfg.Backend == guest.BackendGuestfs {
+		return fmt.Errorf("backend %q is not supported for Windows conversion (requires host mount paths)", cfg.Backend)
+	}
+
+	g, err := guest.AttachFromPrepare(cfg.PrepareData.Disks, cfg.PrepareData.RootDevice, cfg.MountRoot, cfg.Backend)
 	if err != nil {
 		return err
 	}

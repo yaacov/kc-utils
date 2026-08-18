@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/v2v/config"
 )
 
@@ -22,6 +24,7 @@ func Load() (*Config, error) {
 		LogLevel:             "info",
 		BinDir:               defaultBinDir(),
 		CopyConcurrency:      getEnvInt(EnvCopyConcurrency, DefaultCopyConcurrency),
+		Backend:              envOr(EnvBackend, backend.NameDirect),
 	}
 
 	flag.BoolVar(&cfg.IsLocalMigration, "local-migration", getEnvBool(EnvLocalMigration, true), "local migration mode")
@@ -48,8 +51,13 @@ func Load() (*Config, error) {
 	flag.StringVar(&cfg.Fingerprint, "fingerprint", os.Getenv(EnvFingerprint), "vCenter SSL thumbprint")
 	flag.IntVar(&cfg.CopyConcurrency, "copy-concurrency", cfg.CopyConcurrency, "max parallel disk copies")
 	flag.BoolVar(&cfg.Offline, "offline", getEnvBool(EnvOffline, false), "pass --offline to converters (use local packages only)")
-	flag.BoolVar(&cfg.UseGuestfs, "guestfs", getEnvBool(EnvGuestfs, false), "use libguestfs appliance instead of privileged mount syscalls")
+	flag.StringVar(&cfg.Backend, "backend", envOr(EnvBackend, backend.NameDirect), "guest disk backend (direct|guestfs)")
 	flag.Parse()
+
+	cfg.Backend = strings.TrimSpace(cfg.Backend)
+	if err := backend.ValidateName(cfg.Backend); err != nil {
+		return nil, err
+	}
 
 	if err := ValidateCopyMode(cfg); err != nil {
 		return nil, err

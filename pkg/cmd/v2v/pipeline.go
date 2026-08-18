@@ -154,11 +154,11 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	}
 
 	guestSetupStarted = true
-	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, sharedListener, &stageEnv)
+	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, &sharedListener, &stageEnv)
 	if err != nil {
 		return fail(err)
 	}
-	if err := runConvertStage(cfg, pipeline, pipelinePath, sharedListener, &stageEnv); err != nil {
+	if err := runConvertStage(cfg, pipeline, pipelinePath, &sharedListener, &stageEnv); err != nil {
 		return fail(err)
 	}
 	if err := runFinalizeStage(cfg, pipelinePath, stageEnv, pipeline); err != nil {
@@ -169,8 +169,8 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 
 // setupSharedListener starts a guestfish --listen session when guestfs mode is on.
 // The caller owns closing the returned listener.
-func setupSharedListener(cfg *env.Config) (*guest.SharedListener, []string, error) {
-	if !cfg.UseGuestfs {
+func setupSharedListener(cfg *env.Config) (guest.SharedListener, []string, error) {
+	if cfg.Backend != guest.BackendGuestfs {
 		return nil, nil, nil
 	}
 	listener, err := startSharedListener()
@@ -192,9 +192,7 @@ func stageCommonArgs(cfg *env.Config, inputPath, outputPath string) []string {
 		"--output", outputPath,
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
-	}
-	if cfg.UseGuestfs {
-		args = append(args, "--guestfs")
+		"--backend", cfg.Backend,
 	}
 	return args
 }
@@ -274,12 +272,10 @@ func teardownOnlyArgs(cfg *env.Config, pipelinePath string) []string {
 		"--teardown-only",
 		"--mount-root", cfg.MountRoot,
 		"--log-level", cfg.LogLevel,
+		"--backend", cfg.Backend,
 	}
 	if _, err := os.Stat(pipelinePath); err == nil {
 		args = append(args, "--input", pipelinePath)
-	}
-	if cfg.UseGuestfs {
-		args = append(args, "--guestfs")
 	}
 	return args
 }
@@ -319,7 +315,7 @@ func runSubprocess(bin string, args []string, extraEnv []string) error {
 }
 
 func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, stage string) error {
-	if listener == nil || guest.SharedListenerAlive(listener) {
+	if listener == nil || *listener == nil || guest.SharedListenerAlive(*listener) {
 		return nil
 	}
 	slog.Warn("guestfish shared listener died, restarting", "after", stage)
@@ -334,11 +330,11 @@ func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, st
 	if err != nil {
 		return fmt.Errorf("guestfish restart after %s: %w", stage, err)
 	}
-	if closeErr := listener.Close(); closeErr != nil {
+	if closeErr := (*listener).Close(); closeErr != nil {
 		slog.Debug("closing dead shared listener", "error", closeErr)
 	}
-	*listener = *newListener
-	*stageEnv = listener.Env()
+	*listener = newListener
+	*stageEnv = (*listener).Env()
 	if keepNetwork {
 		*stageEnv = append(*stageEnv, guest.EnvGuestfsNetwork+"=1")
 	}

@@ -174,45 +174,17 @@ func TestMergeMountSpecsNoDuplicates(t *testing.T) {
 }
 
 func TestRunCommandQuotesArgs(t *testing.T) {
-	b := &Backend{
-		mountSpecs:  []gfsMountSpec{{Device: "/dev/sda1", GuestMount: "/"}},
-		inspectDone: true,
-	}
 	cmd := []string{"dracut", "--force", "--add-drivers", "virtio virtio_blk virtio_scsi"}
-
-	var shell strings.Builder
-	for i, arg := range cmd {
-		if i > 0 {
-			shell.WriteByte(' ')
-		}
-		shell.WriteString(shellQuote(arg))
-	}
-	shell.WriteString(" 2>&1")
 	expected := `sh "dracut --force --add-drivers 'virtio virtio_blk virtio_scsi' 2>&1"` + "\n"
-
-	var script strings.Builder
-	script.WriteString("sh ")
-	script.WriteString(quoteGuestfish(shell.String()))
-	script.WriteByte('\n')
-	if script.String() != expected {
-		t.Fatalf("sh command quoting:\ngot:  %q\nwant: %q", script.String(), expected)
+	if got := shCommandScript(cmd); got != expected {
+		t.Fatalf("sh command quoting:\ngot:  %q\nwant: %q", got, expected)
 	}
-	_ = b
 }
 
 func containsInOrder(s, a, b string) bool {
-	i := indexOfSub(s, a)
-	j := indexOfSub(s, b)
+	i := strings.Index(s, a)
+	j := strings.Index(s, b)
 	return i >= 0 && j > i
-}
-
-func indexOfSub(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }
 
 func TestFscheckCommand(t *testing.T) {

@@ -13,7 +13,7 @@ import (
 // Caller must Checkin or DiscardCheckout when done.
 func (g *Guest) Checkout(guestPath string) (hostPath string, err error) {
 	guestPath = normalizeGuestPath(guestPath)
-	if g.mode == ModeDirect {
+	if g.backendName == BackendDirect {
 		return g.HostPath(guestPath), nil
 	}
 	base := filepath.Base(guestPath)
@@ -34,7 +34,7 @@ func (g *Guest) Checkout(guestPath string) (hostPath string, err error) {
 // the temp file. In direct mode this is a no-op (edits were live).
 func (g *Guest) Checkin(guestPath, hostPath string) error {
 	guestPath = normalizeGuestPath(guestPath)
-	if g.mode == ModeDirect {
+	if g.backendName == BackendDirect {
 		return nil
 	}
 	if err := g.backend.Upload(hostPath, guestPath); err != nil {
@@ -49,7 +49,7 @@ func (g *Guest) Checkin(guestPath, hostPath string) error {
 // no-op (direct). Caller must call cleanup when done; no Checkin is needed.
 func (g *Guest) CheckoutReadOnly(guestPath string) (hostPath string, cleanup func(), err error) {
 	guestPath = normalizeGuestPath(guestPath)
-	if g.mode == ModeDirect {
+	if g.backendName == BackendDirect {
 		return g.HostPath(guestPath), func() {}, nil
 	}
 	base := filepath.Base(guestPath)
@@ -69,7 +69,7 @@ func (g *Guest) CheckoutReadOnly(guestPath string) (hostPath string, cleanup fun
 // DiscardCheckout removes a checkout temp without uploading. No-op in direct mode
 // when hostPath is the live mount path.
 func (g *Guest) DiscardCheckout(hostPath string) {
-	if g.mode == ModeDirect {
+	if g.backendName == BackendDirect {
 		return
 	}
 	_ = os.Remove(hostPath)

@@ -11,6 +11,10 @@ import (
 	v2v "github.com/yaacov/kc-utils/pkg/cmd/v2v"
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
+
+	// Backend plugins (shared listener + failure cleanup)
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
 )
 
 func main() {

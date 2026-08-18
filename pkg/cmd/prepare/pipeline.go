@@ -27,7 +27,7 @@ type Config struct {
 	Pipeline   *types.PipelineData
 	MountRoot  string
 	OutputPath string
-	UseGuestfs bool
+	Backend    string
 }
 
 // Run executes the prepare pipeline.
@@ -52,10 +52,9 @@ func Run(cfg *Config) error {
 		})
 	}
 
-	mode := guest.ModeFromBool(cfg.UseGuestfs)
-	slog.Info("opening guest disks", "backend", mode.String(), "disks", len(cfg.Input.Disks), "mountRoot", cfg.MountRoot)
+	slog.Info("opening guest disks", "backend", cfg.Backend, "disks", len(cfg.Input.Disks), "mountRoot", cfg.MountRoot)
 
-	if cfg.UseGuestfs && cfg.Input.LUKS != nil && cfg.Input.LUKS.Clevis {
+	if cfg.Backend == guest.BackendGuestfs && cfg.Input.LUKS != nil && cfg.Input.LUKS.Clevis {
 		prevNetwork, hadNetwork := os.LookupEnv(guest.EnvGuestfsNetwork)
 		if err := os.Setenv(guest.EnvGuestfsNetwork, "1"); err != nil {
 			return fmt.Errorf("enable guestfs network for Clevis: %w", err)
@@ -70,7 +69,7 @@ func Run(cfg *Config) error {
 		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
 	}
 
-	g, err := guest.Open(cfg.Input.Disks, cfg.MountRoot, mode)
+	g, err := guest.Open(cfg.Input.Disks, cfg.MountRoot, cfg.Backend)
 	if err != nil {
 		return fmt.Errorf("opening guest disks: %w", err)
 	}

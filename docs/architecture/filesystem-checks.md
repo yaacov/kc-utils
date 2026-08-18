@@ -77,10 +77,10 @@ used by deferred cleanup and `--teardown-only` paths (which skip fsck).
 
 Behavior depends on the guest access backend. Implementation:
 
-- Direct (host-mount): [`pkg/guest/direct/backend.go`](../../pkg/guest/direct/backend.go) `FSCheck`
-- Guestfs (libguestfs appliance): [`pkg/guest/guestfs/backend.go`](../../pkg/guest/guestfs/backend.go) `fscheckCommand`
+- Direct (host-mount): [`pkg/backend/plugins/direct/backend.go`](../../pkg/backend/plugins/direct/backend.go) `FSCheck`
+- Guestfs (libguestfs appliance): [`pkg/backend/plugins/guestfs/backend.go`](../../pkg/backend/plugins/guestfs/backend.go) `fscheckCommand`
 
-| FS type | Guestfs (`V2V_guestfs=true`, kc-v2v default) | Direct / host-mount |
+| FS type | Guestfs (`V2V_backend=guestfs`, kc-v2v default) | Direct / host-mount |
 |---------|----------------------------------------------|---------------------|
 | ext2, ext3, ext4 | guestfish `e2fsck-f` | `e2fsck -f -y` |
 | xfs | guestfish `xfs-repair` | `xfs_repair` |

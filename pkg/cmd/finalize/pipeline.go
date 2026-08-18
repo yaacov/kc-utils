@@ -21,7 +21,7 @@ type Config struct {
 	Pipeline   *types.PipelineData
 	MountRoot  string
 	OutputPath string
-	UseGuestfs bool
+	Backend    string
 }
 
 // Run executes the finalizer pipeline.
@@ -36,7 +36,7 @@ func Run(cfg *Config) error {
 		TargetFirmware: cfg.Pipeline.Prepare.Firmware.Type,
 	}
 
-	g, err := guest.AttachFromPrepare(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice, cfg.MountRoot, cfg.UseGuestfs)
+	g, err := guest.AttachFromPrepare(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice, cfg.MountRoot, cfg.Backend)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func Run(cfg *Config) error {
 		if tornDown {
 			return
 		}
-		slog.Info("tearing down guest (deferred)", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
+		slog.Info("tearing down guest (deferred)", "backend", g.BackendName(), "mountRoot", cfg.MountRoot)
 		if terr := g.Teardown(); terr != nil {
 			slog.Warn("guest teardown failed", "error", terr)
 		}
@@ -74,26 +74,26 @@ func Run(cfg *Config) error {
 	}
 
 	// Sync is a no-op (direct mounts and guestfs appliance writes are already live).
-	slog.Info("syncing guest tree to disks", "backend", g.Mode().String())
+	slog.Info("syncing guest tree to disks", "backend", g.BackendName())
 	if err := g.Sync(); err != nil {
 		slog.Warn("guest sync failed", "error", err)
 		meta.Warnings = append(meta.Warnings, fmt.Sprintf("guest sync failed: %v", err))
 	}
 
 	trimPaths := mountedGuestPaths(cfg.MountRoot, cfg.Pipeline.Prepare.Disks)
-	slog.Info("trimming filesystems", "backend", g.Mode().String(), "mounts", len(trimPaths))
+	slog.Info("trimming filesystems", "backend", g.BackendName(), "mounts", len(trimPaths))
 	for _, mountpoint := range trimPaths {
 		if err := g.FSTrim(mountpoint); err != nil {
 			slog.Warn("fstrim failed", "mountpoint", mountpoint, "error", err)
 		}
 	}
 
-	slog.Info("unmounting guest filesystems", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
+	slog.Info("unmounting guest filesystems", "backend", g.BackendName(), "mountRoot", cfg.MountRoot)
 	if err := g.UnmountFilesystems(); err != nil {
 		slog.Warn("guest unmount failed", "error", err)
 	}
 
-	slog.Info("checking filesystems", "backend", g.Mode().String())
+	slog.Info("checking filesystems", "backend", g.BackendName())
 	for _, d := range cfg.Pipeline.Prepare.Disks {
 		for _, p := range d.Partitions {
 			if err := g.FSCheck(p.DevicePath, p.FSType); err != nil {
@@ -104,7 +104,7 @@ func Run(cfg *Config) error {
 		}
 	}
 
-	slog.Info("releasing guest devices", "backend", g.Mode().String(), "mountRoot", cfg.MountRoot)
+	slog.Info("releasing guest devices", "backend", g.BackendName(), "mountRoot", cfg.MountRoot)
 	if err := g.ReleaseDevices(); err != nil {
 		slog.Warn("guest release failed", "error", err)
 	}
@@ -130,30 +130,29 @@ func Run(cfg *Config) error {
 // TeardownOnly reclaims orphaned guest resources without Sync, customize,
 // trim, or metadata writes. Used by kc-v2v on pipeline failure.
 func TeardownOnly(cfg *Config) error {
-	mode := guest.ModeFromBool(cfg.UseGuestfs)
-	slog.Info("teardown-only starting", "backend", mode.String(), "mountRoot", cfg.MountRoot)
+	slog.Info("teardown-only starting", "backend", cfg.Backend, "mountRoot", cfg.MountRoot)
 
 	if cfg.Pipeline != nil && cfg.Pipeline.Prepare != nil && len(cfg.Pipeline.Prepare.Disks) > 0 {
 		disks := guest.WithRootMount(cfg.Pipeline.Prepare.Disks, cfg.Pipeline.Prepare.RootDevice)
 		diskSpecs := types.DiskSpecsFrom(disks)
-		g, err := guest.AttachMounted(diskSpecs, cfg.MountRoot, mode, disks)
+		g, err := guest.AttachMounted(diskSpecs, cfg.MountRoot, cfg.Backend, disks)
 		if err != nil {
 			slog.Warn("attach for teardown-only failed; falling back to mount-root cleanup", "error", err)
-			return guest.TeardownMountRoot(cfg.MountRoot, mode)
+			return guest.TeardownMountRoot(cfg.MountRoot, cfg.Backend)
 		}
 		guest.SetActive(g)
 		defer guest.ClearActive()
 		if err := g.TeardownDiscard(); err != nil {
 			return fmt.Errorf("teardown discard: %w", err)
 		}
-		slog.Info("teardown-only complete", "backend", mode.String())
+		slog.Info("teardown-only complete", "backend", cfg.Backend)
 		return nil
 	}
 
-	if err := guest.TeardownMountRoot(cfg.MountRoot, mode); err != nil {
+	if err := guest.TeardownMountRoot(cfg.MountRoot, cfg.Backend); err != nil {
 		return fmt.Errorf("teardown mount root: %w", err)
 	}
-	slog.Info("teardown-only complete (mount-root only)", "backend", mode.String())
+	slog.Info("teardown-only complete (mount-root only)", "backend", cfg.Backend)
 	return nil
 }
 

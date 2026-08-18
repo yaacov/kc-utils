@@ -9,6 +9,7 @@ LOG_LEVEL="info"
 MOUNT_ROOT="/tmp/kc-guest"
 OFFLINE=false
 USE_GUESTFS=false
+BACKEND="direct"
 WORK_DIR=""
 GUESTFISH_OWNED=false
 
@@ -20,7 +21,7 @@ Options:
   --disk PATH          Disk image to convert (required)
   --mount-root PATH    Guest mount root (default: /tmp/kc-guest)
   --offline            Skip network-dependent operations
-  --guestfs            Use libguestfs appliance instead of privileged mount syscalls
+  --backend NAME       Guest disk backend: direct or guestfs (default: direct)
   --log-level LEVEL    debug, info, warn, error (default: info)
   --work-dir PATH      Working dir for intermediate JSON (default: auto tmpdir)
   -h, --help           Show this help
@@ -44,7 +45,7 @@ while [[ $# -gt 0 ]]; do
         --disk)       DISK="$2"; shift 2 ;;
         --mount-root) MOUNT_ROOT="$2"; shift 2 ;;
         --offline)    OFFLINE=true; shift ;;
-        --guestfs)    USE_GUESTFS=true; shift ;;
+        --backend)    BACKEND="$2"; shift 2 ;;
         --log-level)  LOG_LEVEL="$2"; shift 2 ;;
         --work-dir)   WORK_DIR="$2"; shift 2 ;;
         -h|--help)    usage ;;
@@ -68,8 +69,8 @@ cat > "$WORK_DIR/input.json" <<EOF
 EOF
 
 GUESTFS_FLAG=""
-if $USE_GUESTFS; then
-    GUESTFS_FLAG="--guestfs"
+if [ "$BACKEND" = guestfs ]; then
+    GUESTFS_FLAG="--backend guestfs"
     export LIBGUESTFS_BACKEND=direct
     # Mirror Go kc-v2v: one shared guestfish --listen for prepare/convert/finalize.
     # Prefer virt-guestfish so RHEL NTFS mounts are allowlisted (argv[0]).
@@ -90,6 +91,9 @@ if $USE_GUESTFS; then
         exit 1
     fi
     echo "=== guestfish shared listener pid=$GUESTFISH_PID ==="
+elif [ "$BACKEND" != direct ]; then
+    echo "error: unknown backend $BACKEND (want direct or guestfs)" >&2
+    exit 1
 fi
 
 echo "=== kc-prepare ==="

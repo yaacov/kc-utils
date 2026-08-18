@@ -138,6 +138,7 @@ func TestSharedListenerEnvV2VPriority(t *testing.T) {
 }
 
 func TestEnsureGuestfishEnvSetsDefaults(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	t.Setenv("V2V_memSize", "")
 	t.Setenv("V2V_smp", "")
 	t.Setenv("LIBGUESTFS_BACKEND", "")
@@ -344,18 +345,13 @@ func TestReleaseDevicesKeepsExternalSemantics(t *testing.T) {
 	}
 }
 
-func TestReleaseClearsSessionDespiteUmountFailure(t *testing.T) {
-	b := &Backend{
-		session: &guestfishSession{pid: 4242, ownedExternally: true},
+func TestReleasePreservesSessionForConvertHandoff(t *testing.T) {
+	sess := &guestfishSession{pid: 4242, ownedExternally: true}
+	b := &Backend{session: sess}
+	if err := b.Release(); err != nil {
+		t.Fatal(err)
 	}
-	err := b.Release()
-	if err == nil {
-		t.Fatal("expected umount-all failure for dead session")
-	}
-	if !strings.Contains(err.Error(), "not running") {
-		t.Fatalf("error=%v", err)
-	}
-	if b.session != nil {
-		t.Fatal("Release should clear session even when umount-all fails")
+	if b.session != sess {
+		t.Fatal("Release should preserve session for convert handoff")
 	}
 }

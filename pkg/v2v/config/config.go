@@ -22,7 +22,7 @@ const (
 	EnvFingerprint                  = "V2V_fingerprint"
 	EnvCopyConcurrency              = "V2V_copyConcurrency"
 	EnvOffline                      = "V2V_offline"
-	EnvGuestfs                      = "V2V_guestfs"
+	EnvBackend                      = "V2V_backend"
 
 	DefaultCopyConcurrency = 4
 	// Forklift conversion-pod paths (not env-configurable).
@@ -65,7 +65,7 @@ type Config struct {
 	CopyConcurrency              int
 
 	Offline              bool
-	UseGuestfs           bool
+	Backend              string
 	LuksDir              string
 	DynamicScriptsDir    string
 	Workdir              string

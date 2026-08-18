@@ -1,4 +1,4 @@
-# pkg/guest/direct — host-kernel backend
+# pkg/backend/plugins/direct — host-kernel backend
 
 Direct backend for guest disk operations using host kernel mounts (losetup,
 LVM, cryptsetup, mount/umount). Requires CAP_SYS_ADMIN or a privileged pod.
@@ -24,6 +24,6 @@ for `FSCheck` command mapping and check-vs-repair semantics.
 | [`mount/`](mount/) | Mount/unmount, remount, /proc/mounts parsing |
 | [`fstype/`](fstype/) | Filesystem type detection via `blkid` |
 
-Import path: `github.com/yaacov/kc-utils/pkg/guest/direct`
+Import path: `github.com/yaacov/kc-utils/pkg/backend/plugins/direct`
 
 Only imported by the parent `pkg/guest` package — never by code outside `pkg/guest/`.

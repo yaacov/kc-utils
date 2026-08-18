@@ -5,7 +5,7 @@ package guest
 import (
 	"testing"
 
-	"github.com/yaacov/kc-utils/pkg/guest/direct"
+	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
 )
 
 func TestNormalizeGuestPath(t *testing.T) {
@@ -41,7 +41,7 @@ func TestDirectFSRoundTrip(t *testing.T) {
 
 func TestCheckoutDirect(t *testing.T) {
 	dir := t.TempDir()
-	g := &Guest{rootPath: dir, mode: ModeDirect, backend: direct.NewMounted(nil, dir, nil)}
+	g := &Guest{rootPath: dir, backendName: BackendDirect, backend: direct.NewMounted(nil, dir, nil)}
 	if err := g.WriteFile("/Windows/System32/config/SYSTEM", []byte("hive"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +59,7 @@ func TestCheckoutDirect(t *testing.T) {
 
 func TestMkdirCreatesParents(t *testing.T) {
 	dir := t.TempDir()
-	g := &Guest{rootPath: dir, mode: ModeDirect, backend: direct.NewMounted(nil, dir, nil)}
+	g := &Guest{rootPath: dir, backendName: BackendDirect, backend: direct.NewMounted(nil, dir, nil)}
 	if err := g.Mkdir("a/b/c", 0o755); err != nil {
 		t.Fatalf("Mkdir: %v", err)
 	}

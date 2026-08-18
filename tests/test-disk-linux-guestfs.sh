@@ -1,5 +1,5 @@
 #!/bin/bash -
-# Test: Full kc-v2v.sh chain on a real Linux disk image using --guestfs mode.
+# Test: Full kc-v2v.sh chain on a real Linux disk image using guestfs backend.
 # Identical to test-disk-linux-chain.sh but uses the libguestfs appliance
 # (shared guestfish --listen + live FS RPC) instead of privileged mounts —
 # does NOT require root, --privileged, or /dev/fuse.
@@ -22,11 +22,11 @@ cleanup_fn rm -rf "$d"
 # Create phony Linux disk image.
 "$TESTS_DIR/make-disk-linux.sh" "$d/linux.img"
 
-# Run full chain with --guestfs (unprivileged appliance mode).
+# Run full chain with guestfs backend (unprivileged appliance mode).
 "$TESTS_DIR/kc-v2v.sh" \
     --disk "$d/linux.img" \
     --offline \
-    --guestfs \
+    --backend guestfs \
     --work-dir "$d" \
     --log-level debug \
     2>&1 | tee "$d/chain.log"

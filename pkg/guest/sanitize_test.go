@@ -45,7 +45,7 @@ func TestGuestPathFromHostNoActive(t *testing.T) {
 }
 
 func TestGuestPathFromHostOutsideRoot(t *testing.T) {
-	g := &Guest{rootPath: "/mnt/guest", mode: ModeDirect}
+	g := &Guest{rootPath: "/mnt/guest", backendName: BackendDirect}
 	SetActive(g)
 	defer ClearActive()
 
@@ -57,7 +57,7 @@ func TestGuestPathFromHostOutsideRoot(t *testing.T) {
 
 func TestGuestPathFromHostInsideRoot(t *testing.T) {
 	root := t.TempDir()
-	g := &Guest{rootPath: root, mode: ModeDirect}
+	g := &Guest{rootPath: root, backendName: BackendDirect}
 	SetActive(g)
 	defer ClearActive()
 
@@ -75,7 +75,7 @@ func TestGuestPathFromHostInsideRoot(t *testing.T) {
 
 func TestGuestPathFromHostAtRoot(t *testing.T) {
 	root := t.TempDir()
-	g := &Guest{rootPath: root, mode: ModeDirect}
+	g := &Guest{rootPath: root, backendName: BackendDirect}
 	SetActive(g)
 	defer ClearActive()
 

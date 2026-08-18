@@ -19,7 +19,7 @@ env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
   → v2v.Run(cfg)
       → env.NeedsCopy?  → ResolveCopySources → ValidateCopySourceCount → write copy-input.json → kc-copy
       → DiscoverDisks
-      → if V2V_guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
+      → if V2V_backend=guestfs: StartSharedListener (wait for socket; kc-v2v owns lifecycle)
       → kc-prepare → kc-convert-* → kc-finalize
            (stages adopt via GUESTFISH_PID / KC_GUESTFISH_PID; pkg/guest only)
       → on failure after prepare may have set up guest:
@@ -69,7 +69,7 @@ Nutanix pre-fill, etc.). Pipeline binaries (including `kc-copy`) live under
 kc-v2v does not run fsck itself. The prepare and finalize subprocesses call
 `Guest.FSCheck()` twice per conversion: pre-fsck in `kc-prepare` (before mount)
 and post-fsck in `kc-finalize` (after unmount). With the image default
-`V2V_guestfs=true`, checks run inside the libguestfs appliance using the guestfs
+`V2V_backend=guestfs`, checks run inside the libguestfs appliance using the guestfs
 backend matrix (ext*, xfs, ntfs/ntfs3; btrfs is not fsck'd).
 
 On pipeline failure after prepare may have set up guest state, kc-v2v runs
