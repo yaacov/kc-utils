@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package lvm
 
@@ -42,9 +42,4 @@ func ScanAndActivate(devices []string) ([]string, error) {
 		}
 	}
 	return lvs, nil
-}
-
-// Deactivate deactivates a volume group.
-func Deactivate(vgName string) error {
-	return exec.Command("vgchange", "-an", vgName).Run()
 }

@@ -4,7 +4,7 @@ Converts a Linux guest to run on KVM/virtio. Removes source hypervisor tools,
 injects virtio drivers into the initramfs, remaps device names, and fixes
 the bootloader configuration.
 
-Requires Linux (`//go:build linux`).
+Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
 
 ## Entry Point
 

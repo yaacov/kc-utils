@@ -26,4 +26,4 @@ for `FSCheck` command mapping and check-vs-repair semantics.
 
 Import path: `github.com/yaacov/kc-utils/pkg/backend/plugins/direct`
 
-Only imported by the parent `pkg/guest` package — never by code outside `pkg/guest/`.
+Registered via blank import from `cmd/*/main.go` and used through `pkg/guest` / `backend.Resolve`.

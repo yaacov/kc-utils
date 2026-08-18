@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package nicnaming_test
 

@@ -5,7 +5,7 @@ checks, assigns target bus slots, resolves firmware type, and assembles the
 final `TargetMeta` JSON that contains everything the orchestrator needs to
 create the KVM virtual machine.
 
-Requires Linux (`//go:build linux`).
+Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
 
 ## Entry Point
 

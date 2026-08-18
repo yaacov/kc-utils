@@ -3,7 +3,7 @@
 ## Before you start
 
 - Read [architecture.md](architecture.md) before changing code structure, packages, plugins, or guest disk access.
-- All binaries target Linux (`GOOS=linux` / `//go:build linux`).
+- Source compiles on any Unix (`//go:build unix`). Guest disk backends (`direct`, `guestfs`) require Linux at runtime. Release binaries use `make build` (`GOOS=linux`).
 
 ## Directory layout
 
@@ -107,7 +107,13 @@ make build-kc-copy      # kc-copy only
 make build-kc-v2v-image # container image (build/kc-v2v/Containerfile)
 ```
 
-Or build directly (Linux only):
+Or build directly on any Unix host:
+
+```bash
+go build ./cmd/...
+```
+
+Release Linux binaries (same as `make build`):
 
 ```bash
 GOOS=linux go build ./cmd/...
@@ -122,9 +128,10 @@ make cross-all      # amd64, arm64, ppc64le, s390x
 ## Test
 
 ```bash
-make test                 # unit tests (on macOS skips //go:build linux packages)
-make test-container       # unit tests in a Linux container (covers linux-only packages)
+make test                 # unit tests (full tree on any Unix host)
+make test-container       # unit tests in a Linux container (kernel integration)
 make lint                 # golangci-lint (auto-installs pinned golangci-lint)
+make deadcode             # optional whole-program unreachable-function check
 make check                # fmt + vet + lint + unit tests
 make test-e2e             # shell e2e tests (see below)
 make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
@@ -132,9 +139,8 @@ make test-e2e-disk        # disk-image tests (privileged container)
 make test-e2e-disk-guestfs # disk-image tests via guestfs (no --privileged)
 ```
 
-On macOS (and other non-Linux hosts), `make test` never compiles packages tagged
-`//go:build linux` (for example `pkg/backend/plugins/guestfs`). Use `make test-container`
-before pushing when those packages change, or rely on CI on `ubuntu-latest`.
+Use `make test-container` before pushing when changing guest disk backends or
+kernel-specific integration tests, or rely on CI on `ubuntu-latest`.
 
 ### `make test-e2e`
 

@@ -62,8 +62,9 @@ See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage in
 
 ## Design Highlights
 
-- **Pure Go core pipeline** - builds with standard `go build`, no C toolchain
-  required. All binaries target Linux (`GOOS=linux`).
+- **Pure Go core pipeline** - builds with standard `go build` on any Unix host, no C toolchain
+  required. Release images use `GOOS=linux` (`make build`). Guest disk backends
+  (`direct`, `guestfs`) require Linux at runtime.
 - **Initramfs rebuild via guest tools** - virtio drivers are injected by running
   the guest's own tooling via `chroot` into the mounted guest root (host-mount)
   or an in-appliance chroot (guestfs): `dracut` first, then `update-initramfs`,
@@ -73,7 +74,7 @@ See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage in
   the guest bootable on KVM. Firstboot PowerShell scripts then complete driver
   installation via `pnputil` and install the QEMU guest agent.
 - **ARM / aarch64 support** - cross-architecture conversion works out of the box.
-  `kc-copy` uses pure Go (govmomi NFC), so it runs on any architecture.
+  `kc-copy` uses pure Go (govmomi NFC), so it compiles and runs on any Unix host.
 - **Pluggable architecture** - Go interfaces with a generic `Registry[K,V]` and
   `init()` self-registration. Add a new hypervisor or distro by dropping a file
   into `pkg/<utility>/<block>/plugins/`.
@@ -92,7 +93,9 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-v2v` | V2V orchestrator for Forklift: runs the pipeline + inspection HTTP (optional NFC disk copy for blank PVCs) |
 | `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
 
-All kc-utils binaries require Linux (`//go:build linux` / `GOOS=linux`).
+The tree compiles on any Unix host. Guest disk backends (`direct`, `guestfs`) require
+Linux at runtime; `kc-copy` runs on any Unix. Release binaries are built with
+`make build` (`GOOS=linux`).
 
 Inter-app communication uses JSON files written to a shared directory, plus a
 shared mount point where the guest root filesystem is mounted.

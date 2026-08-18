@@ -3,7 +3,7 @@
 Opens source disks, inspects the guest OS, mounts guest filesystems, and
 produces metadata for downstream converters.
 
-Requires Linux (`//go:build linux`).
+Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
 
 ## Entry Point
 

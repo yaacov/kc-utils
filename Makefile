@@ -9,7 +9,7 @@ MODULE  := github.com/yaacov/kc-utils
 #   PLATFORM=linux/amd64        Container build platform (linux/amd64 or linux/arm64)
 #   CONTAINER_RUNTIME=          Force docker or podman (auto-detected if empty)
 
-# All binaries require GOOS=linux (pkg/guest is //go:build linux).
+# Release binaries are built with GOOS=linux; source compiles on any Unix (//go:build unix).
 BINS := kc-prepare kc-finalize kc-v2v kc-copy kc-convert-linux kc-convert-windows
 BIN_DIR    := bin
 
@@ -24,6 +24,11 @@ GOLANGCI_LINT_VERSION ?= v1.64.2
 GOLANGCI_LINT_BIN     ?= $(GOBIN)/golangci-lint
 GOLANGCI_LINT_GOVER   := $(shell $(GO) env GOVERSION | tr ':' '_' | tr '/' '_')
 GOLANGCI_LINT_STAMP   := $(GOBIN)/.golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOLANGCI_LINT_GOVER).stamp
+
+DEADCODE_VERSION ?= v0.49.0
+DEADCODE_BIN     ?= $(GOBIN)/deadcode
+DEADCODE_GOVER   := $(shell $(GO) env GOVERSION | tr ':' '_' | tr '/' '_')
+DEADCODE_STAMP   := $(GOBIN)/.deadcode-$(DEADCODE_VERSION)-$(DEADCODE_GOVER).stamp
 
 CONTAINER_RUNTIME ?=
 
@@ -65,7 +70,7 @@ KC_V2V_IMAGE_LOCAL := $(KC_V2V_IMAGE)$(PLATFORM_SUFFIX)
 TEST_IMAGE   := kc-utils-test
 
 .PHONY: all build $(BINS) test test-race test-coverage test-container \
-        lint lint-install fmt vet clean cross-linux-amd64 cross-linux-arm64 \
+        lint lint-install deadcode deadcode-install fmt vet clean cross-linux-amd64 cross-linux-arm64 \
         cross-linux-ppc64le cross-linux-s390x cross-all mod-tidy mod-verify \
         check test-e2e test-e2e-container test-e2e-disk test-e2e-disk-guestfs \
         test-image test-image-rebuild test-build check-all help build-kc-v2v \
@@ -93,7 +98,7 @@ build: $(BINS)
 $(BINS):
 	CGO_ENABLED=0 GOOS=linux $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
 
-## Run unit tests locally (macOS skips //go:build linux packages; use test-container)
+## Run unit tests locally
 test:
 	$(GO) test ./...
 
@@ -113,13 +118,28 @@ lint-install:
 	GOBIN=$(GOBIN) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	@echo "golangci-lint installed successfully."
 
-## Run golangci-lint (GOOS=linux: pkg/guest and related packages are linux-only)
+## Run golangci-lint
 lint: $(GOLANGCI_LINT_STAMP)
 	@echo "Running golangci-lint..."
-	GOOS=linux $(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/...
+	$(GOLANGCI_LINT_BIN) run ./pkg/... ./cmd/...
 
 $(GOLANGCI_LINT_STAMP):
 	$(MAKE) lint-install
+	@touch $@
+
+## Install deadcode (pinned version, into GOBIN)
+deadcode-install:
+	@echo "Installing deadcode $(DEADCODE_VERSION)..."
+	GOBIN=$(GOBIN) $(GO) install golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION)
+	@echo "deadcode installed successfully."
+
+## Report unreachable functions (-test includes test-only entry points)
+deadcode: $(DEADCODE_STAMP)
+	@echo "Running deadcode..."
+	$(DEADCODE_BIN) -test ./...
+
+$(DEADCODE_STAMP):
+	$(MAKE) deadcode-install
 	@touch $@
 
 ## Format Go source files
@@ -195,7 +215,7 @@ test-image: check_container_runtime
 test-image-rebuild: check_container_runtime
 	$(CONTAINER_CMD) build --no-cache -t $(TEST_IMAGE) -f tests/Containerfile .
 
-## [container] Run unit tests in Linux (covers //go:build linux packages)
+## [container] Run unit tests in Linux (integration / kernel-specific tests)
 test-container: test-image
 	$(CONTAINER_CMD) run --rm \
 	    $(KC_UTILS_WORKSPACE_MOUNT) \

@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 package direct
 
@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -15,6 +16,9 @@ import (
 var lddLibRE = regexp.MustCompile(`(/[^ ]+)`)
 
 func TestRunInGuestRoot(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("requires Linux")
+	}
 	root := t.TempDir()
 	installTestShell(t, root)
 
