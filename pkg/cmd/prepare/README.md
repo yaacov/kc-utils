@@ -4,7 +4,7 @@
 strict blocks under [`pkg/prepare/`](../../prepare/) and looks up pluggable blocks
 from each block's `plugins/` registry.
 
-**Sequence:** validate → guest open → decrypt → fsck → root discovery/selection
+**Sequence:** resolve `disk_dir` → validate → guest open → decrypt → fsck → root discovery/selection
 → mount plan/execute → inspect → firmware → converter selection.
 
 Writes `PrepareOutput` JSON on success; on multiboot failure writes partial output with

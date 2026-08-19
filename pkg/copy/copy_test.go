@@ -127,3 +127,19 @@ func TestClampConcurrency(t *testing.T) {
 		t.Fatalf("empty disks: got %d want 1", got)
 	}
 }
+
+func TestTargetsFromDir(t *testing.T) {
+	if TargetsFromDir("/data/vm", 0) != nil {
+		t.Fatal("expected nil for n < 1")
+	}
+	got := TargetsFromDir("/data/vm", 2)
+	if len(got) != 2 {
+		t.Fatalf("len = %d, want 2", len(got))
+	}
+	if got[0].Path != "/data/vm/disk0.img" || got[0].IsBlockDev || got[0].Index != 0 {
+		t.Fatalf("disk0: %+v", got[0])
+	}
+	if got[1].Path != "/data/vm/disk1.img" || got[1].Index != 1 {
+		t.Fatalf("disk1: %+v", got[1])
+	}
+}

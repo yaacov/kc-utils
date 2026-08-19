@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+
+	"github.com/yaacov/kc-utils/pkg/common/types"
 )
 
 const emptyThreshold = 1 << 20 // 1 MiB
@@ -67,6 +69,22 @@ func DiscoverTargets() ([]Target, error) {
 		return targets[i].Index < targets[j].Index
 	})
 	return targets, nil
+}
+
+// TargetsFromDir builds file targets {dir}/disk0.img … disk{n-1}.img.
+func TargetsFromDir(dir string, n int) []Target {
+	if n < 1 {
+		return nil
+	}
+	targets := make([]Target, n)
+	for i := 0; i < n; i++ {
+		targets[i] = Target{
+			Path:       filepath.Join(dir, types.ImageFileName(i)),
+			IsBlockDev: false,
+			Index:      i,
+		}
+	}
+	return targets
 }
 
 // HasEmptyTargets reports whether any conversion-pod mount point exists with empty content.

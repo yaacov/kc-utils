@@ -2,7 +2,8 @@
 
 Standalone vSphere NFC disk copy: downloads VMDK disks from vCenter/ESXi over
 HTTPS and writes raw images to empty PVC targets (block devices or filesystem
-images). Pure Go govmomi export — no VDDK, nbdkit, or nbdcopy.
+images) or to `{target_dir}/diskN.img`. Pure Go govmomi export — no VDDK,
+nbdkit, or nbdcopy.
 
 Runs [`pkg/copy/`](../../pkg/copy/) via `copy.Run(CopyInput)`.
 
@@ -15,7 +16,7 @@ Compiles and runs on any Unix host (no guest disk backend).
 Two input modes:
 
 1. **`--input copy-input.json`** — read `CopyInput` directly
-2. **Flags** — `--host`, `--vm-name`, `--fingerprint`, `--disk-path`, TLS flags, etc.
+2. **Flags** — `--host`, `--vm-name`, `--fingerprint`, `--target-dir`, `--disk-path`, TLS flags, etc.
 
 Exit codes: `0` success, `1` configuration or copy error.
 
@@ -30,11 +31,20 @@ kc-copy \
   --insecure \
   --vm-name my-vm \
   --fingerprint "AB:CD:..." \
+  --target-dir /data/my-vm
+# writes /data/my-vm/disk0.img, disk1.img, … (all VM disks)
+
+kc-copy \
+  --host vcenter.example.com \
+  --datacenter mydatacenter \
+  --insecure \
+  --vm-name my-vm \
+  --fingerprint "AB:CD:..." \
   --disk-path "[ds] vm/disk1.vmdk,[ds] vm/disk2.vmdk" \
   --output copy-progress.json
 ```
 
-JSON input (skip TLS verification):
+JSON input (skip TLS verification; write images under `target_dir`):
 
 ```bash
 cat > copy-input.json <<'EOF'
@@ -44,7 +54,7 @@ cat > copy-input.json <<'EOF'
   "insecure": true,
   "vm_name": "my-vm",
   "fingerprint": "...",
-  "source_disks": ["[ds] vm/disk1.vmdk"],
+  "target_dir": "/data/my-vm",
   "workdir": "/var/tmp/copy",
   "output_path": "copy-progress.json"
 }
@@ -72,7 +82,9 @@ EOF
 kc-copy --input copy-input.json
 ```
 
-`source_disks` / `--disk-path` selects which NFC lease disks to copy (required).
+`source_disks` / `--disk-path` selects which NFC lease disks to copy. Omit it
+to copy every disk on the VM. `--target-dir` / `target_dir` writes
+`diskN.img` files under that directory instead of discovering PVC targets.
 
 ## Configuration
 
@@ -84,8 +96,9 @@ kc-copy --input copy-input.json
 | `--ca-cert` / `ca_cert` | — | PEM custom CA path; error if set but file missing |
 | `--vm-name` / `vm_name` | (required) | Source VM name |
 | `--fingerprint` / `fingerprint` | (required) | vCenter SSL thumbprint fallback for SDK TLS |
-| `--disk-path` / `source_disks` | (required) | VMDKs to select from the NFC lease |
-| `--work-dir` / `workdir` | `/var/tmp/v2v` | Working directory |
+| `--disk-path` / `source_disks` | (optional) | VMDKs to select from the NFC lease; omit to copy all disks |
+| `--target-dir` / `target_dir` | — | Write `{target_dir}/diskN.img` instead of PVC targets |
+| `--work-dir` / `workdir` | `/var/tmp/v2v` | Working directory (progress JSON, not disk images) |
 | `--output` / `output_path` | `copy-progress.json` | Progress output file |
 | `--copy-concurrency` / `copy_concurrency` | `4` | Max parallel disk copies (capped at disk count; `1` = sequential) |
 | `--log-level` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
@@ -119,30 +132,32 @@ omitted in JSON input, falls back to `$WORKDIR/copy-progress.json`).
 
 ## Copy Flow
 
-For each selected source disk → empty PVC target (up to `copy_concurrency` disks in parallel):
+For each selected source disk → target (up to `copy_concurrency` disks in parallel):
 
 1. Connect to vCenter via govmomi, export VM via NFC lease
-2. Filter lease URLs to disks matching `source_disks` (normalized path; list order preserved)
-3. Require selected count equals empty target count
+2. Filter lease URLs to disks matching `source_disks` (normalized path; list order preserved). Empty `source_disks` selects every lease disk in lease order.
+3. PVC mode: require selected count equals empty target count. `--target-dir` mode: write `{target_dir}/disk{N}.img` (`N` = 0..n-1) and skip PVC discovery.
 4. Per disk (worker pool): govmomi NFC download (ESXi thumbprint from lease) → `StreamToRaw` VMDK-to-raw converter → direct write to target
 5. On first disk failure, cancel remaining in-flight copies
 6. For block device targets, `fsync` the device before closing
 7. Complete NFC lease
 
-Count gate: `len(FilterDiskURLs(...))` must equal empty PVC count.
+Count gate (PVC mode only): `len(FilterDiskURLs(...))` must equal empty PVC count.
 
 ### Disk selection and PVC ordering
 
-1. `source_disks` lists the VMDKs to copy.
+1. `source_disks` lists the VMDKs to copy, or is omitted to copy all lease disks.
 2. `mapDiskURLs` labels each NFC disk URL with the VM backing `FileName` (normalized)
    and drops non-disk lease items (nvram, etc. via `HttpNfcLeaseDeviceUrl.disk`).
 3. NFC lease items are matched to `source_disks` by normalized path
    (`disk-000001.vmdk` → `disk.vmdk`).
 4. Selected disks keep **source_disks order**; lease disks not in the list are skipped.
 5. Empty PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
-6. Pairing is `targets[i]` ← `selected[i]`.
+6. Pairing is `targets[i]` ← `selected[i]`. With `--target-dir`, `targets[i]` is
+   `{target_dir}/disk{i}.img`.
 
-Omitting a disk from `source_disks` (e.g. a shared disk) skips copying it.
+Omitting a disk from an explicit `source_disks` list (e.g. a shared disk) skips
+copying it. Omitting the list entirely copies every disk.
 
 ### VMDK stream-to-raw conversion
 
@@ -164,6 +179,7 @@ Target paths (typical pod mounts):
 |----------------|------------|
 | Block | `/dev/block{N}` |
 | Filesystem | `/mnt/disks/disk{N}/disk.img` |
+| `--target-dir` | `{target_dir}/disk{N}.img` |
 
 ## Install paths
 
@@ -181,7 +197,7 @@ Locally, `make build` places `kc-copy` in `bin/`.
 | `copy.go` | `Run()` entry point, worker pool, progress tracking |
 | `download.go` | NFC HTTP download and `StreamToRaw` orchestration |
 | `filter.go` | `FilterDiskURLs` — match NFC lease URLs to `source_disks` |
-| `target.go` | Target PVC discovery and ordering |
+| `target.go` | Target PVC discovery and `TargetsFromDir` |
 | `vmdk.go` | `StreamToRaw` — stream-optimized VMDK to raw conversion |
 | `vsphere.go` | govmomi vSphere connection and NFC lease setup |
 | `drain_linux.go` | Block device `fsync` before close (Linux) |
