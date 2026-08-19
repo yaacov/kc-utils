@@ -19,6 +19,7 @@ import (
 	// Backend plugins
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/qemu"
 
 	// Plugin registrations: bootloader handlers
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/bootloader/plugins/bls"
@@ -70,7 +71,7 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations (use local packages only)")
-	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs)")
+	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs|qemu)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 

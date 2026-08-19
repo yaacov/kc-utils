@@ -74,7 +74,7 @@ TEST_IMAGE   := kc-utils-test
         cross-linux-ppc64le cross-linux-s390x cross-all mod-tidy mod-verify \
         check test-e2e test-e2e-container test-e2e-disk test-e2e-disk-guestfs \
         test-image test-image-rebuild test-build check-all help build-kc-v2v \
-        build-kc-copy cache-virtio-win build-kc-v2v-image \
+        build-kc-copy cache-virtio-win build-kc-v2v-image build-appliance \
         push-kc-v2v-image test-kc-v2v-image check_container_runtime
 
 all: build
@@ -271,6 +271,12 @@ build-kc-v2v: kc-v2v
 ## Build kc-copy binary (pipeline stage + standalone CLI)
 build-kc-copy: kc-copy
 
+## Build the qemu-backend appliance (kernel + initramfs) into bin/appliance/<arch>
+## Arches via APPLIANCE_ARCHES (default: arm64 amd64). Cross builds need binfmt.
+APPLIANCE_ARCHES ?= arm64 amd64
+build-appliance: check_container_runtime
+	CONTAINER_RUNTIME=$(CONTAINER_RUNTIME) build/kc-appliance/build.sh $(APPLIANCE_ARCHES)
+
 ## Cache virtio-win ISOs locally (avoids re-downloading on each image build)
 cache-virtio-win:
 	@mkdir -p build/kc-v2v/cache
@@ -282,7 +288,8 @@ cache-virtio-win:
 		else echo "Downloading $$(basename "$$url")..."; curl -fL --retry 3 --retry-delay 5 -o "$$f" "$$url"; fi; \
 	done
 
-## Build kc-v2v container image
+## Build kc-v2v container image (guestfs backend; the qemu appliance is built
+## separately with `make build-appliance` and is not shipped in this image)
 build-kc-v2v-image: check_container_runtime build
 	$(CONTAINER_CMD) build $(PLATFORM_FLAG) -t $(KC_V2V_IMAGE_LOCAL) -f build/kc-v2v/Containerfile .
 

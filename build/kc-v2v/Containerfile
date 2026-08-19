@@ -70,6 +70,11 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 COPY --from=downloader /usr/share/virtio-win/ /usr/share/virtio-win/
 COPY --from=downloader /usr/share/kc-packages/ /usr/share/kc-packages/
 
+# NOTE: the qemu backend's appliance (build/kc-appliance) is NOT shipped here.
+# This image converts with the guestfs backend (V2V_backend=guestfs below); the
+# qemu backend is an opt-in local-dev backend (darwin + linux) whose appliance is
+# built separately with `make build-appliance`.
+
 RUN mkdir -p /usr/lib/kc-utils
 COPY --from=builder /out/kc-prepare /out/kc-finalize /out/kc-convert-linux /out/kc-convert-windows /out/kc-copy /usr/lib/kc-utils/
 COPY --from=builder /out/kc-v2v /usr/bin/kc-v2v

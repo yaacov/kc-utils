@@ -11,6 +11,7 @@ pluggable blocks document implementers in `<block>/plugins/README.md`.
 | **convert-windows** | [`convert-windows/`](convert-windows/) | All kc-convert-windows blocks |
 | **finalize** | [`finalize/`](finalize/) | All kc-finalize blocks |
 | **backend** | [`backend/`](backend/) | Guest disk backend plugin registry, runtime probes, and `Backend` interface |
+| **qemuagent** | [`qemuagent/`](qemuagent/) | Wire protocol (`proto/`) and in-guest agent (`server/`) for the `qemu` backend's appliance |
 | **guest** | [`guest/`](guest/) | Privileged guest disk facade; delegates to `backend` plugins |
 | **copy** | [`copy/`](copy/) | NFC disk copy via govmomi: VMDK stream-to-raw conversion and vSphere export |
 | **v2v** | [`v2v/`](v2v/) | kc-v2v libraries (config, env, copy, vsphere, inspection); orchestrator in [`cmd/v2v/`](cmd/v2v/) |

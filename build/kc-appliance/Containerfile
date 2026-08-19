@@ -1,0 +1,128 @@
+# kc-appliance — minimal "utility guest" for the qemu backend
+#
+# The qemu backend (pkg/backend/plugins/qemu) boots this appliance directly with
+# qemu-system-* (no libvirt, no libguestfs), attaches the guest disks as
+# virtio-blk drives, and drives a tiny in-guest agent (kc-guest-agent) over a
+# virtio-serial port bridged to a host unix socket. The appliance exposes only
+# PRIMITIVE operations; all conversion logic lives host-side.
+#
+# This build produces two artifacts, extracted by build.sh:
+#   vmlinuz         the Linux kernel
+#   initramfs.img   a gzip'd cpio of a minimal Fedora root, with the agent as /init
+#
+# The initramfs IS the root filesystem (no pivot_root): the kernel unpacks it to
+# a tmpfs and runs /init, which mounts the pseudo-filesystems, loads the virtio
+# modules, and serves the agent protocol.
+#
+# Build for both arches (see build.sh):
+#   podman build --platform linux/arm64 -f build/kc-appliance/Containerfile .
+#   podman build --platform linux/amd64 -f build/kc-appliance/Containerfile .
+
+# ── Stage 1: build the in-guest agent (static, linux) ────────────────
+FROM docker.io/library/golang:1.24 AS agent
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' \
+        -o /out/kc-guest-agent ./cmd/kc-guest-agent
+
+# ── Stage 2: assemble the appliance root + pack initramfs ────────────
+FROM quay.io/fedora/fedora:44 AS build
+
+# Host-side tools needed to assemble/pack the appliance (not shipped in it).
+# kmod supplies depmod, used to regenerate the appliance's module dependency
+# metadata before packing.
+RUN dnf install -y --setopt=install_weak_deps=False \
+        dnf cpio gzip findutils kmod && dnf clean all
+
+# Everything the host composes its logic from runs INSIDE the appliance, so the
+# appliance carries the kernel + the full block/fs/LVM/LUKS/Clevis toolbox.
+#   kernel-core          vmlinuz + virtio modules
+#   kmod                 modprobe (the agent loads virtio drivers at init)
+#   util-linux           lsblk, blkid, mount, umount, fstrim, chroot
+#   lvm2                 pvscan, vgchange, lvs
+#   cryptsetup           LUKS open/close
+#   clevis, clevis-luks  NBDE/Tang unlock
+#   e2fsprogs xfsprogs   e2fsck, xfs_repair
+#   btrfs-progs          btrfs check
+#   ntfs-3g ntfsprogs    ntfsfix, ntfs-3g mount
+#   dosfstools           vfat (ESP) tooling
+#   glibc bash coreutils runtime for chrooted guest commands
+ARG APPLIANCE_ROOT=/rootfs
+RUN dnf install -y \
+        --installroot=${APPLIANCE_ROOT} \
+        --use-host-config \
+        --releasever=44 \
+        --setopt=install_weak_deps=False \
+        --nodocs \
+        kernel-core kmod \
+        glibc bash coreutils \
+        util-linux lvm2 cryptsetup \
+        clevis clevis-luks \
+        e2fsprogs xfsprogs btrfs-progs \
+        ntfs-3g ntfsprogs dosfstools && \
+    dnf --installroot=${APPLIANCE_ROOT} clean all
+
+# Install the agent as /init: the kernel runs it as PID 1 out of the initramfs.
+COPY --from=agent /out/kc-guest-agent ${APPLIANCE_ROOT}/init
+
+# Trim bloat to keep the initramfs small. The appliance only mounts and mutates
+# guest disks over virtio, so whole subsystems are dead weight. Everything below
+# is removed with a clear rationale; nothing here is used at runtime.
+#
+# (a) Kernel package extras — the biggest single wins:
+#   modules/*/dtb           ~98M of ARM board device trees; QEMU's `virt` machine
+#                           supplies its own device tree, so none are ever used.
+#   modules/*/System.map    ~11M kernel symbol table — a debug aid.
+#   /boot/initramfs-*.img   ~42M dracut-generated initramfs; we boot our OWN
+#                           initramfs (this cpio), never the one dracut built.
+#   /boot/symvers-*         module CRC symbols — build-time only.
+#   (vmlinuz is removed in the next step, after it has been extracted.)
+#
+# (b) Subsystems the appliance never runs:
+#   sysimage/rpm, var/lib/rpm   the RPM database — we never run rpm/dnf in-guest.
+#   usr/lib/systemd             no init system; the agent IS /init and the host
+#                               powers the VM off by signalling qemu.
+#   usr/lib/dracut              an initramfs generator — a build-time tool.
+#   usr/lib/udev/hwdb.*         ~9M udev hardware database — no udevd runs here.
+#   usr/lib/kbd                 console keymaps/fonts — we use a serial console.
+#
+# (c) Docs, locales, completions, licenses — never read by the toolbox.
+RUN set -eux; \
+    rm -rf ${APPLIANCE_ROOT}/lib/modules/*/dtb; \
+    rm -f  ${APPLIANCE_ROOT}/lib/modules/*/System.map; \
+    rm -rf ${APPLIANCE_ROOT}/boot/initramfs-* ${APPLIANCE_ROOT}/boot/symvers-*; \
+    rm -rf ${APPLIANCE_ROOT}/usr/lib/sysimage/rpm ${APPLIANCE_ROOT}/var/lib/rpm; \
+    rm -rf ${APPLIANCE_ROOT}/usr/lib/systemd ${APPLIANCE_ROOT}/usr/lib/dracut; \
+    rm -rf ${APPLIANCE_ROOT}/usr/lib/udev/hwdb.d ${APPLIANCE_ROOT}/usr/lib/udev/hwdb.bin; \
+    rm -rf ${APPLIANCE_ROOT}/usr/lib/kbd; \
+    rm -rf ${APPLIANCE_ROOT}/usr/share/doc ${APPLIANCE_ROOT}/usr/share/man \
+           ${APPLIANCE_ROOT}/usr/share/info ${APPLIANCE_ROOT}/usr/share/locale \
+           ${APPLIANCE_ROOT}/usr/share/i18n ${APPLIANCE_ROOT}/usr/share/licenses \
+           ${APPLIANCE_ROOT}/usr/share/bash-completion ${APPLIANCE_ROOT}/usr/share/zsh \
+           ${APPLIANCE_ROOT}/usr/lib/locale; \
+    rm -rf ${APPLIANCE_ROOT}/var/cache/* ${APPLIANCE_ROOT}/var/log/*; \
+    for d in gpu sound media iio hwmon usb hid input infiniband bluetooth \
+             leds gnss greybus hsi parport pcmcia memstick thunderbolt w1; do \
+        rm -rf ${APPLIANCE_ROOT}/lib/modules/*/kernel/drivers/$d; \
+    done
+
+# Extract vmlinuz, then drop the redundant in-tree copy (we boot it via -kernel),
+# regenerate module dependency metadata, and pack the whole appliance root into a
+# gzip'd newc cpio — the initramfs the kernel boots.
+RUN set -eux; \
+    kver="$(ls ${APPLIANCE_ROOT}/lib/modules)"; \
+    cp "${APPLIANCE_ROOT}/lib/modules/${kver}/vmlinuz" /out-vmlinuz 2>/dev/null || \
+        cp "${APPLIANCE_ROOT}/boot/vmlinuz-${kver}" /out-vmlinuz; \
+    rm -f "${APPLIANCE_ROOT}/lib/modules/${kver}/vmlinuz" \
+          "${APPLIANCE_ROOT}/boot/vmlinuz-${kver}"; \
+    depmod -b "${APPLIANCE_ROOT}" "${kver}"; \
+    ( cd "${APPLIANCE_ROOT}" && find . -print0 | cpio --null -o -H newc ) \
+        | gzip -9 > /out-initramfs.img; \
+    ls -la /out-vmlinuz /out-initramfs.img
+
+# ── Stage 3: scratch export — build.sh copies these out ──────────────
+FROM scratch AS export
+COPY --from=build /out-vmlinuz /vmlinuz
+COPY --from=build /out-initramfs.img /initramfs.img

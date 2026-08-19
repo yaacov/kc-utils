@@ -35,6 +35,6 @@ func (f *factory) TeardownMountRoot(mountRoot string) error {
 	return TeardownMountRoot(mountRoot)
 }
 
-func (f *factory) StartSharedListener() (backend.SharedListener, error) {
-	return StartSharedListener()
+func (f *factory) StartSharedListener(disks []types.DiskSpec) (backend.SharedListener, error) {
+	return StartSharedListener(disks)
 }

@@ -13,6 +13,12 @@ type Requirements struct {
 	Root      bool
 	KVM       bool
 	Guestfish bool
+	// QEMU requires a qemu-system-<hostarch> (or qemu-kvm) binary in PATH.
+	QEMU bool
+	// Accel requires hardware virtualization (KVM on Linux, HVF on macOS).
+	// The qemu backend does not set this: it falls back to TCG emulation when
+	// no accelerator is present, so acceleration is preferred but not required.
+	Accel bool
 }
 
 // Plugin is a registered backend implementation factory.
@@ -32,10 +38,12 @@ type SharedListener interface {
 	Close() error
 }
 
-// SharedListenerPlugin is implemented by guestfs for cross-stage listener setup.
+// SharedListenerPlugin is implemented by backends that keep a VM-resident
+// session alive across pipeline stages (guestfs, qemu). disks are attached at
+// boot; guestfs ignores them (it adds drives lazily), qemu boots with them.
 type SharedListenerPlugin interface {
 	Plugin
-	StartSharedListener() (SharedListener, error)
+	StartSharedListener(disks []types.DiskSpec) (SharedListener, error)
 }
 
 // Plugins is the global backend plugin registry.

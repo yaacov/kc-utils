@@ -10,10 +10,10 @@ import (
 // ValidateName reports whether name is a known backend identifier.
 func ValidateName(name string) error {
 	switch strings.TrimSpace(name) {
-	case NameDirect, NameGuestfs:
+	case NameDirect, NameGuestfs, NameQEMU:
 		return nil
 	default:
-		return fmt.Errorf("unknown backend %q (want %q or %q)", name, NameDirect, NameGuestfs)
+		return fmt.Errorf("unknown backend %q (want %q, %q or %q)", name, NameDirect, NameGuestfs, NameQEMU)
 	}
 }
 

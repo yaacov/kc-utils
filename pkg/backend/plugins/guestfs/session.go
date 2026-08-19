@@ -18,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/yaacov/kc-utils/pkg/common/types"
 )
 
 const (
@@ -51,8 +53,9 @@ type SharedListener struct {
 const guestfishHome = "/var/tmp"
 
 // StartSharedListener starts guestfish --listen and returns a handle. The
-// caller must Close it.
-func StartSharedListener() (*SharedListener, error) {
+// caller must Close it. disks are ignored: guestfish adds drives lazily at
+// ensureLaunched, not at listener start.
+func StartSharedListener(_ []types.DiskSpec) (*SharedListener, error) {
 	if err := ensureGuestfishEnv(); err != nil {
 		return nil, err
 	}

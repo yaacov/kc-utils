@@ -5,10 +5,13 @@ package v2v
 import (
 	"errors"
 	"fmt"
+	"os"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/backend"
+	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
 	"github.com/yaacov/kc-utils/pkg/v2v/env"
 )
@@ -56,7 +59,7 @@ func TestStageCommonArgs(t *testing.T) {
 }
 
 func TestSetupSharedListenerDisabled(t *testing.T) {
-	listener, stageEnv, err := setupSharedListener(&env.Config{Backend: backend.NameDirect})
+	listener, stageEnv, err := setupSharedListener(&env.Config{Backend: backend.NameDirect}, nil)
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
@@ -69,28 +72,28 @@ func TestSetupSharedListenerClevisNetwork(t *testing.T) {
 	prev := startSharedListener
 	t.Cleanup(func() { startSharedListener = prev })
 
-	startSharedListener = func() (guest.SharedListener, error) {
+	startSharedListener = func(_ string, _ []types.DiskSpec) (guest.SharedListener, error) {
 		return &stubSharedListener{pid: 1111}, nil
 	}
+	// Baseline unset; t.Setenv also restores it after the test.
+	t.Setenv(guest.EnvGuestfsNetwork, "")
 
 	listener, stageEnv, err := setupSharedListener(&env.Config{
 		Backend:    backend.NameGuestfs,
 		NbdeClevis: true,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("setupSharedListener: %v", err)
 	}
 	if listener == nil || !listener.Alive() {
 		t.Fatalf("listener=%v", listener)
 	}
-	found := false
-	for _, e := range stageEnv {
-		if e == guest.EnvGuestfsNetwork+"=1" {
-			found = true
-			break
-		}
+	// The shared VM boots inside setupSharedListener, so the network flag must be
+	// in the process environment (not only stageEnv) for the backend to see it.
+	if got := os.Getenv(guest.EnvGuestfsNetwork); got != "1" {
+		t.Fatalf("process env %s = %q, want 1 (must be set before boot)", guest.EnvGuestfsNetwork, got)
 	}
-	if !found {
+	if !slices.Contains(stageEnv, guest.EnvGuestfsNetwork+"=1") {
 		t.Fatalf("stageEnv missing %s=1: %v", guest.EnvGuestfsNetwork, stageEnv)
 	}
 }
@@ -99,15 +102,15 @@ func TestSetupSharedListenerError(t *testing.T) {
 	prev := startSharedListener
 	t.Cleanup(func() { startSharedListener = prev })
 
-	startSharedListener = func() (guest.SharedListener, error) {
+	startSharedListener = func(_ string, _ []types.DiskSpec) (guest.SharedListener, error) {
 		return nil, errors.New("boom")
 	}
 
-	_, _, err := setupSharedListener(&env.Config{Backend: backend.NameGuestfs})
+	_, _, err := setupSharedListener(&env.Config{Backend: backend.NameGuestfs}, nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "guestfish shared listener") {
+	if !strings.Contains(err.Error(), "guestfs shared listener") {
 		t.Fatalf("error = %v", err)
 	}
 	if !strings.Contains(err.Error(), "boom") {
@@ -117,7 +120,7 @@ func TestSetupSharedListenerError(t *testing.T) {
 
 func TestEnsureSharedListenerNilNoop(t *testing.T) {
 	stageEnv := []string{"FOO=1"}
-	if err := ensureSharedListener(nil, &stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(nil, &stageEnv, "prepare", backend.NameGuestfs, nil); err != nil {
 		t.Fatalf("nil listener: %v", err)
 	}
 	if len(stageEnv) != 1 || stageEnv[0] != "FOO=1" {
