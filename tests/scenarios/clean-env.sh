@@ -34,8 +34,8 @@ Options:
   --all              Delete namespace and reset MTV settings (default)
   --namespace-only   Delete the benchmark namespace only
   --settings-only    Reset MTV benchmark settings only
-  --release-rhel     Delete RHEL plan/pods and stop the migrated RHEL VM
-  --release-plans    Delete benchmark plans (RHEL + Windows) in the namespace
+  --release-rhel     Delete leftover RHEL plan/pods and stop the migrated RHEL VM
+  --release-plans    Delete benchmark plans (plan-bench and leftover sequential names)
   -h, --help         Show this help
 
 Environment (tests/scenarios/.env):

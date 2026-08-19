@@ -36,7 +36,7 @@ Published archives and the static comparison dashboard live under
 - `tests/scenarios/.env` with vSphere creds, `KC_V2V_IMAGE`, `NS`, and `PROVIDER`
   (copy from `.env.example`)
 - MTV installed; `vddk_image` configured
-- vSphere inventory with RHEL and Windows VMs (or pin `RHEL_VM` / `WIN_VM` in `.env`)
+- vSphere inventory with at least three `mtv-func*` VMs (or pin `VM1` / `VM2` / `VM3` in `.env`)
 
 Integration reference: [docs/apps/forklift-usage.md](../../docs/apps/forklift-usage.md).
 
@@ -45,7 +45,7 @@ Integration reference: [docs/apps/forklift-usage.md](../../docs/apps/forklift-us
 ```bash
 make build-kc-v2v-image push-kc-v2v-image
 cp tests/scenarios/.env.example tests/scenarios/.env
-# edit .env: GOVC_*, KC_V2V_IMAGE, NS, PROVIDER; optional RHEL_VM / WIN_VM
+# edit .env: GOVC_*, KC_V2V_IMAGE, NS, PROVIDER; optional VM1 / VM2 / VM3
 
 # Independent kc-v2v benchmark (logs + mem/CPU/net + pod logs + HTML)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
@@ -65,8 +65,9 @@ SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false MODE=kc ./tests/scenarios/test-mtv-b
 
 Each leg sets or clears `virt_v2v_image_fqin`, waits for the forklift-controller
 rollout to sync `VIRT_V2V_IMAGE`, then creates a fresh namespace and providers.
-Inventory VM discovery retries until `mtv-func*` RHEL and Windows VMs appear
-(unless `RHEL_VM` / `WIN_VM` are pinned).
+Inventory VM discovery retries until three `mtv-func*` VMs appear
+(unless `VM1` / `VM2` / `VM3` are pinned). All three VMs are migrated in one plan
+(`plan-bench`); conversion-pod metrics are sampled in parallel.
 
 ## Artifacts (`runs/`)
 
@@ -95,7 +96,7 @@ To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
 | Path | Purpose |
 |---|---|
 | [test-mtv-benchmark.sh](test-mtv-benchmark.sh) | Benchmark runner (`MODE=kc` or `MODE=compare`) |
-| [clean-env.sh](clean-env.sh) | Standalone cluster cleanup (`--all`, `--namespace-only`, `--settings-only`, `--release-rhel`) |
+| [clean-env.sh](clean-env.sh) | Standalone cluster cleanup (`--all`, `--namespace-only`, `--settings-only`, `--release-rhel`, `--release-plans`; `RHEL_VM` names the migrated RHEL VM for `--release-rhel`) |
 | [clean-runs.sh](clean-runs.sh) | Remove local `runs/` artifacts (`--dry-run` to preview) |
 | [test-mtv-benchmark.md](test-mtv-benchmark.md) | Test plan |
 | [lib/common.sh](lib/common.sh) | Shared helpers (settings, providers, inventory wait, controller sync) |
@@ -113,12 +114,11 @@ To publish a comparison, copy `runs/test-mtv-benchmark-<ts>-*` into
 | `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
 | `NS` | yes | Test namespace |
 | `PROVIDER` | yes | vSphere provider name |
-| `RHEL_VM` / `WIN_VM` | no | Pin source VMs (auto-picked when unset) |
+| `VM1` / `VM2` / `VM3` | no | Pin source VMs (auto-picked from mtv-func* when unset) |
 | `MODE` | no | `kc` or `compare` (default `kc`, shell override) |
 | `SKIP_CLEANUP` | no | Keep namespace after exit (default `true`) |
-| `KEEP_BETWEEN_TESTS` | no | Leave RHEL plan/pods while running Windows (default `true`) |
 | `KEEP_IMAGE_SETTING` | no | Do not restore `virt_v2v_image_fqin` (default `true`) |
 | `DISABLE_WAIT_FOR_REBOOT` | no | Set `feature_windows_wait_for_reboot=false` (default `true`) |
 | `MEM_INTERVAL` | no | Seconds between metric samples (default `10`) |
 | `INTERVAL` | no | Seconds between plan status polls (default `10`) |
-| `MAX_ATTEMPTS` | no | Max poll attempts (~30 min per plan, default `180`) |
+| `MAX_ATTEMPTS` | no | Max poll attempts (~30 min for the combined plan, default `180`) |

@@ -2,9 +2,9 @@
 
 ## Objective
 
-Cold-migrate one `mtv-func*` RHEL VM and one Windows VM from vSphere to
-OpenShift Virtualization with MTV, capturing full artifacts (summary log,
-mem/CPU/net samples, conversion-pod logs, pipeline timings).
+Cold-migrate three `mtv-func*` VMs from vSphere to OpenShift Virtualization
+with MTV, capturing full artifacts (summary log, mem/CPU/net samples,
+conversion-pod logs, pipeline timings).
 
 Two modes:
 
@@ -18,11 +18,10 @@ Two modes:
 - `oc` with `mtv` plugin, `jq`, and `python3` (for the per-run dashboard)
 - MTV installed with VDDK image configured
 - `tests/scenarios/.env` configured (`GOVC_*`, `KC_V2V_IMAGE`, `NS`, `PROVIDER`)
-- At least one inventory VM matching `mtv-func*` with a RHEL guest and one with Windows
-  (or pin with `RHEL_VM` / `WIN_VM`)
+- At least three inventory VMs matching `mtv-func*` (or pin with `VM1` / `VM2` / `VM3`)
 
-Optional overrides: `RHEL_VM` / `WIN_VM`, `NS`, `SKIP_CLEANUP`,
-`KEEP_BETWEEN_TESTS`, `KEEP_IMAGE_SETTING`, `DISABLE_WAIT_FOR_REBOOT`,
+Optional overrides: `VM1` / `VM2` / `VM3`, `NS`, `BENCHMARK_PLAN`,
+`SKIP_CLEANUP`, `KEEP_IMAGE_SETTING`, `DISABLE_WAIT_FOR_REBOOT`,
 `MEM_INTERVAL`, `INTERVAL`, `MAX_ATTEMPTS`.
 
 Warm / preflight caveats: [docs/apps/forklift-usage.md](../../docs/apps/forklift-usage.md).
@@ -33,13 +32,13 @@ Warm / preflight caveats: [docs/apps/forklift-usage.md](../../docs/apps/forklift
    `virt_v2v_image_fqin` and `feature_windows_wait_for_reboot`
 2. **kc leg:** set image to `KC_V2V_IMAGE`, wait for forklift-controller
    `VIRT_V2V_IMAGE` sync, create namespace + providers, wait for inventory
-   (unless VMs pinned), cold plan RHEL then Windows; sample conversion-pod
-   metrics; archive pod logs
+   (unless VMs pinned), create one cold plan with three VMs (`plan-bench`);
+   sample all conversion pods in parallel; archive pod logs
 3. **compare only:** clear `virt_v2v_image_fqin`, wait for controller sync,
-   fresh namespace + providers, repeat RHEL then Windows as the **ref** leg
+   fresh namespace + providers, repeat the three-VM plan as the **ref** leg
 4. Generate `runs/test-mtv-benchmark-<ts>.html` dashboard from CSVs
-5. By default, leave MTV settings, RHEL plan/pods, and namespace in place
-   (`KEEP_IMAGE_SETTING=true`, `KEEP_BETWEEN_TESTS=true`, `SKIP_CLEANUP=true`).
+5. By default, leave MTV settings, plan/pods, and namespace in place
+   (`KEEP_IMAGE_SETTING=true`, `SKIP_CLEANUP=true`).
    Run [`clean-env.sh`](clean-env.sh) afterward,
    or set `SKIP_CLEANUP=false KEEP_IMAGE_SETTING=false` to clean up on exit.
 
@@ -63,14 +62,15 @@ python3 tests/scenarios/lib/generate-run-dashboard.py \
 
 ## Pass Criteria
 
-- Every planned leg reaches `Completed` or `Succeeded` for both VMs
+- Every planned leg reaches `Completed` or `Succeeded` for the plan **and**
+  all three VMs
 - In `compare` mode, a failed kc leg skips the ref leg and fails overall
 
 ## Fail Criteria
 
 - Providers do not become Ready
-- Any plan ends in `Failed`, `Error`, `Cancelled`, or times out (~30 minutes)
-- RHEL failure skips Windows for that leg
+- The plan ends in `Failed`, `Error`, `Cancelled`, or times out (~30 minutes)
+- Any VM in the plan fails (conversion pods still run in parallel)
 
 ## How to Run
 

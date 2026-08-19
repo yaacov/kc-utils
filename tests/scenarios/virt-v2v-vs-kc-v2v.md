@@ -1,6 +1,9 @@
 # Forklift conversion: virt-v2v vs kc-v2v
 
-Cold migration comparison on OpenShift MTV, same source VMs and storage class, sequential runs (RHEL then Windows).
+Cold migration comparison on OpenShift MTV, same source VMs and storage class.
+The numbers below are a **historical sequential** baseline (RHEL then Windows).
+The current runner (`test-mtv-benchmark.sh`) migrates three VMs in one plan and
+samples the conversion pods in parallel.
 
 | Converter | Image | Run id |
 |---|---|---|

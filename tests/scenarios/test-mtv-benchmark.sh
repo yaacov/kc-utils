@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# MTV cold-migration benchmark: RHEL then Windows, with full artifact capture
-# (summary log, mem/CPU/net CSV, conversion-pod logs, pipeline timings).
+# MTV cold-migration benchmark: three VMs in one plan, with full artifact
+# capture (summary log, mem/CPU/net CSV, conversion-pod logs, pipeline
+# timings). Conversion pods are sampled in parallel.
 #
 # Modes (MODE):
 #   kc       Run once with KC_V2V_IMAGE (independent kc-v2v benchmark). Default.
@@ -12,17 +13,17 @@
 # Env overrides (in .env or shell after load):
 #   MODE                    kc | compare (default kc)
 #   KC_V2V_IMAGE            conversion image FQIN (required in .env)
-#   RHEL_VM / WIN_VM        source VM names (auto-picked from mtv-func* if unset)
+#   VM1 / VM2 / VM3         source VM names (auto-picked from mtv-func* if unset)
 #   NS                      namespace (required in .env)
 #   PROVIDER                vSphere provider name (required in .env)
 #   PROVIDER_INSECURE_SKIP_TLS  true = skip TLS verify; false = fetch CA from GOVC_URL:443
 #   SKIP_CLEANUP            keep NS on exit (default true); use cleanup script to remove later
-#   KEEP_BETWEEN_TESTS      leave RHEL plan/pods after RHEL (default true)
 #   KEEP_IMAGE_SETTING      leave virt_v2v_image_fqin / reboot flag (default true)
 #   DISABLE_WAIT_FOR_REBOOT set feature_windows_wait_for_reboot=false (default true)
 #   MEM_INTERVAL            memory sample seconds (default 10)
 #   INTERVAL                plan poll seconds (default 10)
 #   MAX_ATTEMPTS            plan poll attempts (default 180 => 30m)
+#   BENCHMARK_PLAN          plan name (default plan-bench)
 #
 # Artifacts under runs/:
 #   runs/test-mtv-benchmark-<ts>-<converter>.log
@@ -39,11 +40,15 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/cleanup.sh"
 
 MODE="${MODE:-kc}"
-RHEL_VM="${RHEL_VM:-}"
-WIN_VM="${WIN_VM:-}"
+# Prefer VM1/VM2/VM3; accept leftover RHEL_VM/WIN_VM from older .env files.
+VM1="${VM1:-${RHEL_VM:-}}"
+VM2="${VM2:-${WIN_VM:-}}"
+VM3="${VM3:-}"
+BENCH_LABELS=(vm1 vm2 vm3)
+BENCH_VMS=("${VM1}" "${VM2}" "${VM3}")
 SKIP_CLEANUP="${SKIP_CLEANUP:-true}"
-KEEP_BETWEEN_TESTS="${KEEP_BETWEEN_TESTS:-true}"
 KEEP_IMAGE_SETTING="${KEEP_IMAGE_SETTING:-true}"
+BENCHMARK_PLAN="${BENCHMARK_PLAN:-plan-bench}"
 DISABLE_WAIT_FOR_REBOOT="${DISABLE_WAIT_FOR_REBOOT:-true}"
 INTERVAL="${INTERVAL:-10}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-180}"
@@ -54,10 +59,13 @@ RUNS_DIR="${SCENARIO_DIR}/runs"
 ARTIFACT_PREFIX="${RUNS_DIR}/test-mtv-benchmark-${RUN_TS}"
 mkdir -p "${RUNS_DIR}"
 
-# Per-leg state (set by begin_leg)
+# Per-leg state (set by begin_leg / monitor_plan)
 CONVERTER=""
 SUMMARY_LOG=""
 MEM_DIR=""
+LAST_PLAN_STATUS=""
+LAST_VM_STATUS=()
+LAST_VM_DURATION=()
 
 # Background monitor PIDs (memory sampler). Ctrl+C must kill these or they
 # keep polling after the main script is interrupted.
@@ -113,24 +121,101 @@ begin_leg() {
   mkdir -p "${MEM_DIR}"
 }
 
-pipeline_json() {
-  local plan="$1"
+is_terminal_status() {
+  case "${1:-}" in
+    Completed|Succeeded|Failed|Error|Cancelled) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+is_success_status() {
+  case "${1:-}" in
+    Completed|Succeeded) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Inventory id for a named VM on the Plan CR (status, then spec).
+vm_id() {
+  local plan="$1" vm="$2"
   oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o json 2>/dev/null \
-    | jq -c '.status.migration.vms[0].pipeline // []'
+    | jq -r --arg vm "${vm}" '
+        ((.status.migration.vms // []) + (.spec.vms // []))
+        | map(select(.name == $vm) | .id)
+        | map(select(. != null and . != ""))
+        | .[0] // empty
+      ' 2>/dev/null || true
+}
+
+pipeline_json() {
+  local plan="$1" vm="$2"
+  oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o json 2>/dev/null \
+    | jq -c --arg vm "${vm}" '
+        [.status.migration.vms[]? | select(.name == $vm) | .pipeline // []]
+        | .[0] // []
+      '
 }
 
 vm_phase() {
+  local plan="$1" vm="$2"
+  oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o json 2>/dev/null \
+    | jq -r --arg vm "${vm}" '
+        [.status.migration.vms[]? | select(.name == $vm) | .phase // ""]
+        | .[0] // empty
+      ' 2>/dev/null || true
+}
+
+fetch_plan_json() {
   local plan="$1"
-  oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" \
-    -o jsonpath='{.status.migration.vms[0].phase}' 2>/dev/null || true
+  oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o json 2>/dev/null || echo '{}'
+}
+
+# Status string from a Plan CR (or oc mtv get JSON). Prefers condition types
+# when .status is an object.
+plan_status_from_json() {
+  jq -r '
+    if type == "array" then
+      .[0].status // "Unknown"
+    elif (.status | type) == "string" then
+      .status // "Unknown"
+    else
+      def cond($t):
+        [.status.conditions[]? | select(.type == $t) | .status][0] // "False";
+      if cond("Succeeded") == "True" then "Succeeded"
+      elif cond("Failed") == "True" then "Failed"
+      elif cond("Canceled") == "True" then "Cancelled"
+      elif cond("Cancelled") == "True" then "Cancelled"
+      elif cond("Executing") == "True" then "Executing"
+      elif cond("Ready") == "True" then "Ready"
+      else "Unknown"
+      end
+    end
+  ' 2>/dev/null || echo "Unknown"
+}
+
+vm_phase_from_json() {
+  local vm="$1"
+  jq -r --arg vm "${vm}" '
+    [.status.migration.vms[]? | select(.name == $vm) | .phase // ""]
+    | .[0] // empty
+  ' 2>/dev/null || true
+}
+
+pipeline_summary_from_json() {
+  local vm="$1"
+  jq -r --arg vm "${vm}" '
+    [.status.migration.vms[]? | select(.name == $vm) | .pipeline // []]
+    | .[0] // []
+    | [.[] | "\(.name)=\(.phase // "-")"] | join(" ")
+  ' 2>/dev/null || true
 }
 
 summarize_pipeline() {
-  local plan="$1"
-  log "  Pipeline step timings (${plan}):"
+  local plan="$1" vm="$2"
+  log "  Pipeline step timings (${plan} / ${vm}):"
   oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o json 2>/dev/null \
-    | jq -r '
-      (.status.migration.vms[0].pipeline // [])[]
+    | jq -r --arg vm "${vm}" '
+      ([.status.migration.vms[]? | select(.name == $vm)][0].pipeline // [])[]
       | [
           .name,
           (.phase // "-"),
@@ -145,12 +230,26 @@ summarize_pipeline() {
       ' 2>/dev/null | tee -a "${SUMMARY_LOG}" || log "    (unable to parse pipeline)"
 }
 
+# Match the virt-v2v pod for one VM in a (possibly multi-VM) plan.
+# Pods are named like {plan}-vm-{id}-{suffix}; also try label vmID.
+# When vm is set, wait until the Plan CR has that VM's inventory id so the
+# two parallel monitors do not attach to the same pod.
 find_v2v_pod() {
-  local plan="${1:-}"
+  local plan="${1:-}" vm="${2:-}"
+  local vmid=""
+  if [[ -n "${vm}" ]]; then
+    vmid="$(vm_id "${plan}" "${vm}")"
+    [[ -n "${vmid}" ]] || return 0
+  fi
   oc get pods -n "${NS}" -l "${V2V_LABEL}" -o json 2>/dev/null \
-    | jq -r --arg plan "${plan}" '
+    | jq -r --arg plan "${plan}" --arg vmid "${vmid}" '
         [.items[]
           | select($plan == "" or (.metadata.name | startswith($plan)))
+          | select(
+              $vmid == ""
+              or (.metadata.name | contains($vmid))
+              or ((.metadata.labels.vmID // .metadata.labels.vmid // "") == $vmid)
+            )
         ]
         | sort_by(.metadata.creationTimestamp)
         | (map(select(.status.phase == "Running")) | last)
@@ -201,23 +300,27 @@ monitor_conversion_memory() {
   # dies on signal or explicit kill instead of racing the main cleanup path.
   trap - INT TERM EXIT
 
-  local plan="$1" label="$2"
+  local plan="$1" label="$2" vm="$3"
   local csv="${MEM_DIR}/${label}-virt-v2v-memory.csv"
   mkdir -p "${MEM_DIR}"
   echo "timestamp_utc,elapsed_s,pod,node,mem_working_set_mi,mem_rss_mi_cgroup,cpu_m,net_rx_bytes,net_tx_bytes,phase" > "${csv}"
 
   local start_ts pod node mem_top cpu_top rss_mi phase elapsed top_line net_raw net_rx net_tx
   start_ts=$(date +%s)
-  log "  Memory/net monitor -> ${csv} (every ${MEM_INTERVAL}s)"
+  log "  Memory/net monitor (${label}) -> ${csv} (every ${MEM_INTERVAL}s)"
 
   while true; do
-    local status
+    local status vm_p
     status="$(get_plan_status "${plan}")"
-    case "${status}" in
-      Completed|Succeeded|Failed|Error|Cancelled) break ;;
-    esac
+    if is_terminal_status "${status}"; then
+      break
+    fi
+    vm_p="$(vm_phase "${plan}" "${vm}")"
+    if is_terminal_status "${vm_p}"; then
+      break
+    fi
 
-    pod="$(find_v2v_pod "${plan}")"
+    pod="$(find_v2v_pod "${plan}" "${vm}")"
     if [[ -n "${pod}" ]]; then
       node="$(oc get pod -n "${NS}" "${pod}" -o jsonpath='{.spec.nodeName}' 2>/dev/null || true)"
       phase="$(oc get pod -n "${NS}" "${pod}" -o jsonpath='{.status.phase}' 2>/dev/null || true)"
@@ -230,8 +333,8 @@ monitor_conversion_memory() {
       net_tx="$(awk '{print $2}' <<<"${net_raw}")"
       elapsed=$(( $(date +%s) - start_ts ))
       echo "$(date -u +%Y-%m-%dT%H:%M:%SZ),${elapsed},${pod},${node},${mem_top},${rss_mi},${cpu_top},${net_rx},${net_tx},${phase}" >> "${csv}"
-      printf "    [mon] +%s pod=%s node=%s top=%sMi cgroup=%sMi cpu=%sm rx=%s tx=%s phase=%s\n" \
-        "$(fmt_dur "${elapsed}")" "${pod}" "${node:-?}" "${mem_top:-?}" "${rss_mi:-?}" "${cpu_top:-?}" \
+      printf "    [mon %s] +%s pod=%s node=%s top=%sMi cgroup=%sMi cpu=%sm rx=%s tx=%s phase=%s\n" \
+        "${label}" "$(fmt_dur "${elapsed}")" "${pod}" "${node:-?}" "${mem_top:-?}" "${rss_mi:-?}" "${cpu_top:-?}" \
         "${net_rx:-?}" "${net_tx:-?}" "${phase:-?}" \
         | tee -a "${SUMMARY_LOG}"
     fi
@@ -244,136 +347,248 @@ monitor_conversion_memory() {
     peak_cgroup="$(awk -F, 'NR>1 && $6!="" {if ($6+0>max) max=$6+0} END{print max+0}' "${csv}")"
     max_rx="$(awk -F, 'NR>1 && $8!="" {if ($8+0>max) max=$8+0} END{print max+0}' "${csv}")"
     max_tx="$(awk -F, 'NR>1 && $9!="" {if ($9+0>max) max=$9+0} END{print max+0}' "${csv}")"
-    log "  Peak conversion memory: metrics-server=${peak_top}Mi  cgroup=${peak_cgroup}Mi"
-    log "  Network totals (cumulative at last sample): rx=$((max_rx / 1024 / 1024))Mi  tx=$((max_tx / 1024 / 1024))Mi"
+    log "  Peak conversion memory (${label}): metrics-server=${peak_top}Mi  cgroup=${peak_cgroup}Mi"
+    log "  Network totals (${label}, cumulative at last sample): rx=$((max_rx / 1024 / 1024))Mi  tx=$((max_tx / 1024 / 1024))Mi"
   else
-    log "  No conversion memory samples collected"
+    log "  No conversion memory samples collected (${label})"
   fi
 }
 
+wait_mem_monitor() {
+  local pid="$1"
+  if ! wait "${pid}" 2>/dev/null; then
+    kill "${pid}" 2>/dev/null || true
+    wait "${pid}" 2>/dev/null || true
+  fi
+  untrack_bg_pid "${pid}"
+}
+
+# Fill empty BENCH_VMS slots from mtv-func* inventory, skipping names already used.
+fill_unset_bench_vms() {
+  local ns="$1"
+  local provider="$2"
+  local used=" " name i
+  for i in "${!BENCH_VMS[@]}"; do
+    if [[ -n "${BENCH_VMS[$i]}" && "${BENCH_VMS[$i]}" != "null" ]]; then
+      used+="${BENCH_VMS[$i]} "
+    fi
+  done
+  while read -r name; do
+    [[ -z "${name}" || "${name}" == "null" ]] && continue
+    [[ "${used}" == *" ${name} "* ]] && continue
+    for i in "${!BENCH_VMS[@]}"; do
+      if [[ -z "${BENCH_VMS[$i]}" || "${BENCH_VMS[$i]}" == "null" ]]; then
+        BENCH_VMS[$i]="${name}"
+        used+="${name} "
+        break
+      fi
+    done
+  done <<< "$(list_mtv_func_vms "${ns}" "${provider}")"
+}
+
+sync_bench_vm_vars() {
+  VM1="${BENCH_VMS[0]:-}"
+  VM2="${BENCH_VMS[1]:-}"
+  VM3="${BENCH_VMS[2]:-}"
+}
+
+bench_vm_list() {
+  local IFS=,
+  echo "${BENCH_VMS[*]}"
+}
+
+label_upper() {
+  printf '%s' "$1" | tr '[:lower:]' '[:upper:]'
+}
+
 monitor_plan() {
-  local plan="$1" label="$2"
-  local start_time attempt=0 status
-  start_time=$(date +%s)
+  local plan="$1"
+  local start_time="${2:-}"
+  local start_iso="${3:-}"
+  local attempt=0 status i label vm end_iso
+  local phases=() pipes=() done_ts=() mem_pids=()
+  if [[ -z "${start_time}" ]]; then
+    start_time=$(date +%s)
+  fi
+  if [[ -z "${start_iso}" ]]; then
+    start_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  fi
   LAST_PLAN_STATUS="Unknown"
+  LAST_VM_STATUS=()
+  LAST_VM_DURATION=()
 
-  monitor_conversion_memory "${plan}" "${label}" &
-  local mem_pid=$!
-  track_bg_pid "${mem_pid}"
+  for i in "${!BENCH_LABELS[@]}"; do
+    done_ts[$i]=0
+    LAST_VM_STATUS[$i]=""
+    LAST_VM_DURATION[$i]=0
+    monitor_conversion_memory "${plan}" "${BENCH_LABELS[$i]}" "${BENCH_VMS[$i]}" &
+    mem_pids[$i]=$!
+    track_bg_pid "${mem_pids[$i]}"
+  done
 
-  log "--- Monitoring plan ${plan} (${label}) ---"
-  local prev_pipe=""
+  local desc=""
+  for i in "${!BENCH_LABELS[@]}"; do
+    desc+="${BENCH_LABELS[$i]}=${BENCH_VMS[$i]} "
+  done
+  log "--- Monitoring plan ${plan} (${desc% }) ---"
+  local prev_pipe="" plan_json
   while [ "${attempt}" -lt "${MAX_ATTEMPTS}" ]; do
     attempt=$((attempt + 1))
-    status="$(get_plan_status "${plan}")"
+    plan_json="$(fetch_plan_json "${plan}")"
+    status="$(plan_status_from_json <<<"${plan_json}")"
     local elapsed=$(( $(date +%s) - start_time ))
-    local phase pipe_summary
-    phase="$(vm_phase "${plan}")"
-    pipe_summary="$(pipeline_json "${plan}" | jq -r '[.[] | "\(.name)=\(.phase // "-")"] | join(" ")' 2>/dev/null || true)"
+    local pipe_summary="" phase_line=""
+    for i in "${!BENCH_LABELS[@]}"; do
+      label="${BENCH_LABELS[$i]}"
+      vm="${BENCH_VMS[$i]}"
+      phases[$i]="$(vm_phase_from_json "${vm}" <<<"${plan_json}")"
+      pipes[$i]="$(pipeline_summary_from_json "${vm}" <<<"${plan_json}")"
+      pipe_summary+="${label}:[${pipes[$i]}] "
+      phase_line+="${label}=${phases[$i]:-?} "
+      if is_terminal_status "${phases[$i]}" && [[ "${done_ts[$i]}" -eq 0 ]]; then
+        done_ts[$i]=$(date +%s)
+      fi
+    done
+    pipe_summary="${pipe_summary% }"
+    phase_line="${phase_line% }"
 
     if [[ "${pipe_summary}" != "${prev_pipe}" ]]; then
-      log "  [step-change] $(fmt_dur "${elapsed}") phase=${phase:-?} ${pipe_summary}"
+      log "  [step-change] $(fmt_dur "${elapsed}") plan=${status} ${phase_line} ${pipe_summary}"
       prev_pipe="${pipe_summary}"
     else
-      printf "  [%02d/%02d] %s  Status=%s phase=%s\n" \
-        "${attempt}" "${MAX_ATTEMPTS}" "$(fmt_dur "${elapsed}")" "${status}" "${phase:-?}" \
+      printf "  [%02d/%02d] %s  Status=%s %s\n" \
+        "${attempt}" "${MAX_ATTEMPTS}" "$(fmt_dur "${elapsed}")" "${status}" \
+        "${phase_line}" \
         | tee -a "${SUMMARY_LOG}"
     fi
 
-    case "${status}" in
-      Completed|Succeeded|Failed|Error|Cancelled)
-        break
-        ;;
-    esac
+    if is_terminal_status "${status}"; then
+      break
+    fi
     sleep "${INTERVAL}"
   done
 
-  # Wait for monitor to finish peak summary; fall back to kill if it hangs.
-  if ! wait "${mem_pid}" 2>/dev/null; then
-    kill "${mem_pid}" 2>/dev/null || true
-    wait "${mem_pid}" 2>/dev/null || true
+  if ! is_terminal_status "${status}"; then
+    log "  Timed out waiting for plan ${plan} (status=${status:-Unknown}, attempts=${MAX_ATTEMPTS}); stopping samplers."
+    for i in "${!mem_pids[@]}"; do
+      kill "${mem_pids[$i]}" 2>/dev/null || true
+    done
   fi
-  untrack_bg_pid "${mem_pid}"
 
-  local duration=$(( $(date +%s) - start_time ))
+  for i in "${!mem_pids[@]}"; do
+    wait_mem_monitor "${mem_pids[$i]}"
+  done
+
+  local now duration
+  now=$(date +%s)
+  duration=$(( now - start_time ))
   LAST_PLAN_STATUS="${status}"
+  for i in "${!BENCH_LABELS[@]}"; do
+    LAST_VM_STATUS[$i]="${phases[$i]}"
+    if [[ "${done_ts[$i]}" -gt 0 ]]; then
+      LAST_VM_DURATION[$i]=$(( done_ts[$i] - start_time ))
+    else
+      LAST_VM_DURATION[$i]=$(( now - start_time ))
+    fi
+  done
+  end_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   log ""
+  log "Migration ended at ${end_iso}"
+  log "Migration lifetime: $(fmt_dur "${duration}") (start=${start_iso} end=${end_iso})"
   log "  Plan ${plan} finished: status=${status} duration=$(fmt_dur "${duration}")"
-  summarize_pipeline "${plan}"
+  for i in "${!BENCH_LABELS[@]}"; do
+    summarize_pipeline "${plan}" "${BENCH_VMS[$i]}"
+  done
   log "  VM details:"
   oc mtv get plan --name "${plan}" -n "${NS}" --vms 2>&1 | tee -a "${SUMMARY_LOG}" || true
   log ""
 }
 
-run_one() {
-  local label="$1" vm="$2" plan="$3"
+save_conversion_logs() {
+  local plan="$1" label="$2" vm="$3"
+  local vmid pod logfile
+  vmid="$(vm_id "${plan}" "${vm}")"
+  if [[ -z "${vmid}" ]]; then
+    log "  WARNING: no inventory id for VM ${vm}; conversion-pod log may be missing"
+    return 0
+  fi
+  while read -r pod; do
+    [[ -z "${pod}" ]] && continue
+    logfile="${MEM_DIR}/${label}-${pod}.log"
+    log "  Saving conversion pod log (${label}): ${logfile}"
+    oc logs -n "${NS}" "${pod}" --all-containers=true >"${logfile}" 2>&1 || true
+  done < <(oc get pods -n "${NS}" -l "${V2V_LABEL}" -o json 2>/dev/null \
+    | jq -r --arg plan "${plan}" --arg vmid "${vmid}" '
+        .items[]
+        | select(.metadata.name | startswith($plan))
+        | select(
+            (.metadata.name | contains($vmid))
+            or ((.metadata.labels.vmID // .metadata.labels.vmid // "") == $vmid)
+          )
+        | .metadata.name
+      ' 2>/dev/null || true)
+}
+
+run_plan() {
+  local plan="${BENCHMARK_PLAN}"
+  local i label vm_list start_s start_iso
+  vm_list="$(bench_vm_list)"
   log "=========================================="
-  log "RUN ${label}: VM=${vm} plan=${plan} converter=${CONVERTER}"
+  log "RUN: VMs=${vm_list} plan=${plan} converter=${CONVERTER}"
   log "=========================================="
 
   oc mtv delete plan --name "${plan}" -n "${NS}" 2>/dev/null || true
   sleep 2
 
-  oc mtv create plan --name "${plan}" --source "${PROVIDER}" --target host \
-    --vms "${vm}" \
+  if ! oc mtv create plan --name "${plan}" --source "${PROVIDER}" --target host \
+    --vms "${vm_list}" \
     --run-preflight-inspection false \
-    -n "${NS}"
-
-  log "Waiting for plan Ready..."
-  oc wait "plan.forklift.konveyor.io/${plan}" -n "${NS}" \
-    --for=condition=Ready --timeout=300s
-
-  local start_time
-  start_time=$(date +%s)
-  oc mtv start plan --name "${plan}" -n "${NS}"
-  log "Migration started at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-  monitor_plan "${plan}" "${label}"
-  local duration=$(( $(date +%s) - start_time ))
-  local status="${LAST_PLAN_STATUS}"
-
-  local pod logfile
-  while read -r pod; do
-    [[ -z "${pod}" ]] && continue
-    logfile="${MEM_DIR}/${label}-${pod}.log"
-    log "  Saving conversion pod log: ${logfile}"
-    oc logs -n "${NS}" "${pod}" --all-containers=true >"${logfile}" 2>&1 || true
-  done < <(oc get pods -n "${NS}" -l "${V2V_LABEL}" -o json 2>/dev/null \
-    | jq -r --arg plan "${plan}" '
-        .items[]
-        | select(.metadata.name | startswith($plan))
-        | .metadata.name
-      ' 2>/dev/null || true)
-
-  log "RESULT ${label}: status=${status} total=$(fmt_dur "${duration}") vm=${vm} converter=${CONVERTER}"
-  log ""
-
-  if [[ "${status}" != "Completed" && "${status}" != "Succeeded" ]]; then
+    -n "${NS}"; then
+    log "ERROR: failed to create plan ${plan}"
     return 1
   fi
+
+  log "Waiting for plan Ready..."
+  if ! oc wait "plan.forklift.konveyor.io/${plan}" -n "${NS}" \
+    --for=condition=Ready --timeout=300s; then
+    log "ERROR: plan ${plan} did not become Ready"
+    return 1
+  fi
+
+  oc mtv start plan --name "${plan}" -n "${NS}"
+  start_s=$(date +%s)
+  start_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  log "Migration started at ${start_iso}"
+
+  monitor_plan "${plan}" "${start_s}" "${start_iso}"
+
+  for i in "${!BENCH_LABELS[@]}"; do
+    save_conversion_logs "${plan}" "${BENCH_LABELS[$i]}" "${BENCH_VMS[$i]}"
+  done
+
+  for i in "${!BENCH_LABELS[@]}"; do
+    label="${BENCH_LABELS[$i]}"
+    log "RESULT ${label}: status=${LAST_VM_STATUS[$i]:-Unknown} total=$(fmt_dur "${LAST_VM_DURATION[$i]:-0}") vm=${BENCH_VMS[$i]} converter=${CONVERTER}"
+  done
+  log ""
+
+  if ! is_success_status "${LAST_PLAN_STATUS}"; then
+    return 1
+  fi
+  for i in "${!BENCH_LABELS[@]}"; do
+    if ! is_success_status "${LAST_VM_STATUS[$i]}"; then
+      return 1
+    fi
+  done
   return 0
 }
 
-release_after_rhel() {
-  if [[ "${KEEP_BETWEEN_TESTS}" == "true" ]]; then
-    log "KEEP_BETWEEN_TESTS=true — leaving plan-bench-rhel + conversion pods for postmortem."
-    if [[ -n "${RHEL_VM}" ]]; then
-      log "Stopping migrated RHEL VM ${RHEL_VM} (plan/pods kept)..."
-      stop_migrated_vm "${RHEL_VM}" "${NS}"
-    fi
-    return 0
-  fi
-
-  log "RHEL finished OK. Releasing RHEL plan (free memory) before Windows..."
-  release_rhel_resources "${NS}" "${RHEL_VM}"
-}
-
-# Run one converter leg: RHEL then Windows. Sets image, fresh NS, providers.
-# Args: converter (kc|ref)
-# Returns non-zero if either plan fails.
+# Run one converter leg: three VMs in a single plan. Sets image, fresh NS,
+# providers. Args: converter (kc|ref). Returns non-zero if the plan or any
+# VM fails.
 run_converter_leg() {
   local converter="$1"
-  local rc_rhel=0 rc_win=0
+  local rc=0 i label unset_any=false need vm_rc seen=" " vm
 
   begin_leg "${converter}"
 
@@ -383,15 +598,15 @@ run_converter_leg() {
   log "Mode: ${MODE}"
   log "Log: ${SUMMARY_LOG}"
   log "Mem: ${MEM_DIR}"
-  log "NS=${NS} SKIP_CLEANUP=${SKIP_CLEANUP} KEEP_BETWEEN_TESTS=${KEEP_BETWEEN_TESTS}"
+  log "NS=${NS} SKIP_CLEANUP=${SKIP_CLEANUP}"
   log ""
 
   case "${converter}" in
     kc)
-      set_virt_v2v_image "${KC_V2V_IMAGE}"
+      set_virt_v2v_image "${KC_V2V_IMAGE}" || return 1
       ;;
     ref)
-      clear_virt_v2v_image
+      clear_virt_v2v_image || return 1
       ;;
     *)
       log "ERROR: unknown converter '${converter}'"
@@ -415,53 +630,64 @@ run_converter_leg() {
   create_vsphere_and_host_providers "${NS}" "${PROVIDER}"
   log ""
 
-  if [[ -z "${RHEL_VM}" || -z "${WIN_VM}" ]]; then
-    wait_for_mtv_func_vms "${NS}" "${PROVIDER}" || return 1
+  need="${#BENCH_LABELS[@]}"
+  for i in "${!BENCH_VMS[@]}"; do
+    if [[ -z "${BENCH_VMS[$i]}" || "${BENCH_VMS[$i]}" == "null" ]]; then
+      unset_any=true
+      break
+    fi
+  done
+  if [[ "${unset_any}" == "true" ]]; then
+    wait_for_mtv_func_vms "${NS}" "${PROVIDER}" "${need}" || return 1
+    fill_unset_bench_vms "${NS}" "${PROVIDER}"
+    sync_bench_vm_vars
   fi
 
-  if [[ -z "${RHEL_VM}" ]]; then
-    RHEL_VM="$(pick_rhel_vm "${NS}" "${PROVIDER}")"
-  fi
-  if [[ -z "${WIN_VM}" ]]; then
-    WIN_VM="$(pick_win_vm "${NS}" "${PROVIDER}")"
-  fi
+  for i in "${!BENCH_LABELS[@]}"; do
+    label="${BENCH_LABELS[$i]}"
+    vm="${BENCH_VMS[$i]}"
+    if [[ -z "${vm}" || "${vm}" == "null" ]]; then
+      log "ERROR: no source VM for ${label} (pin VM$((i + 1)) or add mtv-func* inventory VMs)"
+      return 1
+    fi
+    if [[ "${seen}" == *" ${vm} "* ]]; then
+      log "ERROR: duplicate source VM '${vm}' (${label})"
+      return 1
+    fi
+    seen+="${vm} "
+  done
 
-  if [[ -z "${RHEL_VM}" || "${RHEL_VM}" == "null" ]]; then
-    log "ERROR: no mtv-func RHEL VM found"
-    return 1
-  fi
-  if [[ -z "${WIN_VM}" || "${WIN_VM}" == "null" ]]; then
-    log "ERROR: no mtv-func Windows VM found"
-    return 1
-  fi
-
-  log "RHEL_VM=${RHEL_VM}"
-  log "WIN_VM=${WIN_VM}"
+  for i in "${!BENCH_LABELS[@]}"; do
+    log "$(label_upper "${BENCH_LABELS[$i]}")=${BENCH_VMS[$i]}"
+  done
   log ""
-  log "Running RHEL then Windows sequentially (one plan at a time)."
+  log "Running ${need} VMs in one plan (${BENCHMARK_PLAN}); conversion pods sampled in parallel."
 
-  run_one "rhel" "${RHEL_VM}" "plan-bench-rhel" || rc_rhel=$?
+  run_plan || rc=$?
 
-  if [[ "${rc_rhel}" -ne 0 ]]; then
-    log "RHEL failed (exit=${rc_rhel}) — skipping Windows; leaving ${NS} for debugging."
+  if [[ "${rc}" -ne 0 ]]; then
+    log "Plan failed (exit=${rc}) — leaving ${NS} for debugging."
     SKIP_CLEANUP=true
-  else
-    release_after_rhel
-    log ""
-    run_one "win" "${WIN_VM}" "plan-bench-win" || rc_win=$?
   fi
 
   log "=========================================="
   log "LEG SUMMARY (${converter})"
   log "=========================================="
   log "Image: $(mtv_setting_get virt_v2v_image_fqin)"
-  log "RHEL (${RHEL_VM}): exit=${rc_rhel}"
-  log "WIN  (${WIN_VM}): exit=${rc_win}"
+  log "Plan ${BENCHMARK_PLAN}: status=${LAST_PLAN_STATUS:-Unknown}"
+  for i in "${!BENCH_LABELS[@]}"; do
+    vm_rc=0
+    is_success_status "${LAST_VM_STATUS[$i]:-}" || vm_rc=1
+    log "$(label_upper "${BENCH_LABELS[$i]}") (${BENCH_VMS[$i]}): status=${LAST_VM_STATUS[$i]:-Unknown} exit=${vm_rc}"
+    if [[ "${vm_rc}" -ne 0 ]]; then
+      rc=1
+    fi
+  done
   log "Full log: ${SUMMARY_LOG}"
   log "Memory CSVs + pod logs: ${MEM_DIR}"
   log ""
 
-  if [[ "${rc_rhel}" -ne 0 || "${rc_win}" -ne 0 ]]; then
+  if [[ "${rc}" -ne 0 ]]; then
     return 1
   fi
   return 0

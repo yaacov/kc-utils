@@ -1,10 +1,12 @@
 # MTV Cold Migration — ref vs kc-v2v Baseline
 
-Sequential cold-migration benchmark (RHEL then Windows) comparing the default
-virt-v2v image (**ref**) against the kc-v2v replacement image (**kc-v2v**).
+Cold-migration benchmark comparing the default virt-v2v image (**ref**) against
+the kc-v2v replacement image (**kc-v2v**). The current runner puts three VMs in
+one MTV plan and samples the conversion pods in parallel. Archived numbers
+below are from an earlier sequential (RHEL then Windows) baseline.
 
-Each run migrates two VMware VMs to OpenShift Virtualization while sampling
-CPU, memory, and network traffic of the conversion pod every ~10 s.
+Each run migrates three VMware VMs to OpenShift Virtualization while sampling
+CPU, memory, and network traffic of each conversion pod every ~10 s.
 
 **Runnable script:** [`tests/scenarios/test-mtv-benchmark.sh`](../../../tests/scenarios/test-mtv-benchmark.sh)
 (`MODE=kc` or `MODE=compare`). See also the
@@ -40,9 +42,8 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 | `NS` | yes | Namespace to create for the test |
 | `PROVIDER` | yes | vSphere provider name |
 | `GOVC_*` | yes | vSphere credentials |
-| `RHEL_VM` / `WIN_VM` | no | Source VM names; auto-discovered when unset |
+| `VM1` / `VM2` / `VM3` | no | Source VM names; auto-discovered from mtv-func* when unset |
 | `SKIP_CLEANUP` | `true` | Keep the namespace after the test |
-| `KEEP_BETWEEN_TESTS` | `true` | Leave RHEL plan/pods while running Windows |
 | `KEEP_IMAGE_SETTING` | `true` | Leave `virt_v2v_image_fqin` after exit |
 | `DISABLE_WAIT_FOR_REBOOT` | `true` | Set `feature_windows_wait_for_reboot=false` |
 | `MEM_INTERVAL` | `10` | Seconds between metric samples |

@@ -140,6 +140,7 @@ set_virt_v2v_image() {
   fi
   echo "Setting virt_v2v_image_fqin=${image}"
   oc mtv settings set --setting virt_v2v_image_fqin --value "${image}"
+  wait_for_virt_v2v_image_sync "${image}"
 }
 
 # Clear the override so Forklift uses the operator default virt-v2v image.
@@ -148,6 +149,69 @@ clear_virt_v2v_image() {
   oc mtv settings set --setting virt_v2v_image_fqin --value "" 2>/dev/null \
     || oc mtv settings unset --setting virt_v2v_image_fqin 2>/dev/null \
     || true
+  wait_for_virt_v2v_image_sync "" "${KC_V2V_IMAGE:-}"
+}
+
+# Conversion pods take VIRT_V2V_IMAGE from the running forklift-controller, not
+# from the MTV setting alone. After set/clear, wait until a Ready controller
+# pod has the expected env (or, when clearing, any image other than $2).
+wait_for_virt_v2v_image_sync() {
+  local expected="$1"
+  local not_image="${2:-}"
+  local attempts="${3:-60}"
+  local sleep_s="${4:-5}"
+  local i current ns
+  ns="$(forklift_controller_namespace)"
+  if [[ -z "${ns}" ]]; then
+    echo "WARNING: could not find forklift-controller; skipping VIRT_V2V_IMAGE wait." >&2
+    return 0
+  fi
+  echo "Waiting for forklift-controller VIRT_V2V_IMAGE sync (ns=${ns})..."
+  for i in $(seq 1 "${attempts}"); do
+    current="$(controller_pod_virt_v2v_image "${ns}")"
+    if [[ -n "${expected}" ]]; then
+      if [[ "${current}" == "${expected}" ]]; then
+        echo "Controller VIRT_V2V_IMAGE=${current} (attempt ${i}/${attempts})"
+        return 0
+      fi
+    elif [[ -n "${current}" && "${current}" != "${not_image}" ]]; then
+      echo "Controller VIRT_V2V_IMAGE=${current} (attempt ${i}/${attempts})"
+      return 0
+    fi
+    sleep "${sleep_s}"
+  done
+  echo "ERROR: timed out waiting for controller VIRT_V2V_IMAGE (want='${expected:-<not ${not_image}>}', got='${current:-<empty>}')." >&2
+  return 1
+}
+
+forklift_controller_namespace() {
+  oc get deploy -A -o json 2>/dev/null \
+    | jq -r '
+        [
+          .items[]
+          | select(
+              (.metadata.name | test("forklift-controller"))
+              or ([.spec.template.spec.containers[]?.env[]?.name] | index("VIRT_V2V_IMAGE"))
+            )
+          | .metadata.namespace
+        ] | .[0] // empty
+      ' 2>/dev/null
+}
+
+controller_pod_virt_v2v_image() {
+  local ns="$1"
+  oc get pods -n "${ns}" -o json 2>/dev/null \
+    | jq -r '
+        [
+          .items[]
+          | select(.metadata.name | test("forklift-controller"))
+          | select(.status.phase == "Running")
+          | select([.status.containerStatuses[]? | .ready] | any)
+          | .spec.containers[]?.env[]?
+          | select(.name == "VIRT_V2V_IMAGE")
+          | .value // empty
+        ] | .[0] // empty
+      ' 2>/dev/null
 }
 
 disable_windows_wait_for_reboot() {
@@ -211,39 +275,34 @@ create_vsphere_and_host_providers() {
   echo "Providers ready."
 }
 
-pick_rhel_vm() {
+list_mtv_func_vms() {
   local ns="$1"
   local provider="$2"
   oc mtv get inventory vm --provider "${provider}" -n "${ns}" \
-    --query "select name where name ~= 'mtv-func.*' and name ~= 'rhel'" \
-    --output json 2>/dev/null | jq -r '.[].name' | sort | head -1
+    --query "select name where name ~= 'mtv-func.*'" \
+    --output json 2>/dev/null | jq -r '.[] | .name // empty' | grep -v '^$' | sort
 }
 
-pick_win_vm() {
-  local ns="$1"
-  local provider="$2"
-  oc mtv get inventory vm --provider "${provider}" -n "${ns}" \
-    --query "select name where name ~= 'mtv-func.*' and name ~= 'win'" \
-    --output json 2>/dev/null | jq -r '.[].name' | sort | head -1
-}
-
-# Providers can be Ready before inventory is fully populated. Retry picks.
+# Providers can be Ready before inventory is fully populated. Retry until
+# at least `need` mtv-func* VMs appear.
 wait_for_mtv_func_vms() {
   local ns="$1"
   local provider="$2"
-  local attempts="${3:-60}"
-  local sleep_s="${4:-5}"
-  local i rhel win
-  echo "Waiting for mtv-func RHEL + Windows inventory VMs..."
+  local need="${3:-3}"
+  local attempts="${4:-60}"
+  local sleep_s="${5:-5}"
+  local i names count
+  echo "Waiting for ${need} mtv-func* inventory VMs..."
   for i in $(seq 1 "${attempts}"); do
-    rhel="$(pick_rhel_vm "${ns}" "${provider}")"
-    win="$(pick_win_vm "${ns}" "${provider}")"
-    if [[ -n "${rhel}" && "${rhel}" != "null" && -n "${win}" && "${win}" != "null" ]]; then
-      echo "Inventory ready (attempt ${i}/${attempts}): rhel=${rhel} win=${win}"
+    names="$(list_mtv_func_vms "${ns}" "${provider}")"
+    count="$(printf '%s\n' "${names}" | grep -c '.' || true)"
+    if [[ "${count}" -ge "${need}" ]]; then
+      echo "Inventory ready (attempt ${i}/${attempts}):"
+      printf '%s\n' "${names}" | sed 's/^/  /'
       return 0
     fi
     sleep "${sleep_s}"
   done
-  echo "ERROR: timed out waiting for mtv-func RHEL/Windows inventory VMs." >&2
+  echo "ERROR: timed out waiting for ${need} mtv-func* inventory VMs (found ${count:-0})." >&2
   return 1
 }
