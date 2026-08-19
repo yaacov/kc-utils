@@ -15,6 +15,7 @@ import (
 	// Backend plugins (shared listener + failure cleanup)
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/qemu"
 )
 
 func main() {

@@ -51,7 +51,7 @@ func Load() (*Config, error) {
 	flag.StringVar(&cfg.Fingerprint, "fingerprint", os.Getenv(EnvFingerprint), "vCenter SSL thumbprint")
 	flag.IntVar(&cfg.CopyConcurrency, "copy-concurrency", cfg.CopyConcurrency, "max parallel disk copies")
 	flag.BoolVar(&cfg.Offline, "offline", getEnvBool(EnvOffline, false), "pass --offline to converters (use local packages only)")
-	flag.StringVar(&cfg.Backend, "backend", envOr(EnvBackend, backend.NameDirect), "guest disk backend (direct|guestfs)")
+	flag.StringVar(&cfg.Backend, "backend", envOr(EnvBackend, backend.NameDirect), "guest disk backend (direct|guestfs|qemu)")
 	flag.Parse()
 
 	cfg.Backend = strings.TrimSpace(cfg.Backend)

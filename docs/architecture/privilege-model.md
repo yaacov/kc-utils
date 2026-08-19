@@ -7,6 +7,14 @@ a QEMU appliance (`guestfish`) and performing all guest file I/O over guestfs
 RPC — no host mounts and no FUSE. This document explains both approaches and
 the trade-offs.
 
+There is also a third mode, [`qemu`](qemu-appliance.md): like guestfs it runs
+guest operations inside a QEMU VM (so the host needs no `CAP_SYS_ADMIN`), but the
+appliance is one **we build ourselves** and boot directly with `qemu-system-*`
+(no libguestfs). It exposes only primitive operations over a unix socket while
+all conversion logic stays host-side, and — unlike `direct`/`guestfs` — it also
+runs on macOS. See [qemu-appliance.md](qemu-appliance.md) for details; this
+document focuses on host-mount vs. guestfish.
+
 ## Why kc-prepare / kc-finalize Need Root
 
 The following operations all require `CAP_SYS_ADMIN` or equivalent:

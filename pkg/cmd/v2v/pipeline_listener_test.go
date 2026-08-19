@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
+	"github.com/yaacov/kc-utils/pkg/common/types"
 	"github.com/yaacov/kc-utils/pkg/guest"
 )
 
@@ -13,7 +15,7 @@ func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
 	prev := startSharedListener
 	t.Cleanup(func() { startSharedListener = prev })
 
-	startSharedListener = func() (guest.SharedListener, error) {
+	startSharedListener = func(_ string, _ []types.DiskSpec) (guest.SharedListener, error) {
 		return &stubSharedListener{pid: 4242}, nil
 	}
 
@@ -21,7 +23,7 @@ func TestEnsureSharedListenerPreservesNetworkOnRestart(t *testing.T) {
 	var listener guest.SharedListener = &stubSharedListener{pid: 0}
 	stageEnv := []string{guest.EnvGuestfsNetwork + "=1"}
 
-	if err := ensureSharedListener(&listener, &stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(&listener, &stageEnv, "prepare", backend.NameGuestfs, nil); err != nil {
 		t.Fatalf("ensureSharedListener: %v", err)
 	}
 	if !listener.Alive() {

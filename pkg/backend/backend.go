@@ -14,6 +14,7 @@ type DirEntry = types.GuestDirEntry
 const (
 	NameDirect  = "direct"
 	NameGuestfs = "guestfs"
+	NameQEMU    = "qemu"
 )
 
 // Backend abstracts privileged disk/mount operations so direct (host syscall)

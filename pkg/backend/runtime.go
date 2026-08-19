@@ -17,11 +17,15 @@ var Probes = struct {
 	HasRoot      func() bool
 	HasKVM       func() bool
 	HasGuestfish func() bool
+	HasQEMU      func() bool
+	HasAccel     func() bool
 }{
 	OnLinux:      onLinux,
 	HasRoot:      hasRoot,
 	HasKVM:       hasKVM,
 	HasGuestfish: hasGuestfish,
+	HasQEMU:      hasQEMU,
+	HasAccel:     hasAccel,
 }
 
 func onLinux() bool {
@@ -79,6 +83,49 @@ func hasGuestfish() bool {
 	return err == nil
 }
 
+// qemuSystemBinary is the qemu-system binary name for the host architecture.
+func qemuSystemBinary() string {
+	switch runtime.GOARCH {
+	case "arm64":
+		return "qemu-system-aarch64"
+	case "amd64":
+		return "qemu-system-x86_64"
+	default:
+		return "qemu-system-" + runtime.GOARCH
+	}
+}
+
+func hasQEMU() bool {
+	if _, err := exec.LookPath(qemuSystemBinary()); err == nil {
+		return true
+	}
+	_, err := exec.LookPath("qemu-kvm")
+	return err == nil
+}
+
+// hasAccel reports whether hardware virtualization is available: KVM on Linux,
+// HVF on macOS. Used to prefer acceleration at launch; the qemu backend still
+// works via TCG when this is false.
+func hasAccel() bool {
+	switch runtime.GOOS {
+	case "linux":
+		f, err := os.Open("/dev/kvm")
+		if err != nil {
+			return false
+		}
+		_ = f.Close()
+		return true
+	case "darwin":
+		out, err := exec.Command(qemuSystemBinary(), "-accel", "help").Output()
+		if err != nil {
+			return false
+		}
+		return strings.Contains(string(out), "hvf")
+	default:
+		return false
+	}
+}
+
 func checkRequirements(req Requirements) (bool, string) {
 	if req.Linux && !Probes.OnLinux() {
 		return false, "requires Linux"
@@ -91,6 +138,12 @@ func checkRequirements(req Requirements) (bool, string) {
 	}
 	if req.Guestfish && !Probes.HasGuestfish() {
 		return false, "guestfish not found in PATH"
+	}
+	if req.QEMU && !Probes.HasQEMU() {
+		return false, "qemu-system binary not found in PATH"
+	}
+	if req.Accel && !Probes.HasAccel() {
+		return false, "hardware virtualization (KVM/HVF) not available"
 	}
 	return true, ""
 }

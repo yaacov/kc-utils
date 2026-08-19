@@ -18,4 +18,5 @@ type SharedListener = backend.SharedListener
 const (
 	BackendDirect  = backend.NameDirect
 	BackendGuestfs = backend.NameGuestfs
+	BackendQEMU    = backend.NameQEMU
 )

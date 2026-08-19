@@ -19,6 +19,7 @@ import (
 	// Backend plugins
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/direct"
 	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/guestfs"
+	_ "github.com/yaacov/kc-utils/pkg/backend/plugins/qemu"
 
 	// Plugin registrations: filesystem trimmer
 	_ "github.com/yaacov/kc-utils/pkg/finalize/fstrim/plugins/default"
@@ -36,7 +37,7 @@ func main() {
 	inputFile := flag.String("input", "", "pipeline JSON file")
 	outputFile := flag.String("output", "target-meta.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
-	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs)")
+	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs|qemu)")
 	teardownOnly := flag.Bool("teardown-only", false, "reclaim orphaned guest resources without Sync or metadata writes")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()

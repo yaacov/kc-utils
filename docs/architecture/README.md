@@ -41,6 +41,7 @@ orchestrator or integration docs.
 ## Design docs
 
 - [privilege-model.md](privilege-model.md) — host-mount vs libguestfs appliance privilege trade-offs
+- [qemu-appliance.md](qemu-appliance.md) — qemu backend: our own minimal appliance, primitive agent protocol, host/guest logic split
 - [filesystem-checks.md](filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair, Windows NTFS
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [conversion-paths.md](conversion-paths.md) — OS + source-hypervisor path reference (index)

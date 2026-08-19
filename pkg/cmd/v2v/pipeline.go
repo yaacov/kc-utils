@@ -130,7 +130,8 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	var pipelineErr error
 	guestSetupStarted := false
 
-	sharedListener, stageEnv, err := setupSharedListener(cfg)
+	disks := input.Disks
+	sharedListener, stageEnv, err := setupSharedListener(cfg, disks)
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +155,11 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	}
 
 	guestSetupStarted = true
-	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, &sharedListener, &stageEnv)
+	pipeline, err := runPrepareStage(cfg, input, inputPath, pipelinePath, &sharedListener, &stageEnv, disks)
 	if err != nil {
 		return fail(err)
 	}
-	if err := runConvertStage(cfg, pipeline, pipelinePath, &sharedListener, &stageEnv); err != nil {
+	if err := runConvertStage(cfg, pipeline, pipelinePath, &sharedListener, &stageEnv, disks); err != nil {
 		return fail(err)
 	}
 	if err := runFinalizeStage(cfg, pipelinePath, stageEnv, pipeline); err != nil {
@@ -167,20 +168,29 @@ func runPipelineOnceBody(cfg *env.Config, input *types.PrepareInput, inputPath, 
 	return pipeline, nil
 }
 
-// setupSharedListener starts a guestfish --listen session when guestfs mode is on.
-// The caller owns closing the returned listener.
-func setupSharedListener(cfg *env.Config) (guest.SharedListener, []string, error) {
-	if cfg.Backend != guest.BackendGuestfs {
+// setupSharedListener starts a cross-stage VM session for backends that keep one
+// alive (guestfs, qemu), attaching disks at boot. The caller owns closing the
+// returned listener. Backends without shared-listener support return no listener.
+func setupSharedListener(cfg *env.Config, disks []types.DiskSpec) (guest.SharedListener, []string, error) {
+	if !guest.SupportsSharedListener(cfg.Backend) {
 		return nil, nil, nil
 	}
-	listener, err := startSharedListener()
+	// The shared appliance boots here, before any stage subprocess runs, so the
+	// networking flag must be in this process's environment (not just stageEnv)
+	// for the backend to enable a netdev at boot. Clevis/NBDE unlock needs it.
+	if cfg.NbdeClevis {
+		if err := os.Setenv(guest.EnvGuestfsNetwork, "1"); err != nil {
+			return nil, nil, fmt.Errorf("enable appliance networking: %w", err)
+		}
+	}
+	listener, err := startSharedListener(cfg.Backend, disks)
 	if err != nil {
-		return nil, nil, fmt.Errorf("guestfish shared listener: %w", err)
+		return nil, nil, fmt.Errorf("%s shared listener: %w", cfg.Backend, err)
 	}
 	stageEnv := listener.Env()
 	if cfg.NbdeClevis {
 		stageEnv = append(stageEnv, guest.EnvGuestfsNetwork+"=1")
-		slog.Info("guestfs appliance networking enabled for Clevis/NBDE")
+		slog.Info("appliance networking enabled for Clevis/NBDE", "backend", cfg.Backend)
 	}
 	return listener, stageEnv, nil
 }
@@ -197,14 +207,14 @@ func stageCommonArgs(cfg *env.Config, inputPath, outputPath string) []string {
 	return args
 }
 
-func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) (*pipelineResult, error) {
+func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string, disks []types.DiskSpec) (*pipelineResult, error) {
 	prepareBin := filepath.Join(cfg.BinDir, "kc-prepare")
 	prepareArgs := stageCommonArgs(cfg, inputPath, pipelinePath)
 
 	if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
 		return nil, fmt.Errorf("kc-prepare: %w", err)
 	}
-	if err := ensureSharedListener(sharedListener, stageEnv, "prepare"); err != nil {
+	if err := ensureSharedListener(sharedListener, stageEnv, "prepare", cfg.Backend, disks); err != nil {
 		return nil, err
 	}
 
@@ -224,7 +234,7 @@ func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipe
 		if err := runSubprocess(prepareBin, prepareArgs, *stageEnv); err != nil {
 			return nil, fmt.Errorf("kc-prepare retry: %w", err)
 		}
-		if err := ensureSharedListener(sharedListener, stageEnv, "prepare-retry"); err != nil {
+		if err := ensureSharedListener(sharedListener, stageEnv, "prepare-retry", cfg.Backend, disks); err != nil {
 			return nil, err
 		}
 		if err := readJSON(pipelinePath, &pipeline); err != nil {
@@ -237,7 +247,7 @@ func runPrepareStage(cfg *env.Config, input *types.PrepareInput, inputPath, pipe
 	return &pipeline, nil
 }
 
-func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string) error {
+func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath string, sharedListener *guest.SharedListener, stageEnv *[]string, disks []types.DiskSpec) error {
 	converter := pipeline.Prepare.Converter
 	if converter == "" {
 		if pipeline.Prepare.Inspect.Type == "windows" {
@@ -254,7 +264,7 @@ func runConvertStage(cfg *env.Config, pipeline *pipelineResult, pipelinePath str
 	if err := runSubprocess(convertBin, convertArgs, *stageEnv); err != nil {
 		return fmt.Errorf("%s: %w", converter, err)
 	}
-	return ensureSharedListener(sharedListener, stageEnv, "conversion")
+	return ensureSharedListener(sharedListener, stageEnv, "conversion", cfg.Backend, disks)
 }
 
 func runFinalizeStage(cfg *env.Config, pipelinePath string, stageEnv []string, pipeline *pipelineResult) error {
@@ -314,11 +324,11 @@ func runSubprocess(bin string, args []string, extraEnv []string) error {
 	return nil
 }
 
-func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, stage string) error {
+func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, stage, backendName string, disks []types.DiskSpec) error {
 	if listener == nil || *listener == nil || guest.SharedListenerAlive(*listener) {
 		return nil
 	}
-	slog.Warn("guestfish shared listener died, restarting", "after", stage)
+	slog.Warn("shared listener died, restarting", "backend", backendName, "after", stage)
 	keepNetwork := false
 	for _, e := range *stageEnv {
 		if strings.HasPrefix(e, guest.EnvGuestfsNetwork+"=") {
@@ -326,9 +336,9 @@ func ensureSharedListener(listener *guest.SharedListener, stageEnv *[]string, st
 			break
 		}
 	}
-	newListener, err := startSharedListener()
+	newListener, err := startSharedListener(backendName, disks)
 	if err != nil {
-		return fmt.Errorf("guestfish restart after %s: %w", stage, err)
+		return fmt.Errorf("%s listener restart after %s: %w", backendName, stage, err)
 	}
 	if closeErr := (*listener).Close(); closeErr != nil {
 		slog.Debug("closing dead shared listener", "error", closeErr)
