@@ -2,6 +2,8 @@
 # Shared cleanup helpers for MTV / kc-v2v cluster scenario tests.
 # Source after lib/common.sh.
 
+BENCHMARK_PLAN="${BENCHMARK_PLAN:-plan-bench}"
+# Legacy sequential plan names (still deleted so leftover CRs clean up).
 BENCHMARK_RHEL_PLAN="${BENCHMARK_RHEL_PLAN:-plan-bench-rhel}"
 BENCHMARK_WIN_PLAN="${BENCHMARK_WIN_PLAN:-plan-bench-win}"
 
@@ -87,6 +89,7 @@ release_rhel_resources() {
 
 release_benchmark_plans() {
   local ns="${1:-${NS}}"
+  release_plan_pods "${BENCHMARK_PLAN}" "${ns}"
   release_plan_pods "${BENCHMARK_RHEL_PLAN}" "${ns}"
   release_plan_pods "${BENCHMARK_WIN_PLAN}" "${ns}"
 }

@@ -5,9 +5,10 @@ Usage:
   generate-run-dashboard.py <artifact-prefix>
 
 Looks for:
-  <prefix>-kc-mem/{rhel,win}-virt-v2v-memory.csv
-  <prefix>-ref-mem/{rhel,win}-virt-v2v-memory.csv
-  <prefix>-{kc,ref}.log  (optional; peaks already come from CSVs)
+  <prefix>-kc-mem/{vm1,vm2,vm3}-virt-v2v-memory.csv
+  <prefix>-ref-mem/{vm1,vm2,vm3}-virt-v2v-memory.csv
+  (also accepts legacy rhel/win CSV names)
+  <prefix>-{kc,ref}.log  (optional; VM walls, migration start/end, plan duration)
 
 Writes:
   <prefix>.html
@@ -19,6 +20,7 @@ import csv
 import json
 import re
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +66,42 @@ def last(samples: list[dict[str, Any]], key: str) -> int | None:
     return None
 
 
-def parse_log_meta(log_path: Path) -> dict[str, str]:
+CSV_SUFFIX = "-virt-v2v-memory.csv"
+PREFERRED_VM_LABELS = ("vm1", "vm2", "vm3", "rhel", "win")
+
+
+def csv_vm_label(path: Path) -> str | None:
+    name = path.name
+    if name.endswith(CSV_SUFFIX):
+        return name[: -len(CSV_SUFFIX)]
+    return None
+
+
+def discover_vm_labels(mem_dirs: list[Path]) -> list[str]:
+    found: set[str] = set()
+    for mem_dir in mem_dirs:
+        for path in mem_dir.glob(f"*{CSV_SUFFIX}"):
+            label = csv_vm_label(path)
+            if label:
+                found.add(label)
+    preferred = [label for label in PREFERRED_VM_LABELS if label in found]
+    rest = sorted(found.difference(PREFERRED_VM_LABELS))
+    return preferred + rest
+
+
+def js_ident(label: str) -> str:
+    """Sanitize a VM label into a JavaScript identifier (const / call args)."""
+    ident = re.sub(r"[^A-Za-z0-9_]", "_", label.upper())
+    if not ident or ident[0].isdigit():
+        ident = f"_{ident}"
+    return ident
+
+
+def vm_display(label: str) -> str:
+    return {"rhel": "RHEL", "win": "Windows"}.get(label, label.upper())
+
+
+def parse_log_meta(log_path: Path, vm_labels: list[str]) -> dict[str, str]:
     meta: dict[str, str] = {}
     if not log_path.is_file():
         return meta
@@ -72,25 +109,65 @@ def parse_log_meta(log_path: Path) -> dict[str, str]:
     m = re.search(r"virt_v2v_image_fqin:\s*(\S+)", text)
     if m:
         meta["image"] = m.group(1)
-    m = re.search(r"^RHEL_VM=(\S+)", text, re.M)
-    if m:
-        meta["rhel_vm"] = m.group(1)
-    m = re.search(r"^WIN_VM=(\S+)", text, re.M)
-    if m:
-        meta["win_vm"] = m.group(1)
-    for label in ("rhel", "win"):
+    for label in vm_labels:
+        upper = label.upper()
+        name_m = re.search(rf"^{re.escape(upper)}=(\S+)", text, re.M)
+        if not name_m and label == "rhel":
+            name_m = re.search(r"^RHEL_VM=(\S+)", text, re.M)
+        if not name_m and label == "win":
+            name_m = re.search(r"^WIN_VM=(\S+)", text, re.M)
+        if name_m:
+            meta[f"{label}_vm"] = name_m.group(1)
         m = re.search(
-            rf"RESULT {label}: status=(\S+) total=(\S+)",
+            rf"RESULT {re.escape(label)}: status=(\S+) total=(\S+)",
             text,
         )
         if m:
             meta[f"{label}_status"] = m.group(1)
             meta[f"{label}_wall"] = m.group(2)
+    m = re.search(r"Migration started at (\S+)", text)
+    if m:
+        meta["started_at"] = m.group(1)
+    m = re.search(r"Migration ended at (\S+)", text)
+    if m:
+        meta["ended_at"] = m.group(1)
+    m = re.search(r"Migration lifetime: (\S+)", text)
+    if m:
+        meta["lifetime"] = m.group(1)
+    else:
+        m = re.search(r"Plan \S+ finished: status=\S+ duration=(\S+)", text)
+        if m:
+            meta["lifetime"] = m.group(1)
+    if "ended_at" not in meta:
+        ended = add_wall(meta.get("started_at"), meta.get("lifetime"))
+        if ended:
+            meta["ended_at"] = ended
     return meta
 
 
 def fmt_peak(v: int | None, unit: str) -> str:
     return f"{v} {unit}" if v is not None else "—"
+
+
+def parse_iso_utc(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def fmt_iso_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def add_wall(iso: str | None, wall: str | None) -> str | None:
+    dt = parse_iso_utc(iso)
+    secs = parse_wall_s(wall)
+    if dt is None or secs is None:
+        return None
+    return fmt_iso_utc(dt + timedelta(seconds=secs))
 
 
 def parse_wall_s(wall: str | None) -> int | None:
@@ -133,6 +210,7 @@ def build_html(
     converters: list[str],
     data: dict[str, dict[str, list[dict[str, Any]]]],
     meta: dict[str, dict[str, str]],
+    vm_labels: list[str],
 ) -> str:
     """converters: ordered list like ['ref','kc'] or ['kc'].
     data[converter][vm] = samples
@@ -148,8 +226,8 @@ def build_html(
     # Embed series consts
     consts: list[str] = []
     for conv in order:
-        for vm in ("rhel", "win"):
-            key = f"{vm.upper()}_{conv.upper()}"
+        for vm in vm_labels:
+            key = f"{js_ident(vm)}_{conv.upper()}"
             consts.append(series_js(key, data.get(conv, {}).get(vm, [])))
 
     # Duration / peak / net table rows
@@ -157,10 +235,11 @@ def build_html(
     dur_rows = []
     peak_rows = []
     net_rows = []
-    for vm, vm_label in (("rhel", "RHEL"), ("win", "Windows")):
-        dur_cells = [f"<td>{vm_label}</td>"]
-        peak_cells = [f"<td>{vm_label}</td>"]
-        net_cells = [f"<td>{vm_label}</td>"]
+    for vm in vm_labels:
+        vm_title = vm_display(vm)
+        dur_cells = [f"<td>{vm_title}</td>"]
+        peak_cells = [f"<td>{vm_title}</td>"]
+        net_cells = [f"<td>{vm_title}</td>"]
         walls_s: dict[str, int | None] = {}
         for conv in order:
             m = meta.get(conv, {})
@@ -195,7 +274,7 @@ def build_html(
     has_duration = any(
         meta.get(c, {}).get(f"{vm}_wall")
         for c in order
-        for vm in ("rhel", "win")
+        for vm in vm_labels
     )
     duration_section = ""
     if has_duration:
@@ -206,15 +285,81 @@ def build_html(
 {"".join(dur_rows)}
 </table>
 """
-    # Chart bootstrap JS — works for 1 or 2 converters
+
+    def meta_cell(conv: str, key: str) -> str:
+        value = meta.get(conv, {}).get(key)
+        return f"<td>{value}</td>" if value else "<td>—</td>"
+
+    has_lifetime = any(
+        meta.get(c, {}).get("lifetime") or meta.get(c, {}).get("started_at")
+        for c in order
+    )
+    lifetime_section = ""
+    if has_lifetime:
+        start_cells = ["<td>Start (UTC)</td>"]
+        end_cells = ["<td>End (UTC)</td>"]
+        life_cells = ["<td>Lifetime</td>"]
+        life_s: dict[str, int | None] = {}
+        for conv in order:
+            start_cells.append(meta_cell(conv, "started_at"))
+            end_cells.append(meta_cell(conv, "ended_at"))
+            life = meta.get(conv, {}).get("lifetime")
+            life_s[conv] = parse_wall_s(life)
+            life_cells.append(f"<td>{life}</td>" if life else "<td>—</td>")
+        if show_dur_diff:
+            start_cells.append("<td></td>")
+            end_cells.append("<td></td>")
+            life_cells.append(
+                f"<td>{fmt_dur_diff(life_s.get('kc'), life_s.get('ref'))}</td>"
+            )
+        lifetime_section = f"""
+<h2>Migration lifetime</h2>
+<p class="caption">From <code>oc mtv start</code> until the plan is terminal
+(log lines: <code>Migration started at</code>, <code>Migration ended at</code>,
+or <code>Plan … finished … duration=</code>).</p>
+<table>
+<tr><th></th>{dur_head}</tr>
+<tr>{"".join(start_cells)}</tr>
+<tr>{"".join(end_cells)}</tr>
+<tr>{"".join(life_cells)}</tr>
+</table>
+"""
     series_args = {
-        "rhel": ", ".join(f"{'rhel'.upper()}_{c.upper()}" for c in order),
-        "win": ", ".join(f"{'win'.upper()}_{c.upper()}" for c in order),
+        vm: ", ".join(f"{js_ident(vm)}_{c.upper()}" for c in order) for vm in vm_labels
     }
     legend_names = [labels.get(c, c) for c in order]
     color_mem = [colors[c]["mem"] for c in order]
     color_cpu = [colors[c]["cpu"] for c in order]
     color_rx = [colors[c]["rx"] for c in order]
+
+    chart_calls = []
+    mem_sections = []
+    net_sections = []
+    for i, vm in enumerate(vm_labels):
+        title_vm = vm_display(vm)
+        caption = (
+            '<p class="caption">x-axis = elapsed seconds since monitor start</p>\n'
+            if i == 0
+            else ""
+        )
+        mem_sections.append(
+            f"<h2>{title_vm} conversion pod — memory &amp; CPU over time</h2>\n"
+            f'<div class="chart-box"><canvas id="{vm}MemCpu"></canvas></div>\n'
+            f"{caption}"
+        )
+        net_cap = (
+            '<p class="caption">Cumulative bytes received from /proc/net/dev '
+            "(all non-lo interfaces)</p>\n"
+            if i == 0
+            else ""
+        )
+        net_sections.append(
+            f"<h2>{title_vm} conversion pod — network RX over time</h2>\n"
+            f'<div class="chart-box short"><canvas id="{vm}Net"></canvas></div>\n'
+            f"{net_cap}"
+        )
+        chart_calls.append(f"mkMemCpu('{vm}MemCpu', {series_args[vm]});")
+        chart_calls.append(f"mkNet('{vm}Net', {series_args[vm]});")
 
     app_js = f"""
 const SERIES_LABELS = {json.dumps(legend_names)};
@@ -276,10 +421,7 @@ function mkNet(canvasId,...series){{
   }});
 }}
 
-mkMemCpu('rhelMemCpu', {series_args["rhel"]});
-mkMemCpu('winMemCpu', {series_args["win"]});
-mkNet('rhelNet', {series_args["rhel"]});
-mkNet('winNet', {series_args["win"]});
+{chr(10).join(chart_calls)}
 """
 
     return f"""<!DOCTYPE html>
@@ -313,14 +455,9 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
   Memory = cgroup RSS (Mi) · CPU = metrics-server (millicores) · Net = cumulative /proc/net/dev (Mi)<br>
   {meta_line}
 </p>
+{lifetime_section}
 {duration_section}
-<h2>RHEL conversion pod — memory &amp; CPU over time</h2>
-<div class="chart-box"><canvas id="rhelMemCpu"></canvas></div>
-<p class="caption">x-axis = elapsed seconds since monitor start</p>
-
-<h2>Windows conversion pod — memory &amp; CPU over time</h2>
-<div class="chart-box"><canvas id="winMemCpu"></canvas></div>
-
+{"".join(mem_sections)}
 <hr>
 
 <h2>Peak resource usage</h2>
@@ -331,13 +468,7 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
 
 <hr>
 
-<h2>RHEL conversion pod — network RX over time</h2>
-<div class="chart-box short"><canvas id="rhelNet"></canvas></div>
-<p class="caption">Cumulative bytes received from /proc/net/dev (all non-lo interfaces)</p>
-
-<h2>Windows conversion pod — network RX over time</h2>
-<div class="chart-box short"><canvas id="winNet"></canvas></div>
-
+{"".join(net_sections)}
 <h2>Network totals (last sample RX)</h2>
 <table>
 <tr><th>VM</th>{net_head}</tr>
@@ -362,21 +493,29 @@ def main() -> int:
     data: dict[str, dict[str, list[dict[str, Any]]]] = {}
     meta: dict[str, dict[str, str]] = {}
     converters: list[str] = []
+    mem_dirs: list[Path] = []
 
     for conv in ("kc", "ref"):
         mem_dir = Path(f"{prefix}-{conv}-mem")
         if not mem_dir.is_dir():
             continue
         converters.append(conv)
-        data[conv] = {
-            "rhel": load_csv(mem_dir / "rhel-virt-v2v-memory.csv"),
-            "win": load_csv(mem_dir / "win-virt-v2v-memory.csv"),
-        }
-        meta[conv] = parse_log_meta(Path(f"{prefix}-{conv}.log"))
+        mem_dirs.append(mem_dir)
 
     if not converters:
         print(f"ERROR: no *-mem dirs found for prefix {prefix}", file=sys.stderr)
         return 1
+
+    vm_labels = discover_vm_labels(mem_dirs)
+    if not vm_labels:
+        print(f"ERROR: no *-virt-v2v-memory.csv files under {prefix}-*-mem", file=sys.stderr)
+        return 1
+
+    for conv, mem_dir in zip(converters, mem_dirs):
+        data[conv] = {
+            vm: load_csv(mem_dir / f"{vm}{CSV_SUFFIX}") for vm in vm_labels
+        }
+        meta[conv] = parse_log_meta(Path(f"{prefix}-{conv}.log"), vm_labels)
 
     # Prefer compare title when both present
     if "ref" in converters and "kc" in converters:
@@ -394,26 +533,38 @@ def main() -> int:
         img = meta.get(c, {}).get("image")
         if img:
             images.append(f"{c}={img}")
-    vms = []
-    for c in converters:
-        m = meta.get(c, {})
-        if m.get("rhel_vm"):
-            vms.append(m["rhel_vm"])
-            break
-    for c in converters:
-        m = meta.get(c, {})
-        if m.get("win_vm"):
-            vms.append(m["win_vm"])
-            break
+    vms: list[str] = []
+    for vm in vm_labels:
+        for c in converters:
+            name = meta.get(c, {}).get(f"{vm}_vm")
+            if name:
+                vms.append(name)
+                break
+
+    lifetimes: list[str] = []
+    for conv in converters:
+        m = meta.get(conv, {})
+        life = m.get("lifetime")
+        started = m.get("started_at")
+        ended = m.get("ended_at")
+        if not life and not started:
+            continue
+        bit = f"{conv} lifetime={life or '—'}"
+        if started and ended:
+            bit += f" ({started} → {ended})"
+        elif started:
+            bit += f" (start={started})"
+        lifetimes.append(bit)
 
     meta_line = (
         f"run {prefix.name} · mode={mode} · converters={','.join(converters)}"
         + (f" · VMs: {', '.join(vms)}" if vms else "")
         + (f" · {' · '.join(images)}" if images else "")
+        + (f" · {' · '.join(lifetimes)}" if lifetimes else "")
     )
 
     out = Path(f"{prefix}.html")
-    out.write_text(build_html(title, meta_line, converters, data, meta))
+    out.write_text(build_html(title, meta_line, converters, data, meta, vm_labels))
     print(f"Wrote {out}")
     return 0
 
