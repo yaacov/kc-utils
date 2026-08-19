@@ -39,6 +39,10 @@ func Run(cfg *Config) error {
 		Source: cfg.Input.Source,
 	}
 
+	if err := resolveInputDisks(&cfg.Input); err != nil {
+		return err
+	}
+
 	if err := validate.Input(len(cfg.Input.Disks), cfg.MountRoot); err != nil {
 		return err
 	}
@@ -315,6 +319,22 @@ func planAndMount(g *guest.Guest, cfg *Config, chosen *types.RootCandidate, allP
 			return fmt.Errorf("mount filesystems: %w", err)
 		}
 	}
+	return nil
+}
+
+func resolveInputDisks(in *types.PrepareInput) error {
+	if len(in.Disks) > 0 {
+		return nil
+	}
+	if in.DiskDir == "" {
+		return nil
+	}
+	disks, err := types.ExpandDiskDir(in.DiskDir)
+	if err != nil {
+		return err
+	}
+	in.Disks = disks
+	slog.Info("expanded disk_dir", "dir", in.DiskDir, "disks", len(disks))
 	return nil
 }
 

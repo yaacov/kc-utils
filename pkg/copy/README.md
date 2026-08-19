@@ -3,17 +3,19 @@
 Standalone vSphere disk copy via govmomi NFC (Network File Copy) export.
 Downloads VMDK disks from vCenter/ESXi over HTTPS — no VMware VDDK library
 required — and writes raw disk images to PVC targets (block devices or
-filesystem images).
+filesystem images) or to `{target_dir}/diskN.img`.
 
 This package implements the `kc-copy` binary's core logic.
 
 ## How it works
 
-1. **Target discovery** — scans `/dev/block[0-9]*` (block devices) and
-   `/mnt/disks/disk[0-9]*` (filesystem mounts) for conversion-pod PVCs.
-   Filters to empty targets (block devices whose first 1 MiB is all zeros —
-   probed by read, since Linux `stat` reports size 0 for block devices —
-   or filesystem images smaller than 1 MiB).
+1. **Target discovery** — if `CopyInput.target_dir` is set, writes
+   `{target_dir}/diskN.img` (raw format) and skips PVC discovery. Otherwise
+   scans `/dev/block[0-9]*` (block devices) and `/mnt/disks/disk[0-9]*`
+   (filesystem mounts) for conversion-pod PVCs. Filters to empty targets
+   (block devices whose first 1 MiB is all zeros — probed by read, since
+   Linux `stat` reports size 0 for block devices — or filesystem images
+   smaller than 1 MiB).
 
 2. **NFC export** — connects to vSphere using credentials from
    `/etc/secret/accessKeyId` and `/etc/secret/secretKey`, locates the VM by
@@ -23,10 +25,11 @@ This package implements the `kc-copy` binary's core logic.
    downloads reuse the govmomi client; ESXi host thumbprints from the lease
    are registered during export (see `nfc.go`).
 
-3. **Disk matching** — filters the NFC lease URLs to only the requested
-   source VMDK paths (snapshot delta suffixes like `-000001.vmdk` are
-   normalized to base `.vmdk` names). Validates that the number of selected
-   source disks matches the number of empty targets.
+3. **Disk matching** — filters the NFC lease URLs to the requested source
+   VMDK paths (snapshot delta suffixes like `-000001.vmdk` are normalized to
+   base `.vmdk` names). Empty `source_disks` selects every lease disk. PVC
+   mode validates that the number of selected source disks matches the number
+   of empty targets.
 
 4. **Concurrent copy** — downloads disks in parallel (default concurrency 4,
    bounded by a semaphore). Each disk is streamed through `StreamToRaw`,
@@ -70,7 +73,7 @@ memory-constrained pods.
 | `nfc.go` | ESXi NFC HTTPS download via govmomi lease thumbprints |
 | `download.go` | NFC download orchestration, `CopyDisk`, progress logging |
 | `filter.go` | VMDK path normalization and NFC lease filtering |
-| `target.go` | PVC target discovery (`DiscoverTargets`, `EmptyTargets`) |
+| `target.go` | PVC target discovery (`DiscoverTargets`, `EmptyTargets`) and `TargetsFromDir` |
 | `drain_linux.go` | Linux page-cache drain via fdatasync + fadvise |
 | `drain_other.go` | No-op drain for non-Linux platforms |
 

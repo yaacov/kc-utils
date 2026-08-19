@@ -1,12 +1,14 @@
 // Package copy provides standalone vSphere disk copy via govmomi NFC export.
 // It downloads VMDK disks from vCenter/ESXi over HTTPS (no VDDK required)
-// and writes raw data to PVC targets (block devices or filesystem images).
+// and writes raw data to PVC targets (block devices or filesystem images)
+// or to `{target_dir}/diskN.img`.
 package copy
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"runtime"
 	"sync"
 
@@ -27,7 +29,8 @@ type CopyInput struct {
 	CaCert          string   `json:"ca_cert,omitempty"`
 	VMName          string   `json:"vm_name"`
 	Fingerprint     string   `json:"fingerprint"`
-	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; filters NFC lease (list order → PVC index)
+	SourceDisks     []string `json:"source_disks"` // VMDK paths to copy; empty = all NFC lease disks (list order → target index)
+	TargetDir       string   `json:"target_dir,omitempty"`
 	Workdir         string   `json:"workdir"`
 	OutputPath      string   `json:"output_path,omitempty"`
 	CopyConcurrency int      `json:"copy_concurrency,omitempty"`
@@ -60,7 +63,7 @@ func ClampConcurrency(n, disks int) int {
 	return n
 }
 
-// Run copies vSphere disks into empty PVC targets via NFC export.
+// Run copies vSphere disks into empty PVC targets or `{target_dir}/diskN.img`.
 func Run(input *CopyInput) error {
 	if input.Host == "" {
 		return fmt.Errorf("host is required")
@@ -71,24 +74,24 @@ func Run(input *CopyInput) error {
 	if input.Fingerprint == "" {
 		return fmt.Errorf("fingerprint is required")
 	}
-	if len(input.SourceDisks) == 0 {
-		return fmt.Errorf("source_disks is required")
-	}
 
-	allTargets, err := DiscoverTargets()
-	if err != nil {
-		return err
-	}
-	if err := logDiscoveredTargets(allTargets); err != nil {
-		return err
-	}
+	var targets []Target
+	if input.TargetDir == "" {
+		allTargets, err := DiscoverTargets()
+		if err != nil {
+			return err
+		}
+		if err := logDiscoveredTargets(allTargets); err != nil {
+			return err
+		}
 
-	targets, err := EmptyTargets()
-	if err != nil {
-		return err
-	}
-	if len(targets) == 0 {
-		return fmt.Errorf("no empty PVC targets found")
+		targets, err = EmptyTargets()
+		if err != nil {
+			return err
+		}
+		if len(targets) == 0 {
+			return fmt.Errorf("no empty PVC targets found")
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -96,6 +99,8 @@ func Run(input *CopyInput) error {
 
 	slog.Info("NFC disk copy starting",
 		"source_disks", len(input.SourceDisks),
+		"all_disks", len(input.SourceDisks) == 0,
+		"target_dir", input.TargetDir,
 		"empty_targets", len(targets),
 		"vm", input.VMName,
 	)
@@ -120,7 +125,25 @@ func Run(input *CopyInput) error {
 		_ = lease.Abort(ctx)
 		return fmt.Errorf("filter NFC disks: %w", err)
 	}
-	if len(selected) != len(targets) {
+	if input.TargetDir != "" {
+		if len(selected) == 0 {
+			_ = lease.Abort(ctx)
+			return fmt.Errorf("no disks in NFC lease")
+		}
+		if err := os.MkdirAll(input.TargetDir, 0o755); err != nil {
+			_ = lease.Abort(ctx)
+			return fmt.Errorf("create target_dir %s: %w", input.TargetDir, err)
+		}
+		targets = TargetsFromDir(input.TargetDir, len(selected))
+		slog.Info("using copy target dir", "dir", input.TargetDir, "disks", len(targets))
+		for _, t := range targets {
+			slog.Info("copy target",
+				"index", t.Index,
+				"path", t.Path,
+				"kind", "file",
+			)
+		}
+	} else if len(selected) != len(targets) {
 		_ = lease.Abort(ctx)
 		return fmt.Errorf("disk count mismatch: %d selected source disk(s) vs %d empty target(s)", len(selected), len(targets))
 	}

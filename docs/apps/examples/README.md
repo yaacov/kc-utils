@@ -16,6 +16,7 @@ work directory; adjust for your environment.
 | File | Used by | Description |
 |------|---------|-------------|
 | [prepare-input-linux.json](prepare-input-linux.json) | kc-prepare | Single-disk Linux guest |
+| [prepare-input-disk-dir.json](prepare-input-disk-dir.json) | kc-prepare | `disk_dir` of standalone `diskN.img` files (no `disks` list) |
 | [prepare-input-windows.json](prepare-input-windows.json) | kc-prepare | Windows guest + static IPs |
 | [prepare-input-multiboot.json](prepare-input-multiboot.json) | kc-prepare | Multiboot with `options.root=first` (also the default when omitted) |
 | [prepare-input-luks.json](prepare-input-luks.json) | kc-prepare | LUKS keyfile mapping |

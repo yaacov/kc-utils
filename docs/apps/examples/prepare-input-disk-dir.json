@@ -1,0 +1,11 @@
+{
+  "disk_dir": "/var/lib/kc/my-vm",
+  "source": {
+    "name": "rhel9-vm",
+    "type": "vmware",
+    "firmware_hint": "uefi"
+  },
+  "options": {
+    "tmp_dir": "/var/lib/kc/tmp"
+  }
+}

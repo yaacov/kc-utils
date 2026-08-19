@@ -58,7 +58,8 @@ Fsck failures are non-fatal: prepare logs a warning and continues.
 
 `PrepareInput` JSON containing:
 
-- `disks` -- list of source disk paths or URIs
+- `disks` -- list of source disk paths or URIs (optional when `disk_dir` is set)
+- `disk_dir` -- directory of `diskN.img` files from standalone `kc-copy --target-dir`; expanded to `disks` before open when `disks` is empty
 - `source` -- source hypervisor metadata (name, type, firmware hint, NICs, etc.)
 - `luks` -- optional LUKS decryption keys
 - `options.root` -- root selection policy (see below)
@@ -83,6 +84,7 @@ A preferred root that is not listed by `inspect-os` is an error. When prepare
 and inspect disagree on which device owns a guest path, prepare wins.
 
 Example inputs: [examples/prepare-input-linux.json](examples/prepare-input-linux.json),
+[examples/prepare-input-disk-dir.json](examples/prepare-input-disk-dir.json),
 [examples/prepare-input-multiboot.json](examples/prepare-input-multiboot.json).
 Example outputs: [examples/prepare-output-complete.json](examples/prepare-output-complete.json),
 [examples/prepare-output-error-multiboot.json](examples/prepare-output-error-multiboot.json).

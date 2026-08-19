@@ -32,8 +32,9 @@ type PipelineData struct {
 
 // PrepareInput is the JSON input to kc-prepare.
 type PrepareInput struct {
-	Disks  []DiskSpec `json:"disks"`
-	Source SourceSpec `json:"source"`
+	Disks   []DiskSpec `json:"disks,omitempty"`
+	DiskDir string     `json:"disk_dir,omitempty"` // directory of diskN.img files; used when Disks is empty
+	Source  SourceSpec `json:"source"`
 	// NetworkMap is provided by the orchestrator for NIC remapping at the
 	// infrastructure level (e.g. Forklift/MTV). Not consumed in-guest; retained
 	// so orchestrators can pass it through the pipeline JSON without losing it.
