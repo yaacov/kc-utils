@@ -19,6 +19,9 @@ build/kc-v2v/cache/*.iso
 .idea/
 .vscode/
 
+# Mac OS data files
+.DS_Store
+
 # Claude Code (keep shared skills)
 .claude/*
 !.claude/skills/
