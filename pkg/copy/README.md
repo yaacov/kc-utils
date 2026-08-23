@@ -1,9 +1,8 @@
 # pkg/copy — NFC disk copy
 
 Standalone vSphere disk copy via govmomi NFC (Network File Copy) export.
-Downloads VMDK disks from vCenter/ESXi over HTTPS — no VMware VDDK library
-required — and writes raw disk images to PVC targets (block devices or
-filesystem images) or to `{target_dir}/diskN.img`.
+Downloads VMDK disks from vCenter/ESXi over HTTPS and writes raw disk images
+to PVC targets (block devices or filesystem images) or to `{target_dir}/diskN.img`.
 
 This package implements the `kc-copy` binary's core logic.
 

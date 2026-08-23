@@ -18,7 +18,7 @@ for creating the target VM.
 
 - Disk copying from VMware uses pure Go
   [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
-  directly into target PVCs (no VDDK or nbdkit required).
+  directly into target PVCs.
 - Guest filesystem operations can run rootless via the
   [libguestfs](https://libguestfs.org/) appliance, driven by the `guestfish`
   CLI: a minimal QEMU appliance VM mounts the guest disks internally, so no

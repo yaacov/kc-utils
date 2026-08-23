@@ -1,8 +1,7 @@
 # Fetch VMware disks to the local machine
 
 Copy a vSphere VM's disks to sparse raw `diskN.img` files with
-[`kc-copy`](../apps/kc-copy.md). Runs on Mac or Linux. No VDDK, nbdkit, or
-libguestfs.
+[`kc-copy`](../apps/kc-copy.md). Runs on Mac or Linux. No libguestfs.
 
 ## Credentials
 

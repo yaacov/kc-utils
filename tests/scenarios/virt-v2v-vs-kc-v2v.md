@@ -22,11 +22,10 @@ Canonical metrics: archived under [`docs/architecture/ref-baseline/runs/`](../..
 |---|---|---|
 | Implementation | C / libguestfs stack (`virt-v2v`) | Pure Go |
 | Architectures | **x86_64 only** | Compiles to **any Go target** (amd64, arm64, …) |
-| vSphere disk copy | Requires **proprietary VMware VDDK** | **No VDDK** — open copy path (e.g. NFC) |
+| vSphere disk copy | virt-v2v disk transfer | govmomi NFC export |
 | Guest conversion | libguestfs / virt-v2v pipeline | kc-prepare / kc-finalize + guestfish |
-| Licensing / redistribution | VDDK redistributability and arch limits apply | No proprietary VDDK dependency |
 
-**Highlight:** kc-v2v is a pure Go converter that can be built for any architecture Forklift targets, and it does **not** require the proprietary VDDK for disk copy. Default virt-v2v remains x86-centric and depends on VDDK for efficient vSphere transfers.
+**Highlight:** kc-v2v is a pure Go converter that can be built for any architecture Forklift targets. Default virt-v2v remains x86-centric.
 
 ---
 
@@ -52,7 +51,7 @@ Plan wall = Initialize → VirtualMachineCreation. Conversion work for kc-v2v is
 | DiskTransferV2v | 13m 4s | 3s | −13m 1s |
 | ImageConversion + DiskTransfer | 18m 48s | 13m 2s | **−5m 46s** |
 
-**Takeaway:** On this archived baseline, both RHEL and Windows are clearly faster end-to-end with kc-v2v. Pipeline shape differs: virt-v2v spends most time in `DiskTransferV2v` (VDDK); kc-v2v folds NFC copy + convert into `ImageConversion`.
+**Takeaway:** On this archived baseline, both RHEL and Windows are clearly faster end-to-end with kc-v2v. Pipeline shape differs: virt-v2v spends most time in `DiskTransferV2v`; kc-v2v folds NFC copy + convert into `ImageConversion`.
 
 ---
 
@@ -87,7 +86,6 @@ kc-v2v peaks later (guest convert / finalize); virt-v2v shows higher spikes, esp
 | Dimension | Winner / note |
 |---|---|
 | Portability | **kc-v2v** — pure Go, multi-arch |
-| No proprietary VDDK | **kc-v2v** |
 | RHEL wall clock | **kc-v2v** (~3.5 min faster) |
 | Windows wall clock | **kc-v2v** (~6 min faster) |
 | Peak memory | **kc-v2v** (lower on both) |

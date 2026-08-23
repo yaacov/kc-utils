@@ -2,8 +2,7 @@
 
 Standalone vSphere NFC disk copy: downloads VMDK disks from vCenter/ESXi over
 HTTPS and writes raw images to empty PVC targets (block devices or filesystem
-images) or to `{target_dir}/diskN.img`. Pure Go govmomi export — no VDDK,
-nbdkit, or nbdcopy.
+images) or to `{target_dir}/diskN.img`. Pure Go govmomi export.
 
 Runs [`pkg/copy/`](../../pkg/copy/) via `copy.Run(CopyInput)`.
 

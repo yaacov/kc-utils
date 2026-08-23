@@ -7,7 +7,7 @@ The image is built with the official **golang** image for compilation and
 
 Binary documentation: [docs/apps/kc-v2v.md](../../docs/apps/kc-v2v.md).
 
-When Forklift attaches **blank PVCs** (cold vSphere, `useV2vForTransfer` path), kc-v2v optionally spawns **`kc-copy`** for NFC disk copy before conversion. Disk copy uses pure Go govmomi NFC export (no VDDK required).
+When Forklift attaches **blank PVCs** (cold vSphere, `useV2vForTransfer` path), kc-v2v optionally spawns **`kc-copy`** for NFC disk copy before conversion. Disk copy uses pure Go govmomi NFC export.
 
 See [pkg/v2v/README.md](../../pkg/v2v/README.md) for copy selection logic, vsphere inventory, configuration, and flow details.
 
@@ -96,8 +96,6 @@ No `VIRTIO_WIN` env path is used at runtime — directory-only driver lookup.
 | `VIRTIO_WIN_LEGACY_URL` | `https://fedorapeople.org/.../virtio-win-0.1.160-1/virtio-win-0.1.160.iso` | Legacy drivers (2k8, 2k3, xp, vista) |
 | `VIRTIO_WIN_SKIP_DOWNLOAD` | `0` | Set to `1` to skip download (pre-populated tree) |
 
-No VDDK sidecar or external libraries are needed — disk copy is pure Go.
-
 ## Forklift wiring
 
 Point the migration controller at this image — same setting as virt-v2v:
@@ -116,7 +114,7 @@ Pipeline stage binaries (`kc-prepare`, `kc-convert-*`, `kc-finalize`, `kc-copy`)
 are installed under `/usr/lib/kc-utils/`. `kc-copy` is also at `/usr/bin/kc-copy`
 for standalone debug use.
 
-Disk copy uses govmomi NFC export — no VDDK sidecar init container is needed.
+Disk copy uses govmomi NFC export.
 
 ## Forklift configuration for kc-v2v
 
@@ -132,7 +130,7 @@ oc mtv settings set --setting virt_v2v_image_fqin --value quay.io/you/kc-v2v:lat
 oc mtv settings unset --setting virt_v2v_extra_args
 ```
 
-kc-v2v uses pure Go NFC export for disk copy — no VDDK init image is required.
+kc-v2v uses pure Go NFC export for disk copy.
 
 ### Plan settings
 

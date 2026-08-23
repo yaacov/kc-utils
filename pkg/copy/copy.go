@@ -1,5 +1,5 @@
 // Package copy provides standalone vSphere disk copy via govmomi NFC export.
-// It downloads VMDK disks from vCenter/ESXi over HTTPS (no VDDK required)
+// It downloads VMDK disks from vCenter/ESXi over HTTPS
 // and writes raw data to PVC targets (block devices or filesystem images)
 // or to `{target_dir}/diskN.img`.
 package copy
