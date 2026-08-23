@@ -23,8 +23,9 @@ import (
 // Environment variables for cross-stage VM sharing. kc-v2v boots one appliance
 // and exports these so stage subprocesses adopt it instead of booting their own.
 const (
-	EnvQEMUSock = "KC_QEMU_SOCK"
-	EnvQEMUPID  = "KC_QEMU_PID"
+	EnvQEMUSock      = "KC_QEMU_SOCK"
+	EnvQEMUPID       = "KC_QEMU_PID"
+	EnvQEMUDebugSock = "KC_QEMU_DEBUG_SOCK"
 )
 
 // vmSession owns a running appliance: the qemu-system process and the agent
@@ -149,18 +150,19 @@ func (s *vmSession) boot(network bool) error {
 	s.socketPath = socketPath
 
 	cfg := launchConfig{
-		Binary:     qemuBinary(arch),
-		Machine:    machineFor(arch),
-		CPU:        cpuFor(arch, accel),
-		Accel:      accel,
-		MemMiB:     resolveMemSize(),
-		SMP:        resolveSMP(),
-		Kernel:     kernel,
-		Initrd:     initrd,
-		Cmdline:    kernelCmdline(arch),
-		SocketPath: socketPath,
-		Drives:     s.drives,
-		Network:    network,
+		Binary:          qemuBinary(arch),
+		Machine:         machineFor(arch),
+		CPU:             cpuFor(arch, accel),
+		Accel:           accel,
+		MemMiB:          resolveMemSize(),
+		SMP:             resolveSMP(),
+		Kernel:          kernel,
+		Initrd:          initrd,
+		Cmdline:         kernelCmdline(arch),
+		SocketPath:      socketPath,
+		DebugSocketPath: debugSocketPath(socketPath),
+		Drives:          s.drives,
+		Network:         network,
 	}
 	args := qemuArgs(&cfg)
 
@@ -176,6 +178,7 @@ func (s *vmSession) boot(network bool) error {
 		"smp", cfg.SMP,
 		"drives", len(cfg.Drives),
 		"socket", socketPath,
+		"debug_socket", cfg.DebugSocketPath,
 	)
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start %s: %w", cfg.Binary, err)
@@ -197,7 +200,11 @@ func (s *vmSession) boot(network bool) error {
 		return fmt.Errorf("qemu appliance boot: %w\n%s", err, s.console.String())
 	}
 	s.client = client
-	slog.Info("qemu appliance ready", "socket", socketPath, "pid", cmd.Process.Pid)
+	slog.Info("qemu appliance ready",
+		"socket", socketPath,
+		"debug_socket", cfg.DebugSocketPath,
+		"pid", cmd.Process.Pid,
+	)
 	return nil
 }
 
@@ -335,6 +342,7 @@ func (s *vmSession) sharedEnv() []string {
 	return []string{
 		EnvQEMUSock + "=" + s.socketPath,
 		EnvQEMUPID + "=" + strconv.Itoa(pid),
+		EnvQEMUDebugSock + "=" + debugSocketPath(s.socketPath),
 		"V2V_memSize=" + strconv.Itoa(resolveMemSize()),
 		"V2V_smp=" + strconv.Itoa(resolveSMP()),
 	}

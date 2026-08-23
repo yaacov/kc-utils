@@ -22,11 +22,18 @@ primitives, then executed inside the appliance via the agent.
 
 ```text
 host unix socket  <──virtio-serial──>  /dev/virtio-ports/org.kc-utils.agent
-   (QEMU -chardev socket,server=on)            (agent in the appliance)
+   (QEMU -chardev socket,server=on)            (agent protocol)
+
+host debug.sock   <──virtio-serial──>  /dev/virtio-ports/org.kc-utils.debug
+   (same private dir as agent.sock)            (interactive bash PTY)
 ```
 
-Wire protocol: length-prefixed JSON frames, `pkg/qemuagent/proto`. One request →
-one response, serialized by a mutex in `client.go`.
+Wire protocol (agent port): length-prefixed JSON frames, `pkg/qemuagent/proto`.
+One request → one response, serialized by a mutex in `client.go`.
+
+The debug port is a raw byte channel, not JSON. Attach while the appliance is
+up with `socat` / `nc`; see
+[Interactive debug shell](../../../../docs/architecture/qemu-appliance.md#interactive-debug-shell).
 
 ## Acceleration
 
@@ -42,9 +49,10 @@ converting an x86_64 guest needs an x86_64 appliance (TCG on Apple Silicon).
 
 Like `guestfs`, a multi-stage pipeline shares one appliance (mounts live inside
 the VM). `kc-v2v` boots it via `StartSharedListener(disks)` and exports
-`KC_QEMU_SOCK` / `KC_QEMU_PID`; each stage subprocess adopts it (`adoptVMSession`)
-instead of booting its own. A standalone single-stage run boots its own VM and
-remounts from the recorded disk infos (`remountFromDiskInfos`).
+`KC_QEMU_SOCK` / `KC_QEMU_PID` / `KC_QEMU_DEBUG_SOCK`; each stage subprocess
+adopts it (`adoptVMSession`) instead of booting its own. A standalone
+single-stage run boots its own VM and remounts from the recorded disk infos
+(`remountFromDiskInfos`).
 
 ## Files
 
@@ -77,6 +85,7 @@ Pure helpers (`qemuArgs`, `accelFor`, `parseLsblkPartitions`, `parseLVPaths`,
 | `KC_APPLIANCE_ARCH` | override appliance arch (default host `GOARCH`) |
 | `KC_QEMU_BINARY`    | override the `qemu-system-*` binary |
 | `KC_QEMU_SOCK` / `KC_QEMU_PID` | set by the parent to share a booted VM across stages |
+| `KC_QEMU_DEBUG_SOCK` | debug-channel unix socket (`debug.sock` next to the agent socket) |
 | `V2V_memSize` / `V2V_smp` | appliance RAM (MiB) / vCPUs |
 
 See [docs/architecture/qemu-appliance.md](../../../../docs/architecture/qemu-appliance.md)
