@@ -21,8 +21,7 @@ for creating the target VM.
   directly into target PVCs.
 - Guest filesystem operations go through a pluggable backend: host-kernel
   mounts (`direct`), a [libguestfs](https://libguestfs.org/) appliance
-  (`guestfs`), or a QEMU appliance with in-guest agent (`qemu`). See
-  [docs/architecture/backends.md](docs/architecture/backends.md).
+  (`guestfs`), or a QEMU appliance with in-guest agent (`qemu`).
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
 On OpenShift MTV cold migrations, kc-v2v beats virt-v2v wall time
@@ -87,7 +86,7 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-convert-windows` | Convert Windows guests: install virtio-win drivers, update registry, firstboot scripts |
 | `kc-finalize` | Unmount, trim, fsck, assign bus slots, determine firmware, emit TargetMeta JSON |
 | `kc-v2v` | V2V orchestrator for Forklift: runs the pipeline + inspection HTTP (optional NFC disk copy for blank PVCs) |
-| `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
+| `kc-copy` | NFC disk copy stage via govmomi |
 | `kc-guest-agent` | In-appliance PID 1 for `--backend qemu` (not run on the conversion host) |
 
 The tree compiles on any Unix host. `kc-copy` runs on any Unix. Release
