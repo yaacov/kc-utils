@@ -1,22 +1,14 @@
 # qemu backend
 
-A guest-disk backend that boots **our own** minimal appliance directly with
-`qemu-system-*`, attaches the guest disks as virtio-blk drives, and drives a
-tiny in-guest agent over a unix socket.
+A guest-disk backend that boots a minimal appliance with `qemu-system-*`,
+attaches guest disks as virtio-blk drives, and drives `kc-guest-agent` over a
+unix socket.
 
 The appliance exposes only **primitive** operations (exec, file I/O, raw device
 I/O, stat/statfs). **All conversion logic stays host-side** in this package:
 partition discovery, LVM activation, LUKS/Clevis unlock, mount planning,
 fs-checks, and chrooted guest commands are composed on the host out of those
 primitives, then executed inside the appliance via the agent.
-
-## Why it exists
-
-- **We own it.** The appliance is one we build
-  ([`build/kc-appliance`](../../../../build/kc-appliance)); the host only needs
-  a `qemu-system-*` binary and that image.
-- **It runs on macOS.** The host code only launches qemu and speaks a socket, so
-  this is a first-class backend on Apple Silicon (HVF), not just Linux (KVM).
 
 ## Transport
 
@@ -33,7 +25,7 @@ One request → one response, serialized by a mutex in `client.go`.
 
 The debug port is a raw byte channel, not JSON. Attach while the appliance is
 up with `socat` / `nc`; see
-[Interactive debug shell](../../../../docs/architecture/qemu-appliance.md#interactive-debug-shell).
+[Interactive debug shell](../../../../docs/architecture/backends.md#interactive-debug-shell).
 Local cookbook: [docs/debug/README.md](../../../../docs/debug/README.md).
 
 ## Acceleration
@@ -89,5 +81,5 @@ Pure helpers (`qemuArgs`, `accelFor`, `parseLsblkPartitions`, `parseLVPaths`,
 | `KC_QEMU_DEBUG_SOCK` | debug-channel unix socket (`debug.sock` next to the agent socket) |
 | `V2V_memSize` / `V2V_smp` | appliance RAM (MiB) / vCPUs |
 
-See [docs/architecture/qemu-appliance.md](../../../../docs/architecture/qemu-appliance.md)
+See [docs/architecture/backends.md](../../../../docs/architecture/backends.md)
 for the full protocol and host/guest logic split.

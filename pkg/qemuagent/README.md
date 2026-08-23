@@ -15,4 +15,4 @@ appliance (see [`build/kc-appliance`](../../build/kc-appliance)). It exposes onl
 imports `pkg/backend`: all conversion logic lives host-side in the backend.
 
 Binary contract: [docs/apps/kc-guest-agent.md](../../docs/apps/kc-guest-agent.md).
-Protocol and the host/guest split: [docs/architecture/qemu-appliance.md](../../docs/architecture/qemu-appliance.md).
+Protocol and the host/guest split: [docs/architecture/backends.md](../../docs/architecture/backends.md).

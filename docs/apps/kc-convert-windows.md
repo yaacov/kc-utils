@@ -4,7 +4,7 @@ Converts a Windows guest to run on KVM/virtio. Installs virtio-win drivers,
 registers them in the Windows registry, disables hypervisor-specific services,
 and generates firstboot scripts for post-reboot setup.
 
-`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
+Guest disk backends: [../architecture/backends.md](../architecture/backends.md).
 
 ## Entry Point
 

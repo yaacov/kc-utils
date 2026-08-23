@@ -272,7 +272,7 @@ because fsck runs in the appliance VM, not on the conversion-pod host. See
 Fedora libguestfs mounts NTFS with plain `guestfish`. On RHEL/CentOS/UBI,
 libguestfs only allows NTFS when the program name starts with `virt-`;
 kc-utils prefers `virt-guestfish` when that binary is present. Details:
-[docs/architecture/privilege-model.md](../../docs/architecture/privilege-model.md#ntfs-mounts-on-rhelcentosubi).
+[docs/architecture/backends.md](../../docs/architecture/backends.md#ntfs-mounts-on-rhelcentosubi).
 
 See also existing `V2V_*` flags in [`pkg/v2v/config/config.go`](../../pkg/v2v/config/config.go).
 

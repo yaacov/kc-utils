@@ -21,9 +21,8 @@ for creating the target VM.
   directly into target PVCs.
 - Guest filesystem operations go through a pluggable backend: host-kernel
   mounts (`direct`), a [libguestfs](https://libguestfs.org/) appliance
-  (`guestfs`), or our own QEMU appliance (`qemu`). Appliance backends mount
-  guest disks inside a VM, so they need no host root or `CAP_SYS_ADMIN`;
-  `qemu` also runs on macOS.
+  (`guestfs`), or a QEMU appliance with in-guest agent (`qemu`). See
+  [docs/architecture/backends.md](docs/architecture/backends.md).
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
 On OpenShift MTV cold migrations, kc-v2v beats virt-v2v wall time
@@ -37,18 +36,11 @@ instead of a separate DiskTransferV2v stream.
 Interactive charts of memory, CPU, and network I/O over time for the ref vs
 kc-v2v runs.
 
-Three guest access modes are supported (see [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md)):
+Three guest disk backends are available (see [docs/architecture/backends.md](docs/architecture/backends.md)):
 
-- **host-mount** (`--backend direct`, default) - mounts guest filesystems with
-  `mount(8)` and runs guest tools via `chroot` into that tree; requires root or
-  `CAP_SYS_ADMIN`.
-- **guestfs** (`--backend guestfs`) - runs a minimal [libguestfs](https://libguestfs.org/)
-  appliance VM via `guestfish`; guest disks are accessed inside the appliance
-  (no host root); requires Linux with `/dev/kvm`.
-- **qemu** (`--backend qemu`) - boots our own minimal appliance directly with
-  `qemu-system-*` and drives a primitive in-guest agent over a unix socket,
-  composing all logic host-side. Runs on **Linux or macOS** (KVM/HVF/TCG). See
-  [docs/architecture/qemu-appliance.md](docs/architecture/qemu-appliance.md).
+- **direct** (`--backend direct`, default) — host kernel mounts and `chroot` for guest commands
+- **guestfs** (`--backend guestfs`) — [libguestfs](https://libguestfs.org/) appliance via `guestfish`
+- **qemu** (`--backend qemu`) — QEMU appliance with in-guest agent over a virtio-serial socket
 
 ## Forklift (MTV) Integration
 
@@ -66,9 +58,9 @@ See [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) for full usage in
 ## Design Highlights
 
 - **Pure Go core pipeline** - builds with standard `go build` on any Unix host, no C toolchain
-  required. Release images use `GOOS=linux` (`make build`). The `direct` and
-  `guestfs` backends require Linux at runtime; the `qemu` backend also runs on
-  macOS (it only launches `qemu-system-*` and speaks a unix socket).
+  required. Release images use `GOOS=linux` (`make build`). Guest disk backends
+  have platform-specific runtime requirements; see
+  [docs/architecture/backends.md](docs/architecture/backends.md).
 - **Initramfs rebuild via guest tools** - virtio drivers are injected by running
   the guest's own tooling via `chroot` into the mounted guest root (host-mount)
   or an in-appliance chroot (guestfs): `dracut` first, then `update-initramfs`,
@@ -98,9 +90,9 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
 | `kc-guest-agent` | In-appliance PID 1 for `--backend qemu` (not run on the conversion host) |
 
-The tree compiles on any Unix host. Guest disk backends (`direct`, `guestfs`) require
-Linux at runtime; `qemu` also runs on macOS. `kc-copy` runs on any Unix. Release
-binaries are built with `make build` (`GOOS=linux`).
+The tree compiles on any Unix host. `kc-copy` runs on any Unix. Release
+binaries are built with `make build` (`GOOS=linux`). Guest disk backend
+requirements are documented in [docs/architecture/backends.md](docs/architecture/backends.md).
 
 Inter-app communication uses JSON files written to a shared directory, plus a
 shared mount point where the guest root filesystem is mounted.
@@ -135,8 +127,7 @@ dependencies, build, test, and PR guidance.
 ### Architecture
 
 - [docs/architecture/README.md](docs/architecture/README.md) - Architecture reference index
-- [docs/architecture/privilege-model.md](docs/architecture/privilege-model.md) - Privilege model: host-mount vs guestfish / libguestfs appliance
-- [docs/architecture/qemu-appliance.md](docs/architecture/qemu-appliance.md) - qemu backend: our own minimal appliance, primitive agent protocol, host/guest logic split
+- [docs/architecture/backends.md](docs/architecture/backends.md) - Guest disk backends (`direct`, `guestfs`, `qemu`)
 - [docs/architecture/guest-os-handlers.md](docs/architecture/guest-os-handlers.md) - Linux distro and Windows version classification, special cases, and code map
 - [docs/architecture/conversion-paths.md](docs/architecture/conversion-paths.md) - OS + source-hypervisor conversion path reference
 

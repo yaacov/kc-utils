@@ -15,7 +15,7 @@ describes only its own contract**; composition and deployment live elsewhere.
 | **Orchestrator** | [../apps/kc-v2v.md](../apps/kc-v2v.md), [../apps/forklift-usage.md](../apps/forklift-usage.md) | `V2V_*` → JSON mapping, subprocess order, Forklift wiring | Block/plugin internals (link to architecture + stage docs) |
 | **Integration** | [../apps/README.md](../apps/README.md), [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) | Full pod flow, image contents, MTV setup | Per-flag reference (link to stage docs) |
 | **Debug cookbook** | [../debug/](../debug/) | Local Mac/Linux qemu how-tos | Stage CLI tables, Forklift env, protocol essays |
-| **Design** | This directory | Cross-cutting behavior (privilege, OS paths, benchmarks) | CLI tables duplicated from app docs |
+| **Design** | This directory | Cross-cutting behavior (backends, OS paths, benchmarks) | CLI tables duplicated from app docs |
 
 **Rules (mirror [block isolation](../../community/architecture.md#block-isolation)):**
 
@@ -41,8 +41,7 @@ orchestrator or integration docs.
 
 ## Design docs
 
-- [privilege-model.md](privilege-model.md) — host-mount vs libguestfs appliance privilege trade-offs
-- [qemu-appliance.md](qemu-appliance.md) — qemu backend: our own minimal appliance, primitive agent protocol, host/guest logic split
+- [backends.md](backends.md) — guest disk backends (`direct`, `guestfs`, `qemu`)
 - [filesystem-checks.md](filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair, Windows NTFS
 - [guest-os-handlers.md](guest-os-handlers.md) — Linux distro and Windows version classification, special cases, and code map
 - [conversion-paths.md](conversion-paths.md) — OS + source-hypervisor path reference (index)

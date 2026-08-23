@@ -25,7 +25,7 @@ appliance, prepare / convert / finalize, boot the converted x86 guest):
 Design reference, OS classification, conversion-path matrices, and benchmarks:
 
 - [architecture/README.md](architecture/README.md) — architecture docs index and **documentation layering**
-- [architecture/privilege-model.md](architecture/privilege-model.md) — host-mount vs guestfish
+- [architecture/backends.md](architecture/backends.md) — guest disk backends (`direct`, `guestfs`, `qemu`)
 - [architecture/guest-os-handlers.md](architecture/guest-os-handlers.md) — Linux distro and Windows version handlers
 - [architecture/conversion-paths.md](architecture/conversion-paths.md) — OS + hypervisor path reference
 - [architecture/ref-baseline/README.md](architecture/ref-baseline/README.md) — MTV cold-migration benchmark

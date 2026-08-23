@@ -3,7 +3,7 @@
 ## Before you start
 
 - Read [architecture.md](architecture.md) before changing code structure, packages, plugins, or guest disk access.
-- Source compiles on any Unix (`//go:build unix`). The `direct` and `guestfs` backends require Linux at runtime; the `qemu` backend also runs on macOS. Release binaries use `make build` (`GOOS=linux`).
+- Source compiles on any Unix (`//go:build unix`). Guest disk backends have platform-specific runtime requirements; see [docs/architecture/backends.md](../docs/architecture/backends.md). Release binaries use `make build` (`GOOS=linux`).
 
 ## Directory layout
 

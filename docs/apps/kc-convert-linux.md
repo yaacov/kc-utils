@@ -4,7 +4,7 @@ Converts a Linux guest to run on KVM/virtio. Removes source hypervisor tools,
 injects virtio drivers into the initramfs, remaps device names, and fixes
 the bootloader configuration.
 
-`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
+Guest disk backends: [../architecture/backends.md](../architecture/backends.md).
 
 ## Entry Point
 

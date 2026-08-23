@@ -52,7 +52,7 @@ the agent falls back to `/sys/class/virtio-ports/*/name` and opens the raw
 
 Length-prefixed JSON frames (4-byte big-endian length + one JSON object).
 `[]byte` fields are base64. One flat `Request`, one flat `Response`. Framing
-and field layout: [qemu-appliance.md](../architecture/qemu-appliance.md#wire-protocol).
+and field layout: [backends.md](../architecture/backends.md#wire-protocol).
 
 | Op | Role |
 |----|------|
@@ -76,7 +76,7 @@ mounts filesystems they appear under `/mnt/guest`.
 
 How-to (attach snippet, held appliance, per-stage checks):
 [../debug/README.md](../debug/README.md). Design notes:
-[qemu-appliance.md — Interactive debug shell](../architecture/qemu-appliance.md#interactive-debug-shell).
+[backends.md — Interactive debug shell](../architecture/backends.md#interactive-debug-shell).
 
 ## Integration
 
@@ -92,7 +92,7 @@ the `kc-v2v` container image (that image converts with `guestfs`).
 
 ## Related
 
-- [../architecture/qemu-appliance.md](../architecture/qemu-appliance.md) — host/guest split and protocol
+- [../architecture/backends.md](../architecture/backends.md) — guest disk backends (host/guest split and protocol)
 - [../../pkg/qemuagent/README.md](../../pkg/qemuagent/README.md) — `proto/` and `server/` packages
 - [../../build/kc-appliance/README.md](../../build/kc-appliance/README.md) — kernel + initramfs build
 - [../debug/start-appliance.md](../debug/start-appliance.md) — boot the appliance and attach the debug shell

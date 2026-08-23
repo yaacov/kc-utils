@@ -70,7 +70,7 @@ Runnable examples and sample JSON for every handoff live in
 [examples/](examples/README.md).
 
 From a Linux host with root, after `make build`
-(see [../architecture/privilege-model.md](../architecture/privilege-model.md) for why root is required, and `--backend guestfs` to avoid it):
+(see [../architecture/backends.md](../architecture/backends.md) for backend requirements):
 
 ```bash
 sudo docs/apps/examples/run-linux-disk.sh
@@ -199,7 +199,7 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 
 ### Architecture reference
 
-See [../architecture/README.md](../architecture/README.md) for privilege model,
+See [../architecture/README.md](../architecture/README.md) for guest disk backends,
 guest OS handlers, conversion-path matrices, and benchmark data.
 
 - [../architecture/filesystem-checks.md](../architecture/filesystem-checks.md) — guest fsck timing, supported FS types, check vs repair

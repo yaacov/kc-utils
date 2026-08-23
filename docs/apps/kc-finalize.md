@@ -5,7 +5,7 @@ checks, assigns target bus slots, resolves firmware type, and assembles the
 final `TargetMeta` JSON that contains everything the orchestrator needs to
 create the KVM virtual machine.
 
-`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
+Guest disk backends: [../architecture/backends.md](../architecture/backends.md).
 
 ## Entry Point
 

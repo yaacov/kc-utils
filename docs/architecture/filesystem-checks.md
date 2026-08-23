@@ -51,7 +51,7 @@ post-fsck in [`pkg/cmd/finalize/pipeline.go`](../../pkg/cmd/finalize/pipeline.go
 
 In guestfs mode (kc-v2v container default), finalize unmounts inside the
 libguestfs appliance before post-fsck; LUKS mappers stay open until fsck
-completes. See [privilege-model.md](privilege-model.md).
+completes. See [backends.md](backends.md).
 
 ## LUKS and encryption
 
@@ -131,6 +131,6 @@ and writes raw bytes to the block device — it is not an fsck pass.
 
 - Stage behavior: [kc-prepare.md](../apps/kc-prepare.md), [kc-finalize.md](../apps/kc-finalize.md)
 - Orchestrator: [kc-v2v.md](../apps/kc-v2v.md)
-- Backend trade-offs: [privilege-model.md](privilege-model.md)
+- Backend trade-offs: [backends.md](backends.md)
 - Windows convert pipeline: [kc-convert-windows.md](../apps/kc-convert-windows.md)
 - Container / guestfs default: [build/kc-v2v/README.md](../../build/kc-v2v/README.md)

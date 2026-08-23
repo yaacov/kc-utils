@@ -64,7 +64,7 @@ func NewMounted(disks []types.DiskSpec, mountRoot string, diskInfos []types.Disk
 		return b, nil
 	}
 
-	// No shared appliance: boot our own and remount from the recorded plan.
+	// No shared appliance: boot a local VM and remount from the recorded plan.
 	session, err = newVMSession(drives, b.network)
 	if err != nil {
 		return nil, err

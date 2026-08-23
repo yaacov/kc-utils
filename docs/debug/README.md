@@ -6,7 +6,7 @@ prove that step worked.
 
 This is not the CLI contract. Stage flags and JSON live under
 [`docs/apps/`](../apps/). Design of the appliance and protocol:
-[`docs/architecture/qemu-appliance.md`](../architecture/qemu-appliance.md).
+[`docs/architecture/backends.md`](../architecture/backends.md).
 The in-appliance binary: [`docs/apps/kc-guest-agent.md`](../apps/kc-guest-agent.md).
 
 ```text
