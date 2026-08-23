@@ -19,18 +19,20 @@ import (
 const defaultPort = "/dev/virtio-ports/org.kc-utils.agent"
 
 type mountpoint struct {
-	source, target, fstype string
-	flags                  uintptr
+	source, target, fstype, data string
+	flags                        uintptr
 }
 
 // coreMounts are the pseudo-filesystems guest tools (blkid, lvm, mount, chroot)
 // expect. Failures are non-fatal: a device may already be mounted by the kernel.
+// devpts is required so the debug channel can allocate a PTY for interactive bash.
 var coreMounts = []mountpoint{
-	{"proc", "/proc", "proc", 0},
-	{"sysfs", "/sys", "sysfs", 0},
-	{"devtmpfs", "/dev", "devtmpfs", 0},
-	{"tmpfs", "/run", "tmpfs", 0},
-	{"tmpfs", "/tmp", "tmpfs", 0},
+	{"proc", "/proc", "proc", "", 0},
+	{"sysfs", "/sys", "sysfs", "", 0},
+	{"devtmpfs", "/dev", "devtmpfs", "", 0},
+	{"devpts", "/dev/pts", "devpts", "ptmxmode=0666,mode=0620", 0},
+	{"tmpfs", "/run", "tmpfs", "", 0},
+	{"tmpfs", "/tmp", "tmpfs", "", 0},
 }
 
 // virtioModules are loaded (best-effort) during init so the agent can reach the
@@ -59,6 +61,9 @@ func run(port string, asInit bool) error {
 		}
 		mountCoreFilesystems()
 		loadKernelModules()
+		// Interactive debug channel: a second virtio-serial port with bash on a
+		// PTY. Independent of the agent protocol; failures stay in this goroutine.
+		go serveChannel(debugPortName, []string{"/bin/bash", "-i"})
 	}
 	for {
 		err := serveOnce(port)
@@ -116,7 +121,7 @@ func mountCoreFilesystems() {
 			fmt.Fprintf(os.Stderr, "kc-guest-agent: mkdir %s: %v\n", m.target, err)
 			continue
 		}
-		if err := syscall.Mount(m.source, m.target, m.fstype, m.flags, ""); err != nil {
+		if err := syscall.Mount(m.source, m.target, m.fstype, m.flags, m.data); err != nil {
 			fmt.Fprintf(os.Stderr, "kc-guest-agent: mount %s: %v\n", m.target, err)
 		}
 	}

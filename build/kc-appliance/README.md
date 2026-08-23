@@ -66,14 +66,21 @@ qemu-user emulation registered:
 There is no separate root filesystem: the kernel unpacks `initramfs.img` into a
 tmpfs and runs `/init` (the agent) as PID 1. On start the agent:
 
-1. mounts `/proc`, `/sys`, `/dev` (devtmpfs), `/run`, `/tmp`;
-2. `modprobe`s the virtio drivers (`virtio_console` for the agent port,
+1. mounts `/proc`, `/sys`, `/dev` (devtmpfs), `/dev/pts` (devpts, for the debug
+   PTY), `/run`, `/tmp`;
+2. `modprobe`s the virtio drivers (`virtio_console` for the serial ports,
    `virtio_blk` for the disks, …);
-3. resolves the virtio-serial port and serves the protocol in
+3. starts an interactive debug channel on virtio-serial port
+   `org.kc-utils.debug` (`/bin/bash -i` on a PTY, respawned on exit);
+4. resolves the agent virtio-serial port and serves the protocol in
    `pkg/qemuagent/proto`, reopening the port after each stage disconnects. The
-   named node `/dev/virtio-ports/org.kc-utils.agent` is a udev artifact, so with
-   no udevd the agent falls back to matching `/sys/class/virtio-ports/*/name` and
-   opens the raw `/dev/vportNpM` device.
+   named node `/dev/virtio-ports/<name>` is a udev artifact, so with no udevd
+   the agent falls back to matching `/sys/class/virtio-ports/*/name` and opens
+   the raw `/dev/vportNpM` device.
+
+To attach a shell to a running appliance (for example while `kc-prepare
+--backend qemu` is in progress), connect to `debug.sock` next to `agent.sock`.
+See [Interactive debug shell](../../docs/architecture/qemu-appliance.md#interactive-debug-shell).
 
 The host side (launch args, session lifecycle, disk→`/dev/vd*` mapping) lives in
 `pkg/backend/plugins/qemu`. See `docs/architecture/qemu-appliance.md` for the

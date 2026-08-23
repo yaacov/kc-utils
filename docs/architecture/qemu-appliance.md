@@ -32,16 +32,21 @@ kc-v2v / kc-prepare / kc-convert-* / kc-finalize   (host, unprivileged)
   └── pkg/backend/plugins/qemu  (all conversion logic composed here)
         └── qemu-system-<arch>  (-kernel vmlinuz -initrd initramfs.img)
               ├── guest disks   → virtio-blk → /dev/vd{a,b,…}
-              └── virtio-serial ←──unix socket──→ kc-guest-agent (/init, PID 1)
-                    primitives only: exec, file I/O, raw dev I/O, stat/statfs
+              └── virtio-serial
+                    ├── org.kc-utils.agent ←──unix socket──→ kc-guest-agent protocol
+                    │     primitives only: exec, file I/O, raw dev I/O, stat/statfs
+                    └── org.kc-utils.debug ←──debug.sock──→ interactive bash (PTY)
 ```
 
 Disks attach in order, so the host maps disk *i* deterministically to
 `/dev/vd{a+i}` — no device-listing round trip. The agent port is named
 `org.kc-utils.agent`, bridged to a host unix socket that QEMU owns (`-chardev
-socket,...,server=on`). The named node `/dev/virtio-ports/org.kc-utils.agent` is
-created by udev, which the minimal appliance does not run, so the agent resolves
-the port from `/sys/class/virtio-ports/*/name` and opens the raw `/dev/vportNpM`.
+socket,...,server=on`). A second port, `org.kc-utils.debug`, is bridged to
+`debug.sock` in the same directory for an interactive shell (see
+[Interactive debug shell](#interactive-debug-shell)). The named node
+`/dev/virtio-ports/<name>` is created by udev, which the minimal appliance does
+not run, so the agent resolves ports from `/sys/class/virtio-ports/*/name` and
+opens the raw `/dev/vportNpM`.
 
 ## Wire protocol
 
@@ -98,17 +103,66 @@ Apple Silicon that means TCG for the convert stage.
   captured in a bounded buffer for diagnostics; an early process exit fails boot
   fast.
 - **Shared across stages**: `kc-v2v` boots one appliance with all disks attached
-  (`StartSharedListener(disks)`) and exports `KC_QEMU_SOCK` / `KC_QEMU_PID`. Each
-  stage subprocess **adopts** it (`adoptVMSession`) rather than booting its own,
-  so mounts established in one stage persist into the next — exactly like the
-  guestfs shared listener. This is required for a full multi-stage pipeline
-  (mounts live inside the VM).
+  (`StartSharedListener(disks)`) and exports `KC_QEMU_SOCK` / `KC_QEMU_PID` /
+  `KC_QEMU_DEBUG_SOCK`. Each stage subprocess **adopts** it (`adoptVMSession`)
+  rather than booting its own, so mounts established in one stage persist into
+  the next — exactly like the guestfs shared listener. This is required for a
+  full multi-stage pipeline (mounts live inside the VM).
 - **Standalone**: a single-stage run with no shared socket boots its own VM and
   re-establishes mounts from the recorded disk infos (`remountFromDiskInfos`).
 - **Crash recovery**: an owned session can `restart()` once (adopted sessions
   cannot — the parent owns the process).
 - **Close**: an owned session powers off / SIGTERMs the VM and removes the
   socket; an adopted session only drops its client connection.
+
+## Interactive debug shell
+
+A second virtio-serial port (`org.kc-utils.debug`) is always attached. PID 1
+runs `/bin/bash -i` on a PTY bound to that port and respawns it when the process
+exits or the host disconnects. This is independent of the framed agent protocol,
+so you can inspect the appliance **while prepare (or convert/finalize) is
+running**.
+
+The host socket sits next to the agent socket: `/tmp/kc-qemu-*/debug.sock`. Boot
+logs include `debug_socket`; a parent process also exports `KC_QEMU_DEBUG_SOCK`.
+
+1. Start a qemu-backed run as usual (`kc-prepare --backend qemu …` or `kc-v2v`
+   with `V2V_backend=qemu`) and wait until logs show `qemu appliance ready`.
+2. Find the socket: `"$KC_QEMU_DEBUG_SOCK"` if set, otherwise the single
+   `/tmp/kc-qemu-*/debug.sock` (the attach snippet below rejects multiple
+   matches — with several runs going, pick one explicitly).
+3. Attach from a second terminal (raw TTY so the guest PTY owns line discipline):
+
+```sh
+if [ -n "${KC_QEMU_DEBUG_SOCK-}" ]; then
+    sock=$KC_QEMU_DEBUG_SOCK
+else
+    set -- /tmp/kc-qemu-*/debug.sock
+    # exactly one live match: a stale sibling from another run must not win
+    if [ "$#" -ne 1 ] || [ ! -S "$1" ]; then
+        echo "pick a debug socket and set sock=/tmp/kc-qemu-XXX/debug.sock:" >&2
+        [ "$#" -gt 0 ] && ls -1 "$@"
+        exit 1
+    fi
+    sock=$1
+fi
+
+# Linux (socat)
+socat UNIX-CONNECT:"$sock" STDIO,raw,echo=0
+
+# macOS (BSD nc); restore the tty after
+stty raw -echo
+nc -U "$sock"
+stty sane
+```
+
+You are in the **appliance** (initramfs), not the converted guest. Once prepare
+has mounted filesystems they appear under `/mnt/guest`. Detach with `exit` or by
+closing the client; bash respawns for the next connect. Kernel boot messages
+stay on `-serial stdio` (captured for diagnostics) and are not this channel.
+
+Changing the in-guest agent requires rebuilding the initramfs
+(`make build-appliance`); host-side qemu launch changes alone are not enough.
 
 ## Building the appliance
 

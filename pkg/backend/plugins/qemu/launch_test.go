@@ -136,18 +136,30 @@ func flagValue(args []string, flag string) (string, bool) {
 	return "", false
 }
 
+// countFlagValue counts occurrences of flag followed by value.
+func countFlagValue(args []string, flag, value string) int {
+	n := 0
+	for i := 0; i < len(args)-1; i++ {
+		if args[i] == flag && args[i+1] == value {
+			n++
+		}
+	}
+	return n
+}
+
 func TestQEMUArgsCore(t *testing.T) {
 	cfg := launchConfig{
-		Binary:     "qemu-system-aarch64",
-		Machine:    "virt",
-		CPU:        "host",
-		Accel:      "hvf",
-		MemMiB:     2048,
-		SMP:        4,
-		Kernel:     "/a/vmlinuz",
-		Initrd:     "/a/initramfs.img",
-		Cmdline:    "console=ttyAMA0 panic=1",
-		SocketPath: "/tmp/agent.sock",
+		Binary:          "qemu-system-aarch64",
+		Machine:         "virt",
+		CPU:             "host",
+		Accel:           "hvf",
+		MemMiB:          2048,
+		SMP:             4,
+		Kernel:          "/a/vmlinuz",
+		Initrd:          "/a/initramfs.img",
+		Cmdline:         "console=ttyAMA0 panic=1",
+		SocketPath:      "/tmp/agent.sock",
+		DebugSocketPath: "/tmp/debug.sock",
 		Drives: []driveSpec{
 			{Path: "/disk0.qcow2", Format: "qcow2"},
 			{Path: "/disk1.img"},
@@ -177,15 +189,24 @@ func TestQEMUArgsCore(t *testing.T) {
 		t.Errorf("-append = %q", v)
 	}
 
-	// The agent chardev must be a server socket that does not block on boot.
-	chardev, ok := flagValue(args, "-chardev")
-	if !ok || !strings.Contains(chardev, "path=/tmp/agent.sock") ||
-		!strings.Contains(chardev, "server=on") || !strings.Contains(chardev, "wait=off") {
-		t.Errorf("-chardev = %q", chardev)
-	}
+	// Both agent and debug chardevs are server sockets that do not block on boot.
 	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "id=kcagent,path=/tmp/agent.sock") ||
+		!strings.Contains(joined, "id=kcdebug,path=/tmp/debug.sock") {
+		t.Errorf("missing agent/debug chardev sockets: %q", joined)
+	}
+	if strings.Count(joined, "server=on") < 2 || strings.Count(joined, "wait=off") < 2 {
+		t.Errorf("chardevs must be server=on,wait=off: %q", joined)
+	}
 	if !strings.Contains(joined, "virtserialport,chardev=kcagent,name="+agentPortName) {
 		t.Errorf("missing virtserialport for agent: %q", joined)
+	}
+	if !strings.Contains(joined, "virtserialport,chardev=kcdebug,name="+debugPortName) {
+		t.Errorf("missing virtserialport for debug: %q", joined)
+	}
+	// One virtio-serial controller; both ports attach to it.
+	if n := countFlagValue(args, "-device", "virtio-serial"); n != 1 {
+		t.Errorf("expected 1 virtio-serial controller, got %d: %q", n, joined)
 	}
 
 	// Two drives -> two if=none drives with matching virtio-blk devices, formats preserved.
@@ -212,6 +233,21 @@ func TestQEMUArgsCore(t *testing.T) {
 	// Networking is off by default.
 	if strings.Contains(joined, "-netdev") {
 		t.Errorf("networking should be disabled by default: %q", joined)
+	}
+}
+
+func TestQEMUArgsDerivesDebugSocket(t *testing.T) {
+	args := qemuArgs(&launchConfig{SocketPath: "/tmp/kc-qemu-x/agent.sock"})
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "id=kcdebug,path=/tmp/kc-qemu-x/debug.sock") {
+		t.Errorf("expected debug.sock sibling of agent.sock: %q", joined)
+	}
+}
+
+func TestDebugSocketPath(t *testing.T) {
+	got := debugSocketPath("/tmp/kc-qemu-abc/agent.sock")
+	if got != "/tmp/kc-qemu-abc/debug.sock" {
+		t.Errorf("debugSocketPath = %q", got)
 	}
 }
 

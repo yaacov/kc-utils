@@ -17,6 +17,14 @@ const (
 	// it is bridged to a host unix socket by the -chardev/-device pair below.
 	agentPortName = "org.kc-utils.agent"
 
+	// debugPortName is a second virtio-serial port used as an interactive
+	// channel (PID 1 binds /bin/bash to it). Bridged to debug.sock next to
+	// the agent socket.
+	debugPortName = "org.kc-utils.debug"
+
+	// debugSockName is the unix-socket filename sitting next to agent.sock.
+	debugSockName = "debug.sock"
+
 	// applianceMountRoot is where guest filesystems are mounted inside the
 	// appliance. Host mount points are rebased under it (see mount.go / fs.go).
 	applianceMountRoot = "/mnt/guest"
@@ -41,18 +49,25 @@ type driveSpec struct {
 
 // launchConfig is the fully-resolved input to qemuArgs.
 type launchConfig struct {
-	Binary     string
-	Machine    string
-	CPU        string
-	Accel      string // "hvf", "kvm", or "tcg"
-	MemMiB     int
-	SMP        int
-	Kernel     string
-	Initrd     string
-	Cmdline    string
-	SocketPath string
-	Drives     []driveSpec
-	Network    bool // user-mode networking (Clevis/NBDE)
+	Binary          string
+	Machine         string
+	CPU             string
+	Accel           string // "hvf", "kvm", or "tcg"
+	MemMiB          int
+	SMP             int
+	Kernel          string
+	Initrd          string
+	Cmdline         string
+	SocketPath      string
+	DebugSocketPath string // sibling of SocketPath; interactive debug channel
+	Drives          []driveSpec
+	Network         bool // user-mode networking (Clevis/NBDE)
+}
+
+// debugSocketPath returns the debug-channel unix socket that sits next to the
+// agent socket in the same private directory.
+func debugSocketPath(agentSock string) string {
+	return filepath.Join(filepath.Dir(agentSock), debugSockName)
 }
 
 // applianceArch returns the appliance architecture (Go GOARCH naming),
@@ -194,6 +209,19 @@ func qemuArgs(c *launchConfig) []string {
 		"-device", "virtio-serial",
 		"-device", "virtserialport,chardev=kcagent,name="+agentPortName,
 	)
+
+	// Interactive debug channel: same virtio-serial controller, second port.
+	// The in-guest agent binds an app (bash) to it; the host attaches with socat.
+	debugSock := c.DebugSocketPath
+	if debugSock == "" && c.SocketPath != "" {
+		debugSock = debugSocketPath(c.SocketPath)
+	}
+	if debugSock != "" {
+		args = append(args,
+			"-chardev", "socket,id=kcdebug,path="+escapeQEMUValue(debugSock)+",server=on,wait=off",
+			"-device", "virtserialport,chardev=kcdebug,name="+debugPortName,
+		)
+	}
 
 	// Guest disks as virtio-blk drives, attached in order -> /dev/vd{a,b,...}.
 	for i, d := range c.Drives {
