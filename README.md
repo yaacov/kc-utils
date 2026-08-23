@@ -19,10 +19,11 @@ for creating the target VM.
 - Disk copying from VMware uses pure Go
   [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
   directly into target PVCs.
-- Guest filesystem operations can run rootless via the
-  [libguestfs](https://libguestfs.org/) appliance, driven by the `guestfish`
-  CLI: a minimal QEMU appliance VM mounts the guest disks internally, so no
-  host root or `CAP_SYS_ADMIN` is required.
+- Guest filesystem operations go through a pluggable backend: host-kernel
+  mounts (`direct`), a [libguestfs](https://libguestfs.org/) appliance
+  (`guestfs`), or our own QEMU appliance (`qemu`). Appliance backends mount
+  guest disks inside a VM, so they need no host root or `CAP_SYS_ADMIN`;
+  `qemu` also runs on macOS.
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
 On OpenShift MTV cold migrations, kc-v2v beats virt-v2v wall time
