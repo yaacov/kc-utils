@@ -1,10 +1,9 @@
 # qemu Backend: Our Own Minimal Appliance
 
-The `qemu` backend is a third guest-disk access mode alongside
-[host-mount (`direct`) and libguestfs (`guestfs`)](privilege-model.md). It boots
-a **purpose-built, minimal appliance we build ourselves** directly with
-`qemu-system-*` — no libvirt, no libguestfs, no supermin — and talks to a tiny
-in-guest agent over a unix socket.
+The `qemu` backend is one of three guest-disk access modes (`direct`, `guestfs`,
+`qemu`; see [privilege-model.md](privilege-model.md) for `direct` and `guestfs`).
+It boots a **purpose-built, minimal appliance we build ourselves** directly with
+`qemu-system-*` and talks to a tiny in-guest agent over a unix socket.
 
 The defining principle: **the appliance exposes only primitive operations; all
 conversion logic stays host-side.** Partition discovery, LVM activation, LUKS /
@@ -12,18 +11,13 @@ Clevis unlock, mount planning, filesystem checks, and chrooted guest commands ar
 all *composed on the host* out of a small primitive vocabulary, then executed
 inside the appliance via the agent.
 
-## Why a third backend
-
-| | `direct` | `guestfs` | `qemu` |
-|-|----------|-----------|--------|
-| Host privileges | `CAP_SYS_ADMIN` | `/dev/kvm` | qemu (KVM/HVF/TCG) |
-| Dependency | host kernel + tools | libguestfs/supermin stack | just `qemu-system-*` + our image |
-| Host OS | Linux | Linux | **Linux or macOS** |
-| We control the appliance | n/a | no (upstream) | **yes** |
+## Why this backend
 
 The host side only launches `qemu-system-*` and speaks a unix socket — every
-Linux tool runs *inside* the appliance — so `qemu` is a first-class backend on
-macOS (Apple Silicon via HVF), not just Linux.
+Linux tool runs *inside* the appliance we build — so `qemu` is a first-class
+backend on macOS (Apple Silicon via HVF) as well as Linux (KVM). TCG is the
+fallback when hardware acceleration is unavailable. We control the appliance
+image end to end (`build/kc-appliance`).
 
 ## Topology
 
@@ -38,6 +32,7 @@ kc-v2v / kc-prepare / kc-convert-* / kc-finalize   (host, unprivileged)
                     └── org.kc-utils.debug ←──debug.sock──→ interactive bash (PTY)
 ```
 
+The in-appliance binary is [`kc-guest-agent`](../apps/kc-guest-agent.md).
 Disks attach in order, so the host maps disk *i* deterministically to
 `/dev/vd{a+i}` — no device-listing round trip. The agent port is named
 `org.kc-utils.agent`, bridged to a host unix socket that QEMU owns (`-chardev
@@ -106,8 +101,8 @@ Apple Silicon that means TCG for the convert stage.
   (`StartSharedListener(disks)`) and exports `KC_QEMU_SOCK` / `KC_QEMU_PID` /
   `KC_QEMU_DEBUG_SOCK`. Each stage subprocess **adopts** it (`adoptVMSession`)
   rather than booting its own, so mounts established in one stage persist into
-  the next — exactly like the guestfs shared listener. This is required for a
-  full multi-stage pipeline (mounts live inside the VM).
+  the next. This is required for a full multi-stage pipeline (mounts live
+  inside the VM).
 - **Standalone**: a single-stage run with no shared socket boots its own VM and
   re-establishes mounts from the recorded disk infos (`remountFromDiskInfos`).
 - **Crash recovery**: an owned session can `restart()` once (adopted sessions
@@ -116,6 +111,10 @@ Apple Silicon that means TCG for the convert stage.
   socket; an adopted session only drops its client connection.
 
 ## Interactive debug shell
+
+Local Mac/Linux how-to (fetch disks, hold the appliance across stages, boot the
+converted guest): [../debug/README.md](../debug/README.md). Agent CLI:
+[kc-guest-agent.md](../apps/kc-guest-agent.md).
 
 A second virtio-serial port (`org.kc-utils.debug`) is always attached. PID 1
 runs `/bin/bash -i` on a PTY bound to that port and respawns it when the process

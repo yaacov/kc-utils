@@ -5,9 +5,9 @@ This directory builds the **appliance** used by the `qemu` guest-disk backend
 directly under `qemu-system-*` and serves a small set of primitive operations to
 the host over a virtio-serial port.
 
-Unlike `libguestfs`, we own this appliance end to end. It carries only what the
-host needs to inspect and mutate guest disks — the kernel, the virtio drivers,
-and the block/filesystem/LVM/LUKS/Clevis toolbox — plus the in-guest agent
+We own this appliance end to end. It carries only what the host needs to inspect
+and mutate guest disks — the kernel, the virtio drivers, and the
+block/filesystem/LVM/LUKS/Clevis toolbox — plus the in-guest agent
 (`kc-guest-agent`) running as `/init`.
 
 ## Artifacts
@@ -80,7 +80,8 @@ tmpfs and runs `/init` (the agent) as PID 1. On start the agent:
 
 To attach a shell to a running appliance (for example while `kc-prepare
 --backend qemu` is in progress), connect to `debug.sock` next to `agent.sock`.
-See [Interactive debug shell](../../docs/architecture/qemu-appliance.md#interactive-debug-shell).
+See [Interactive debug shell](../../docs/architecture/qemu-appliance.md#interactive-debug-shell)
+and the local how-to in [docs/debug/README.md](../../docs/debug/README.md).
 
 The host side (launch args, session lifecycle, disk→`/dev/vd*` mapping) lives in
 `pkg/backend/plugins/qemu`. See `docs/architecture/qemu-appliance.md` for the

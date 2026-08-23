@@ -136,7 +136,7 @@ Boot-critical filter cleanup only; full MSI/driver scrub is not implemented.
 | Directories removed | `Program Files\Parallels\Parallels Tools`, `Program Files (x86)\Parallels\Parallels Tools` |
 | Registry keys removed | `Uninstall\Parallels Tools` |
 
-Boot-critical filter + core service disable; full virt-v2v-style driver list is not implemented.
+Boot-critical filter + core service disable; a full leftover-driver scrub is not implemented.
 
 ### Cleanup summary
 
@@ -276,9 +276,9 @@ regardless of the source hypervisor.
 ## Gaps and Notes
 
 1. **Windows Citrix/Parallels cleanup** -- Boot-critical filter and core
-   service cleanup is implemented; full MSI/driver scrub matching virt-v2v
-   is still partial. Install is unaffected (VirtIO drivers install normally
-   regardless of source hypervisor).
+   service cleanup is implemented; full MSI/driver scrub is still partial.
+   Install is unaffected (VirtIO drivers install normally regardless of
+   source hypervisor).
 
 2. **Guest agent exclusions** -- `win2008`, `winvista`, `win2003`, and `winxp`
    do not receive the QEMU guest agent MSI (see

@@ -167,7 +167,7 @@ func Run(cfg *Config) error {
 
 	// Block 14: Initramfs injection — rebuild to ensure virtio drivers are
 	// included in the initramfs (on-disk modules alone are not sufficient for
-	// early boot). Matching virt-v2v which always rebuilds for the best kernel.
+	// early boot). Always rebuild for the selected (best) kernel.
 	if selectedKernel != nil {
 		slog.Info("initramfs rebuild")
 		if err := initramfs.InjectVirtioModules(cfg.MountRoot, selectedKernel); err != nil {

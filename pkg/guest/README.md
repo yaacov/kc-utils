@@ -1,11 +1,11 @@
 # pkg/guest — privileged guest disk operations
 
-Sole boundary for privileged host and libguestfs operations on guest disks.
-Callers must not invoke guestfish, mount/umount, losetup, LVM, cryptsetup,
-chroot, fsck, or fstrim for guest disks outside this package.
+Sole boundary for guest disk backends. Callers must not invoke guestfish,
+mount/umount, losetup, LVM, cryptsetup, chroot, fsck, or fstrim for guest disks
+outside this package.
 
 Backend implementations live in [`pkg/backend/plugins/`](../backend/plugins/).
-Selection uses `--backend direct|guestfs` (default `direct`) with runtime
+Selection uses `--backend direct|guestfs|qemu` (default `direct`) with runtime
 requirement checks in [`pkg/backend/`](../backend/).
 
 See also: [docs/architecture/filesystem-checks.md](../../docs/architecture/filesystem-checks.md)
@@ -17,8 +17,9 @@ for fsck timing, supported filesystem types, and check-vs-repair behavior.
 |---------|--------|-----------|--------------|
 | `direct` | [`plugins/direct/`](../backend/plugins/direct/) | Host kernel mounts via losetup, LVM, cryptsetup | Linux, CAP_SYS_ADMIN / privileged pod |
 | `guestfs` | [`plugins/guestfs/`](../backend/plugins/guestfs/) | libguestfs appliance RPC via `guestfish --listen` | Linux, `/dev/kvm` |
+| `qemu` | [`plugins/qemu/`](../backend/plugins/qemu/) | Own appliance booted with `qemu-system-*`; primitive agent over a unix socket | Linux or macOS, `qemu-system-*` + appliance image |
 
-Both backends implement the `Backend` interface in [`pkg/backend/backend.go`](../backend/backend.go).
+All backends implement the `Backend` interface in [`pkg/backend/backend.go`](../backend/backend.go).
 The `Guest` facade normalizes guest paths and delegates to the active backend — the rest
 of the codebase is unaware of which backend is in use.
 
@@ -57,6 +58,7 @@ pkg/guest/
 pkg/backend/plugins/
   direct/             — Direct backend plugin
   guestfs/            — Guestfs backend plugin
+  qemu/               — Qemu backend plugin
 ```
 
 Import path: `github.com/yaacov/kc-utils/pkg/guest`

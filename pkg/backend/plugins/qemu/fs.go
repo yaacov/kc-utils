@@ -45,8 +45,7 @@ func (b *Backend) IsDir(guestPath string) bool {
 }
 
 // Glob matches guest-absolute paths. It walks the deepest literal prefix of the
-// pattern via ReadDir and matches the wildcard segments host-side, mirroring the
-// guestfs backend.
+// pattern via ReadDir and matches the wildcard segments host-side.
 func (b *Backend) Glob(pattern string) ([]string, error) {
 	searchRoot, patternSuffix := globSplit(pattern)
 	var matches []string

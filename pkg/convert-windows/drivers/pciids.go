@@ -16,7 +16,7 @@ type PCIIDPair struct {
 	Modern string
 }
 
-// StoragePCIIDs maps boot-critical storage drivers to virt-v2v PCI IDs
+// StoragePCIIDs maps boot-critical storage drivers to VirtIO PCI IDs
 // (without the PCI# prefix used in CriticalDeviceDatabase keys).
 var StoragePCIIDs = map[string]PCIIDPair{
 	"viostor": {

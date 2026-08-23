@@ -1,10 +1,10 @@
 # kc-appliance — minimal "utility guest" for the qemu backend
 #
 # The qemu backend (pkg/backend/plugins/qemu) boots this appliance directly with
-# qemu-system-* (no libvirt, no libguestfs), attaches the guest disks as
-# virtio-blk drives, and drives a tiny in-guest agent (kc-guest-agent) over a
-# virtio-serial port bridged to a host unix socket. The appliance exposes only
-# PRIMITIVE operations; all conversion logic lives host-side.
+# qemu-system-*, attaches the guest disks as virtio-blk drives, and drives a
+# tiny in-guest agent (kc-guest-agent) over a virtio-serial port bridged to a
+# host unix socket. The appliance exposes only PRIMITIVE operations; all
+# conversion logic lives host-side.
 #
 # This build produces two artifacts, extracted by build.sh:
 #   vmlinuz         the Linux kernel

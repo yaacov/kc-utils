@@ -5,7 +5,7 @@
 //
 // The agent is only ever executed inside the Linux appliance; on other GOOS it
 // compiles (so `go build ./...` works on a dev host) but refuses to run.
-// Documentation: docs/architecture/qemu-appliance.md
+// Documentation: docs/apps/kc-guest-agent.md
 package main
 
 import (

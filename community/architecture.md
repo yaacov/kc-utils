@@ -67,17 +67,19 @@ Cross-stage shared code lives in:
 |---------|--------------|-----------|
 | `direct` (default) | Linux, root / `CAP_SYS_ADMIN` | `--backend direct` / `V2V_backend=direct` |
 | `guestfs` | Linux, `/dev/kvm` | `--backend guestfs` / `V2V_backend=guestfs` |
+| `qemu` | Linux or macOS, `qemu-system-*` + appliance image | `--backend qemu` / `V2V_backend=qemu` |
 
 Stage binaries blank-import backend plugins in `cmd/kc-*/main.go`. `backend.Resolve(name)` validates registration and runtime availability before `Guest.Open`.
 
-## The Two Backends: Direct vs Guestfs
+## Guest disk backends
 
-`pkg/backend/plugins/` provides two `Backend` implementations (selected explicitly, not auto-detected):
+`pkg/backend/plugins/` provides `Backend` implementations (selected explicitly, not auto-detected):
 
 | Mode | Implementation | Requires |
 |------|---------------|----------|
 | **Direct** (default) | `pkg/backend/plugins/direct/` — host kernel mounts via `mount(8)`, `losetup`, LVM, cryptsetup | Linux, root / `CAP_SYS_ADMIN` |
 | **Guestfs** (`--backend guestfs`) | `pkg/backend/plugins/guestfs/` — shared `guestfish --listen` session; guest FS via appliance RPC (`Checkout` for host-path tools) | Linux, `/dev/kvm` |
+| **Qemu** (`--backend qemu`) | `pkg/backend/plugins/qemu/` — own appliance booted with `qemu-system-*`; primitive agent over a unix socket | Linux or macOS, `qemu-system-*` + appliance image |
 
 ### Backend Transparency
 
@@ -95,6 +97,7 @@ Converters never call `chroot` or other privileged tools directly. `kc-convert-l
 
 - **Direct** — real `chroot(2)` into the mounted guest root (`pkg/backend/plugins/direct/`)
 - **Guestfs** — `guestfish "sh"` inside the appliance VM (`pkg/backend/plugins/guestfs/`)
+- **Qemu** — chroot inside the appliance via the in-guest agent (`pkg/backend/plugins/qemu/`)
 
 `kc-convert-windows` reads virtio-win drivers from the pre-extracted driver tree
 at `/usr/share/virtio-win/drivers/by-os/` on the host filesystem (not guest-disk I/O).

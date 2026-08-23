@@ -14,4 +14,5 @@ appliance (see [`build/kc-appliance`](../../build/kc-appliance)). It exposes onl
 **primitive** operations — exec, file I/O, raw device I/O, stat/statfs — and never
 imports `pkg/backend`: all conversion logic lives host-side in the backend.
 
+Binary contract: [docs/apps/kc-guest-agent.md](../../docs/apps/kc-guest-agent.md).
 Protocol and the host/guest split: [docs/architecture/qemu-appliance.md](../../docs/architecture/qemu-appliance.md).

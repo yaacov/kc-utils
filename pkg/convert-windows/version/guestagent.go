@@ -1,7 +1,7 @@
 package version
 
 // handlersWithoutGuestAgent lists version handlers that must not collect or
-// install qemu-ga MSIs (virt-v2v parity: XP, 2003, Server 2008, Vista).
+// install qemu-ga MSIs (XP, 2003, Server 2008, Vista).
 var handlersWithoutGuestAgent = map[string]struct{}{
 	"win2008":  {},
 	"winvista": {},

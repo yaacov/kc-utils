@@ -17,8 +17,8 @@ const (
 	NameQEMU    = "qemu"
 )
 
-// Backend abstracts privileged disk/mount operations so direct (host syscall)
-// and guestfs (libguestfs) implementations can be swapped by name.
+// Backend abstracts privileged disk/mount operations so implementations
+// (direct, guestfs, qemu) can be swapped by name.
 //
 // All guestfs CLI and privileged host tool invocations for guest disks must
 // live in Backend implementations under pkg/backend/plugins/.

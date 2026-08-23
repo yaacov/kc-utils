@@ -72,7 +72,7 @@ func remapFile(guestRoot, relPath string, prefixes [][2]string) error {
 	return nil
 }
 
-// remapCrypttab prefers UUID= for /dev/sd* devices (virt-v2v behavior) when
+// remapCrypttab prefers UUID= for /dev/sd* devices when
 // blkid can resolve the device on the host; otherwise falls back to vd* remap.
 func remapCrypttab(guestRoot string, prefixes [][2]string) error {
 	filePath := filepath.Join(guestRoot, "etc", "crypttab")

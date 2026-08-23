@@ -24,7 +24,7 @@ func hostAccelAvailable() bool {
 const applianceProbeRoot = "/mnt/probe"
 
 // probeRemotePaths are the OS-identity markers copied out to the host for
-// inspection; mirrors the guestfs backend allowlist.
+// inspection.
 var probeRemotePaths = []string{
 	"/etc/os-release",
 	"/usr/lib/os-release",
@@ -113,7 +113,7 @@ func (b *Backend) ProbeUnmount(hostMountPoint string) error {
 }
 
 // pruneEmptyWindowsProbeDirs removes marker directories left empty when a device
-// is not the OS it might have been (mirrors the guestfs backend).
+// is not the OS it might have been.
 func pruneEmptyWindowsProbeDirs(hostMountPoint string) {
 	for _, top := range []string{"Windows", "windows", "WINDOWS"} {
 		hive := filepath.Join(hostMountPoint, top, "System32", "config", "SYSTEM")

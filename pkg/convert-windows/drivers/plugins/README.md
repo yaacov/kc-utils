@@ -52,8 +52,8 @@ others. For storage drivers, creates three sets of registry entries:
   its configuration name.
 - `DriverDatabase\DeviceIds\PCI\{vendorDeviceId}` — binds PCI hardware IDs to
   the driver INF.
-- `DriverDatabase\DriverPackages\{infLabel}` — writes a version blob (matching
-  the format used by virt-v2v), configuration binding, and descriptors.
+- `DriverDatabase\DriverPackages\{infLabel}` — writes a version blob,
+  configuration binding, and descriptors.
 
 If a service key already exists (e.g. from a prior install), it is left
 unchanged unless the driver is boot-critical, in which case `Start` is forced

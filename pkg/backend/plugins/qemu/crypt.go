@@ -11,8 +11,8 @@ import (
 )
 
 // EnvClevisNetwork enables appliance user-mode networking before boot, required
-// for Clevis/NBDE (Tang) unlock. It shares the name used by the guestfs backend
-// (KC_GUESTFS_NETWORK) so orchestrators set a single variable.
+// for Clevis/NBDE (Tang) unlock. Orchestrators set this variable to enable
+// appliance networking.
 const EnvClevisNetwork = "KC_GUESTFS_NETWORK"
 
 // clevisNetworkRequested reports whether appliance networking should be enabled

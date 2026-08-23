@@ -1,10 +1,10 @@
 //go:build unix
 
-// Package guest is the sole boundary for privileged host and libguestfs
-// operations on guest disks. Callers must not invoke guestfish,
-// mount/umount, losetup, LVM, cryptsetup, chroot, fsck, or fstrim for guest
-// disks outside this package. Use StartSharedListener from orchestrators
-// that need a cross-stage guestfish --listen session.
+// Package guest is the sole boundary for guest disk backends.
+// Callers must not invoke guestfish, mount/umount, losetup, LVM, cryptsetup,
+// chroot, fsck, or fstrim for guest disks outside this package. Use
+// StartSharedListener from orchestrators that need a cross-stage guestfish
+// --listen session.
 package guest
 
 import (

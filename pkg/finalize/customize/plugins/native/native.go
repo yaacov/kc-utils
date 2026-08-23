@@ -38,8 +38,8 @@ func (n *NativeCustomizer) Apply(guestRoot string, options map[string]string) er
 	}
 
 	// Create /.autorelabel only as a fallback when the converter did not
-	// perform an offline setfiles relabel. The offline relabel (matching
-	// virt-v2v) avoids the slow boot-time relabel + automatic reboot.
+	// perform an offline setfiles relabel. The offline relabel avoids the
+	// slow boot-time relabel + automatic reboot.
 	if options["selinux_relabeled"] != "true" {
 		selinuxDir := filepath.Join(guestRoot, "etc", "selinux")
 		if guest.FileExists(selinuxDir) {

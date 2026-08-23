@@ -14,6 +14,7 @@ describes only its own contract**; composition and deployment live elsewhere.
 | **Stage / utility** | [../apps/kc-*.md](../apps/) | CLI flags, input/output JSON, in-process behavior | How the orchestrator builds JSON, Forklift env vars, sibling binaries |
 | **Orchestrator** | [../apps/kc-v2v.md](../apps/kc-v2v.md), [../apps/forklift-usage.md](../apps/forklift-usage.md) | `V2V_*` → JSON mapping, subprocess order, Forklift wiring | Block/plugin internals (link to architecture + stage docs) |
 | **Integration** | [../apps/README.md](../apps/README.md), [../../build/kc-v2v/README.md](../../build/kc-v2v/README.md) | Full pod flow, image contents, MTV setup | Per-flag reference (link to stage docs) |
+| **Debug cookbook** | [../debug/](../debug/) | Local Mac/Linux qemu how-tos | Stage CLI tables, Forklift env, protocol essays |
 | **Design** | This directory | Cross-cutting behavior (privilege, OS paths, benchmarks) | CLI tables duplicated from app docs |
 
 **Rules (mirror [block isolation](../../community/architecture.md#block-isolation)):**

@@ -13,8 +13,8 @@ import (
 )
 
 // Relabel performs an offline SELinux relabel of the guest filesystem using
-// setfiles, matching virt-v2v's approach. This avoids the slow boot-time
-// relabel and automatic reboot that /.autorelabel triggers.
+// setfiles. This avoids the slow boot-time relabel and automatic reboot that
+// /.autorelabel triggers.
 //
 // On success it removes any existing /.autorelabel. On failure the caller
 // should fall back to creating /.autorelabel.
@@ -46,7 +46,7 @@ func Relabel(guestRoot string, mountPoints []string) (bool, error) {
 	}
 
 	// setfiles does not cross filesystem boundaries, so run it against
-	// each mountpoint, matching virt-v2v behavior.
+	// each mountpoint.
 	targets := mountPointsForSetfiles(mountPoints)
 	slog.Info("running offline SELinux relabel", "policy", policy, "targets", len(targets))
 

@@ -12,7 +12,7 @@ import (
 )
 
 // Fix patches the NTFS boot sector number-of-heads field on pre-Vista Windows.
-// Thresholds match virt-v2v convert_windows.ml fix_ntfs_heads.
+// Thresholds are keyed by whole-disk size.
 func Fix(needsFix bool, disks []types.DiskInfo) {
 	if !needsFix {
 		return
@@ -64,7 +64,7 @@ func patchNTFSHeads(devicePath string, heads uint16) bool {
 	return true
 }
 
-// headsForSize returns virt-v2v's XP/2000 heads table based on whole-disk size.
+// headsForSize returns the XP/2000 heads table based on whole-disk size.
 func headsForSize(sizeBytes int64) uint16 {
 	switch {
 	case sizeBytes < 2114445312:
