@@ -25,7 +25,8 @@ wait_for_namespace_gone() {
     oc get ns "${ns}" >/dev/null 2>&1 || return 0
     sleep "${sleep_s}"
   done
-  echo "WARNING: namespace '${ns}' still present after ${attempts} attempts." >&2
+  echo "WARNING: namespace '${ns}' still present after ${attempts} attempts (phase=$(oc get ns "${ns}" -o jsonpath='{.status.phase}' 2>/dev/null || echo missing))." >&2
+  oc get vm,vmi,pvc,plan.forklift.konveyor.io -n "${ns}" --no-headers 2>/dev/null || true
   return 1
 }
 
@@ -43,13 +44,17 @@ delete_benchmark_namespace() {
 create_benchmark_namespace() {
   local ns="$1"
   echo "Creating benchmark namespace '${ns}'..."
-  oc create namespace "${ns}"
+  if oc create namespace "${ns}"; then
+    return 0
+  fi
+  echo "ERROR: failed to create namespace '${ns}' (phase=$(oc get ns "${ns}" -o jsonpath='{.status.phase}' 2>/dev/null || echo missing))." >&2
+  return 1
 }
 
 # Delete NS if present, wait until gone, recreate.
 fresh_namespace() {
   local ns="$1"
-  delete_benchmark_namespace "${ns}" true
+  delete_benchmark_namespace "${ns}" true || true
   create_benchmark_namespace "${ns}"
 }
 

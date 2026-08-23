@@ -29,6 +29,8 @@ def load_csv(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     rows: list[dict[str, Any]] = []
+    prev_t: int | None = None
+    prev_rx_bytes: int | None = None
     with path.open(newline="") as f:
         for row in csv.DictReader(f):
             try:
@@ -47,14 +49,28 @@ def load_csv(path: Path) -> list[dict[str, Any]]:
             except ValueError:
                 cpu = None
             try:
-                rx = int(int(float(rx_raw)) / 1024 / 1024) if rx_raw != "" else None
+                rx_bytes = int(float(rx_raw)) if rx_raw != "" else None
             except ValueError:
-                rx = None
-            rows.append({"t": t, "mem": mem, "cpu": cpu, "rx": rx})
+                rx_bytes = None
+            rx = int(rx_bytes / 1024 / 1024) if rx_bytes is not None else None
+            rx_rate = None
+            if (
+                rx_bytes is not None
+                and prev_rx_bytes is not None
+                and prev_t is not None
+                and t > prev_t
+                and rx_bytes >= prev_rx_bytes
+            ):
+                delta_mi = (rx_bytes - prev_rx_bytes) / 1024 / 1024
+                rx_rate = round(delta_mi / (t - prev_t), 2)
+            if rx_bytes is not None:
+                prev_t = t
+                prev_rx_bytes = rx_bytes
+            rows.append({"t": t, "mem": mem, "cpu": cpu, "rx": rx, "rx_rate": rx_rate})
     return rows
 
 
-def peak(samples: list[dict[str, Any]], key: str) -> int | None:
+def peak(samples: list[dict[str, Any]], key: str) -> int | float | None:
     vals = [s[key] for s in samples if s.get(key) is not None]
     return max(vals) if vals else None
 
@@ -145,8 +161,12 @@ def parse_log_meta(log_path: Path, vm_labels: list[str]) -> dict[str, str]:
     return meta
 
 
-def fmt_peak(v: int | None, unit: str) -> str:
-    return f"{v} {unit}" if v is not None else "—"
+def fmt_peak(v: int | float | None, unit: str) -> str:
+    if v is None:
+        return "—"
+    if isinstance(v, float):
+        return f"{v:.1f} {unit}"
+    return f"{v} {unit}"
 
 
 def parse_iso_utc(value: str | None) -> datetime | None:
@@ -254,6 +274,7 @@ def build_html(
             peak_cells.append(f"<td>{fmt_peak(peak(samples, 'mem'), 'Mi')}</td>")
             peak_cells.append(f"<td>{fmt_peak(peak(samples, 'cpu'), 'm')}</td>")
             net_cells.append(f"<td>{fmt_peak(last(samples, 'rx'), 'Mi')}</td>")
+            net_cells.append(f"<td>{fmt_peak(peak(samples, 'rx_rate'), 'Mi/s')}</td>")
         if show_dur_diff:
             dur_cells.append(
                 f"<td>{fmt_dur_diff(walls_s.get('kc'), walls_s.get('ref'))}</td>"
@@ -269,7 +290,10 @@ def build_html(
         f"<th>{labels.get(c, c)} peak mem</th><th>{labels.get(c, c)} peak CPU</th>"
         for c in order
     )
-    net_head = "".join(f"<th>{labels.get(c, c)} RX</th>" for c in order)
+    net_head = "".join(
+        f"<th>{labels.get(c, c)} RX</th><th>{labels.get(c, c)} peak Mi/s</th>"
+        for c in order
+    )
 
     has_duration = any(
         meta.get(c, {}).get(f"{vm}_wall")
@@ -348,14 +372,15 @@ or <code>Plan … finished … duration=</code>).</p>
             f"{caption}"
         )
         net_cap = (
-            '<p class="caption">Cumulative bytes received from /proc/net/dev '
-            "(all non-lo interfaces)</p>\n"
+            '<p class="caption">Solid = cumulative RX from /proc/net/dev '
+            "(all non-lo interfaces). Dashed = Mi/s vs the previous sample "
+            "(Δbytes / Δelapsed).</p>\n"
             if i == 0
             else ""
         )
         net_sections.append(
             f"<h2>{title_vm} conversion pod — network RX over time</h2>\n"
-            f'<div class="chart-box short"><canvas id="{vm}Net"></canvas></div>\n'
+            f'<div class="chart-box"><canvas id="{vm}Net"></canvas></div>\n'
             f"{net_cap}"
         )
         chart_calls.append(f"mkMemCpu('{vm}MemCpu', {series_args[vm]});")
@@ -406,16 +431,34 @@ function mkMemCpu(canvasId,...series){{
       plugins:{{legend:{{position:'bottom'}}}},interaction:{{mode:'index',intersect:false}}}}
   }});
 }}
+function overlayAll(seriesList,key){{
+  const nonempty=seriesList.filter(s=>s&&s.length);
+  if(!nonempty.length)return{{labels:[],data:seriesList.map(()=>[])}};
+  const times=[...new Set(nonempty.flatMap(s=>s.map(p=>p.t)))].sort((a,b)=>a-b);
+  const labels=[], data=seriesList.map(()=>[]);
+  for(const t of times){{
+    const m=Math.floor(t/60),s=t%60;
+    labels.push(s===0?m+'m':m+':'+String(s).padStart(2,'0'));
+    seriesList.forEach((samples,i)=>data[i].push(nearest(samples,t,key,20)));
+  }}
+  return{{labels,data}};
+}}
 function mkNet(canvasId,...series){{
-  const rx=overlay(series,'rx');
-  const datasets=series.map((_,i)=>({{
-    label:SERIES_LABELS[i]+' RX (Mi)',data:rx.data[i],borderColor:COLOR_RX[i],
-    backgroundColor:COLOR_RX[i]+'1a',tension:.3,pointRadius:1,fill:true
-  }}));
+  const rx=overlayAll(series,'rx');
+  const rate=overlayAll(series,'rx_rate');
+  const datasets=[];
+  series.forEach((_,i)=>{{
+    datasets.push({{label:SERIES_LABELS[i]+' RX (Mi)',data:rx.data[i],borderColor:COLOR_RX[i],
+      backgroundColor:COLOR_RX[i]+'1a',tension:.25,pointRadius:1,fill:true,yAxisID:'y'}});
+    datasets.push({{label:SERIES_LABELS[i]+' RX (Mi/s)',data:rate.data[i],borderColor:COLOR_RX[i],
+      backgroundColor:'transparent',tension:.25,pointRadius:1,fill:false,borderDash:[4,3],yAxisID:'yRate'}});
+  }});
   new Chart(document.getElementById(canvasId),{{type:'line',
     data:{{labels:rx.labels,datasets}},
     options:{{responsive:true,maintainAspectRatio:false,
       scales:{{y:{{beginAtZero:true,title:{{display:true,text:'Cumulative Mi'}}}},
+              yRate:{{beginAtZero:true,position:'right',grid:{{drawOnChartArea:false}},
+                title:{{display:true,text:'Mi/s'}}}},
               x:{{title:{{display:true,text:'Elapsed'}}}}}},
       plugins:{{legend:{{position:'bottom'}}}},interaction:{{mode:'index',intersect:false}}}}
   }});
@@ -452,7 +495,7 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
 <div class="wrap">
 <h1>{title}</h1>
 <p class="meta">
-  Memory = cgroup RSS (Mi) · CPU = metrics-server (millicores) · Net = cumulative /proc/net/dev (Mi)<br>
+  Memory = cgroup RSS (Mi) · CPU = metrics-server (millicores) · Net = cumulative RX (Mi) and per-sample rate (Mi/s)<br>
   {meta_line}
 </p>
 {lifetime_section}
@@ -469,7 +512,7 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
 <hr>
 
 {"".join(net_sections)}
-<h2>Network totals (last sample RX)</h2>
+<h2>Network totals (last sample RX + peak Mi/s)</h2>
 <table>
 <tr><th>VM</th>{net_head}</tr>
 {"".join(net_rows)}

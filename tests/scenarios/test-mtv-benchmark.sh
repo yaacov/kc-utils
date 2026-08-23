@@ -100,11 +100,12 @@ kill_bg_jobs() {
 
 usage() {
   cat <<EOF
-Usage: MODE=kc|compare $0
+Usage: MODE=kc|ref|compare $0
 
   Configure tests/scenarios/.env first (see .env.example).
 
   MODE=kc       Independent kc-v2v benchmark (default)
+  MODE=ref      Operator-default virt-v2v only
   MODE=compare  kc-v2v then operator-default virt-v2v
 
 Artifacts: ${ARTIFACT_PREFIX}-<converter>.log and -mem/
@@ -540,20 +541,31 @@ run_plan() {
   oc mtv delete plan --name "${plan}" -n "${NS}" 2>/dev/null || true
   sleep 2
 
-  if ! oc mtv create plan --name "${plan}" --source "${PROVIDER}" --target host \
+  local create_out
+  if ! create_out="$(oc mtv create plan --name "${plan}" --source "${PROVIDER}" --target host \
     --vms "${vm_list}" \
     --run-preflight-inspection false \
-    -n "${NS}"; then
+    -n "${NS}" 2>&1)"; then
     log "ERROR: failed to create plan ${plan}"
+    log "${create_out}"
+    log "DEBUG: ns phase=$(oc get ns "${NS}" -o jsonpath='{.status.phase}' 2>/dev/null || echo missing)"
+    oc mtv get plan -n "${NS}" 2>&1 | tee -a "${SUMMARY_LOG}" || true
+    oc get vm,vmi,pvc -n "${NS}" --no-headers 2>&1 | tee -a "${SUMMARY_LOG}" || true
     return 1
   fi
+  log "${create_out}"
 
   log "Waiting for plan Ready..."
-  if ! oc wait "plan.forklift.konveyor.io/${plan}" -n "${NS}" \
-    --for=condition=Ready --timeout=300s; then
+  local wait_out
+  if ! wait_out="$(oc wait "plan.forklift.konveyor.io/${plan}" -n "${NS}" \
+    --for=condition=Ready --timeout=300s 2>&1)"; then
     log "ERROR: plan ${plan} did not become Ready"
+    log "${wait_out}"
+    oc get "plan.forklift.konveyor.io/${plan}" -n "${NS}" -o yaml 2>&1 \
+      | tee -a "${SUMMARY_LOG}" || true
     return 1
   fi
+  log "${wait_out}"
 
   oc mtv start plan --name "${plan}" -n "${NS}"
   start_s=$(date +%s)
@@ -625,9 +637,15 @@ run_converter_leg() {
   log "Ceph: $(oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}' 2>/dev/null || echo n/a)"
   log ""
 
-  fresh_namespace "${NS}"
+  if ! fresh_namespace "${NS}"; then
+    log "ERROR: failed to recreate namespace ${NS} for ${converter} leg"
+    return 1
+  fi
   log "Creating providers..."
-  create_vsphere_and_host_providers "${NS}" "${PROVIDER}"
+  if ! create_vsphere_and_host_providers "${NS}" "${PROVIDER}"; then
+    log "ERROR: failed to create providers in ${NS}"
+    return 1
+  fi
   log ""
 
   need="${#BENCH_LABELS[@]}"
@@ -697,13 +715,13 @@ run_converter_leg() {
 #  Main
 # ===================================================================
 case "${MODE}" in
-  kc|compare) ;;
+  kc|ref|compare) ;;
   -h|--help|help)
     usage
     exit 0
     ;;
   *)
-    echo "ERROR: MODE must be 'kc' or 'compare' (got '${MODE}')." >&2
+    echo "ERROR: MODE must be 'kc', 'ref', or 'compare' (got '${MODE}')." >&2
     usage >&2
     exit 1
     ;;
@@ -745,18 +763,25 @@ trap on_interrupt INT TERM
 
 overall_rc=0
 
-run_converter_leg "kc" || overall_rc=$?
-
-if [[ "${MODE}" == "compare" ]]; then
-  if [[ "${overall_rc}" -ne 0 ]]; then
-    echo "kc leg failed — skipping ref (default) leg."
-  else
-    echo ""
-    echo "kc leg OK. Starting ref (operator default) leg..."
-    echo ""
+case "${MODE}" in
+  kc)
+    run_converter_leg "kc" || overall_rc=$?
+    ;;
+  ref)
     run_converter_leg "ref" || overall_rc=$?
-  fi
-fi
+    ;;
+  compare)
+    run_converter_leg "kc" || overall_rc=$?
+    if [[ "${overall_rc}" -ne 0 ]]; then
+      echo "kc leg failed — skipping ref (default) leg."
+    else
+      echo ""
+      echo "kc leg OK. Starting ref (operator default) leg..."
+      echo ""
+      run_converter_leg "ref" || overall_rc=$?
+    fi
+    ;;
+esac
 
 echo "=========================================="
 echo "OVERALL SUMMARY"
