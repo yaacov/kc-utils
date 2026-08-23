@@ -16,9 +16,6 @@ for creating the target VM.
   <br><br>
 </p>
 
-kc-utils are a pure Go re-implementation of [virt-v2v-in-place](https://libguestfs.org/virt-v2v-in-place.1.html);
-see also [virt-v2v](https://libguestfs.org/virt-v2v.1.html).
-
 - Disk copying from VMware uses pure Go
   [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
   directly into target PVCs (no VDDK or nbdkit required).
@@ -48,9 +45,9 @@ Three guest access modes are supported (see [docs/architecture/privilege-model.m
   appliance VM via `guestfish`; guest disks are accessed inside the appliance
   (no host root); requires Linux with `/dev/kvm`.
 - **qemu** (`--backend qemu`) - boots our own minimal appliance directly with
-  `qemu-system-*` (no libguestfs) and drives a primitive in-guest agent over a
-  unix socket, composing all logic host-side. Runs on **Linux or macOS**
-  (KVM/HVF/TCG). See [docs/architecture/qemu-appliance.md](docs/architecture/qemu-appliance.md).
+  `qemu-system-*` and drives a primitive in-guest agent over a unix socket,
+  composing all logic host-side. Runs on **Linux or macOS** (KVM/HVF/TCG). See
+  [docs/architecture/qemu-appliance.md](docs/architecture/qemu-appliance.md).
 
 ## Forklift (MTV) Integration
 
@@ -98,10 +95,11 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-finalize` | Unmount, trim, fsck, assign bus slots, determine firmware, emit TargetMeta JSON |
 | `kc-v2v` | V2V orchestrator for Forklift: runs the pipeline + inspection HTTP (optional NFC disk copy for blank PVCs) |
 | `kc-copy` | NFC disk copy stage via govmomi (spawned by `kc-v2v`; also usable standalone) |
+| `kc-guest-agent` | In-appliance PID 1 for `--backend qemu` (not run on the conversion host) |
 
 The tree compiles on any Unix host. Guest disk backends (`direct`, `guestfs`) require
-Linux at runtime; `kc-copy` runs on any Unix. Release binaries are built with
-`make build` (`GOOS=linux`).
+Linux at runtime; `qemu` also runs on macOS. `kc-copy` runs on any Unix. Release
+binaries are built with `make build` (`GOOS=linux`).
 
 Inter-app communication uses JSON files written to a shared directory, plus a
 shared mount point where the guest root filesystem is mounted.
@@ -119,6 +117,7 @@ dependencies, build, test, and PR guidance.
 - [docs/apps/README.md](docs/apps/README.md) - Complete conversion flow
 - [docs/apps/kc-v2v.md](docs/apps/kc-v2v.md) - V2V orchestrator (Forklift conversion pod)
 - [docs/apps/kc-copy.md](docs/apps/kc-copy.md) - NFC disk copy stage CLI
+- [docs/apps/kc-guest-agent.md](docs/apps/kc-guest-agent.md) - in-appliance agent for the qemu backend
 - [pkg/v2v/README.md](pkg/v2v/README.md) - kc-v2v libraries (copy, vsphere, env, inspection)
 - [build/kc-v2v/README.md](build/kc-v2v/README.md) - Container image, Forklift Plan config
 - [docs/apps/forklift-usage.md](docs/apps/forklift-usage.md) - Using kc-v2v with Forklift (MTV)
@@ -127,6 +126,10 @@ dependencies, build, test, and PR guidance.
 - [docs/apps/kc-convert-linux.md](docs/apps/kc-convert-linux.md) - Linux converter pipeline
 - [docs/apps/kc-convert-windows.md](docs/apps/kc-convert-windows.md) - Windows converter pipeline
 - [docs/apps/kc-finalize.md](docs/apps/kc-finalize.md) - kc-finalize pipeline
+
+### Debug
+
+- [docs/debug/README.md](docs/debug/README.md) - local Mac/Linux qemu conversion cookbook
 
 ### Architecture
 

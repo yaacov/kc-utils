@@ -9,8 +9,8 @@ import (
 )
 
 // RunCommand executes cmd inside the guest via chroot in the appliance. The
-// guest's /proc, /sys, and /dev are provided before the command runs and torn
-// down afterwards, matching virt-v2v behaviour (and the guestfs backend).
+// guest's /proc, /sys, and /dev are bound before the command runs and unbound
+// afterwards.
 //
 // guestRoot is the host mount root; the guest is chrooted at applianceMountRoot
 // inside the appliance. cmd runs the guest's own (guest-arch) binaries.

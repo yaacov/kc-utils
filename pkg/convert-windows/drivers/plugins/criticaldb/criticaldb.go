@@ -27,7 +27,7 @@ func (c *CriticalDBRegistrar) Register(hive registry.Hive, ccs string, driverNam
 		return nil
 	}
 	for _, pciid := range []string{pair.Legacy, pair.Modern} {
-		// virt-v2v uses a single key name "PCI#VEN_…&REV_…" under CriticalDeviceDatabase.
+		// Use a single key name "PCI#VEN_…&REV_…" under CriticalDeviceDatabase.
 		cdbPath := fmt.Sprintf("%s\\Control\\CriticalDeviceDatabase\\PCI#%s", ccs, pciid)
 		hive.CreateKey(cdbPath)
 		hive.SetString(cdbPath, "ClassGUID", drivers.SCSIClassGUID)

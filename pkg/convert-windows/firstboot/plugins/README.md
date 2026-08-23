@@ -106,8 +106,7 @@ Supports a batch mode (`devcon.exe`) for older Windows versions.
 ## signal
 
 **What it does:** Signals the orchestrator that conversion is complete and the
-guest has successfully booted under KVM (same COM1 marker Forklift injects for
-virt-v2v).
+guest has successfully booted under KVM (same COM1 marker Forklift injects).
 
 **How it works:** Generates a script that writes `CONVERSION_DONE` to COM1.
 Modern guests get a PowerShell script (`cmd /c "echo CONVERSION_DONE>\\.\COM1"`);

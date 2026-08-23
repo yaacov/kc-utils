@@ -4,7 +4,7 @@ Converts a Linux guest to run on KVM/virtio. Removes source hypervisor tools,
 injects virtio drivers into the initramfs, remaps device names, and fixes
 the bootloader configuration.
 
-Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
+`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
 
 ## Entry Point
 
@@ -18,7 +18,7 @@ Requires Linux at runtime for guest disk backends (see [privilege model](../arch
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network firstboot when no local package matches (local packages are always tried first) |
-| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`) |
+| `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux), `qemu` (Linux or macOS) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 ## qemu-guest-agent Installation

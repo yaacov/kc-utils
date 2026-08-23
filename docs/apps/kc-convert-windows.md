@@ -4,7 +4,7 @@ Converts a Windows guest to run on KVM/virtio. Installs virtio-win drivers,
 registers them in the Windows registry, disables hypervisor-specific services,
 and generates firstboot scripts for post-reboot setup.
 
-Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
+`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
 
 ## Entry Point
 
@@ -18,7 +18,7 @@ Requires Linux at runtime for guest disk backends (see [privilege model](../arch
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
-| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`) |
+| `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux), `qemu` (Linux or macOS) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 VirtIO drivers are located from the pre-extracted virtio-win tree via the

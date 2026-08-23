@@ -10,7 +10,15 @@ CLI reference, pipeline block tables, usage guides, and runnable examples:
 - [apps/README.md](apps/README.md) — conversion flow overview
 - [apps/kc-prepare.md](apps/kc-prepare.md), [apps/kc-convert-linux.md](apps/kc-convert-linux.md), [apps/kc-convert-windows.md](apps/kc-convert-windows.md), [apps/kc-finalize.md](apps/kc-finalize.md) — pipeline binaries
 - [apps/kc-v2v.md](apps/kc-v2v.md), [apps/kc-copy.md](apps/kc-copy.md), [apps/forklift-usage.md](apps/forklift-usage.md) — V2V orchestration and Forklift integration
+- [apps/kc-guest-agent.md](apps/kc-guest-agent.md) — in-appliance PID 1 for `--backend qemu`
 - [apps/examples/](apps/examples/README.md) — JSON samples and runnable example
+
+## Debug
+
+Local Mac/Linux cookbook for `--backend qemu` (fetch VMware disks, hold the
+appliance, prepare / convert / finalize, boot the converted x86 guest):
+
+- [debug/README.md](debug/README.md) — prerequisites, held appliance, debug-socket attach
 
 ## Architecture
 

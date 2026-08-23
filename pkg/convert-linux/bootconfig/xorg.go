@@ -21,9 +21,8 @@ var (
 )
 
 // ConfigureXorgDriver sets the X.org display driver to modesetting in
-// xorg.conf or XF86Config if present. This matches virt-v2v behavior
-// for VMware-origin guests that ship an xorg.conf with a vendor-specific
-// driver (e.g. vmwgfx).
+// xorg.conf or XF86Config if present. VMware-origin guests often ship an
+// xorg.conf with a vendor-specific driver (e.g. vmwgfx).
 func ConfigureXorgDriver(guestRoot string) {
 	xorgConf := filepath.Join(guestRoot, "etc", "X11", "xorg.conf")
 	if !guest.FileExists(xorgConf) {

@@ -33,8 +33,8 @@ env.Load (V2V_* env + flags)          # cmd/kc-v2v bootstrap
       → HTTP server (:8080) when LOCAL_MIGRATION=true
 ```
 
-Converter selection mirrors upstream virt-v2v: `PrepareOutput.converter` (or
-`PrepareOutput.inspect.type`) determines `kc-convert-linux` vs
+Converter selection uses `PrepareOutput.converter` (or
+`PrepareOutput.inspect.type`) to choose `kc-convert-linux` vs
 `kc-convert-windows`.
 
 ### Failure cleanup

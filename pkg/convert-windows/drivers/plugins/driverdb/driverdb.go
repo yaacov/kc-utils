@@ -80,7 +80,7 @@ func ddbArch(arch string) string {
 	}
 }
 
-// ddbVersionBlob matches virt-v2v's DriverPackages Version REG_BINARY for viostor.
+// ddbVersionBlob is the DriverPackages Version REG_BINARY used for storage drivers.
 func ddbVersionBlob() []byte {
 	// \x00\xff\x09\x00\x00\x00\x00\x00 + SCSI class GUID bytes + 24 zero bytes
 	guid := []byte{

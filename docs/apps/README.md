@@ -61,14 +61,16 @@ binaries (including `kc-copy` when copy is needed). See
 
 To run copy alone (without conversion), use [kc-copy.md](kc-copy.md).
 
+The qemu backend's in-appliance binary is [kc-guest-agent.md](kc-guest-agent.md)
+(not a pipeline stage). Local Mac/Linux how-to: [../debug/README.md](../debug/README.md).
+
 ## Quick start
 
 Runnable examples and sample JSON for every handoff live in
 [examples/](examples/README.md).
 
 From a Linux host with root, after `make build`
-(see [../architecture/privilege-model.md](../architecture/privilege-model.md) for why root is required and how
-libguestfs avoids it):
+(see [../architecture/privilege-model.md](../architecture/privilege-model.md) for why root is required, and `--backend guestfs` to avoid it):
 
 ```bash
 sudo docs/apps/examples/run-linux-disk.sh
@@ -189,6 +191,11 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 - [kc-copy.md](kc-copy.md) — NFC disk copy stage CLI (subprocess + standalone)
 - [forklift-usage.md](forklift-usage.md) — Using kc-v2v with Forklift (MTV)
 - [../../tests/scenarios/README.md](../../tests/scenarios/README.md) — Cluster benchmark tests (manual)
+
+### qemu backend
+
+- [kc-guest-agent.md](kc-guest-agent.md) — in-appliance PID 1 (primitives + debug bash channel)
+- [../debug/README.md](../debug/README.md) — local Mac/Linux qemu conversion cookbook
 
 ### Architecture reference
 

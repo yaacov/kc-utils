@@ -3,7 +3,7 @@
 Opens source disks, inspects the guest OS, mounts guest filesystems, and
 produces metadata for downstream converters.
 
-Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
+`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
 
 ## Entry Point
 
@@ -16,7 +16,7 @@ Requires Linux at runtime for guest disk backends (see [privilege model](../arch
 | `--input` | yes | | Path to PrepareInput JSON |
 | `--output` | no | `prepare-out.json` | Path to write PrepareOutput JSON |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory for guest filesystem mounts |
-| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`) |
+| `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux), `qemu` (Linux or macOS) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 In guestfs mode, prepare adopts the shared `guestfish --listen` session when
@@ -69,7 +69,7 @@ Fsck failures are non-fatal: prepare logs a warning and continues.
 
 | Value | Behavior |
 |-------|----------|
-| *(omitted)* or `first` | Pick the first discovered root (default; Forklift / virt-v2v `--root first` compatible) |
+| *(omitted)* or `first` | Pick the first discovered root (default; Forklift `--root first` compatible) |
 | `single` | Fail if multiple OS roots are found; error lists candidates |
 | `/dev/...` | Pick the root on the given block device |
 

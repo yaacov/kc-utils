@@ -43,7 +43,7 @@ type vmSession struct {
 }
 
 // envPositiveInt returns the first positive integer among the named env vars,
-// or def. Mirrors the guestfs backend's V2V_* resolution shape.
+// or def.
 func envPositiveInt(def int, names ...string) int {
 	for _, name := range names {
 		if v := os.Getenv(name); v != "" {

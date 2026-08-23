@@ -5,7 +5,7 @@ checks, assigns target bus slots, resolves firmware type, and assembles the
 final `TargetMeta` JSON that contains everything the orchestrator needs to
 create the KVM virtual machine.
 
-Requires Linux at runtime for guest disk backends (see [privilege model](../architecture/privilege-model.md)).
+`direct` and `guestfs` require Linux at runtime (see [privilege model](../architecture/privilege-model.md)). `--backend qemu` also runs on macOS ([qemu-appliance.md](../architecture/qemu-appliance.md)).
 
 ## Entry Point
 
@@ -18,7 +18,7 @@ Requires Linux at runtime for guest disk backends (see [privilege model](../arch
 | `--input` | yes\* | | Path to PipelineData JSON (from kc-convert-linux or kc-convert-windows; contains `prepare` and `convert` sections) |
 | `--output` | no | `target-meta.json` | Path to write PipelineData JSON (with `target` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Guest mount root (live mounts in direct mode; path key for `pkg/guest` in guestfs mode) |
-| `--backend` | no | `direct` | Guest disk backend (`direct` or `guestfs`; guestfs adopts shared `GUESTFISH_PID` from `kc-v2v`) |
+| `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux; guestfs adopts shared `GUESTFISH_PID` from `kc-v2v`), `qemu` (Linux or macOS) |
 | `--teardown-only` | no | `false` | Reclaim orphaned guest resources only (no metadata) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 

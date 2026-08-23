@@ -34,7 +34,7 @@ func ScanKeyFiles(luksDir string) ([]string, error) {
 }
 
 // KeyFilesMap builds a device→keyfile map. When device is empty, uses "all" sentinel
-// matching virt-v2v's all:file: semantics for kc-prepare to try keys on encrypted volumes.
+// so kc-prepare tries every key on every encrypted volume.
 func KeyFilesMap(luksDir string) (map[string]string, error) {
 	files, err := ScanKeyFiles(luksDir)
 	if err != nil {
