@@ -44,8 +44,8 @@ Three guest disk backends are available (see [docs/architecture/backends.md](doc
 ## Forklift (MTV) Integration
 
 kc-v2v is a drop-in replacement for the virt-v2v **container image** in
-[Forklift](https://github.com/kubev2v/forklift). The MTV cluster setting is still
-`virt_v2v_image_fqin`; point it at your kc-v2v image FQIN:
+[Forklift](https://github.com/kubev2v/forklift). The MTV cluster setting is
+`virt_v2v_image_fqin`:
 
 ```bash
 oc mtv settings set --setting virt_v2v_image_fqin \
