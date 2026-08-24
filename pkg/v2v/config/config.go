@@ -23,6 +23,7 @@ const (
 	EnvCopyConcurrency              = "V2V_copyConcurrency"
 	EnvOffline                      = "V2V_offline"
 	EnvBackend                      = "V2V_backend"
+	EnvBitLockerDir                 = "V2V_BITLOCKER_DIR"
 
 	DefaultCopyConcurrency = 4
 	// Forklift conversion-pod paths (not env-configurable).
@@ -35,6 +36,7 @@ const (
 	DefaultInspectionOutputFile = DefaultWorkdir + "/inspection.xml"
 	DefaultDynamicScriptsDir    = "/mnt/dynamic_scripts"
 	DefaultLuksDir              = "/etc/luks"
+	DefaultBitLockerDir         = "/etc/bitlocker"
 	DefaultMountRoot            = "/tmp/kc-guest"
 
 	BlockGlob = "/dev/block[0-9]*"
@@ -67,6 +69,7 @@ type Config struct {
 	Offline              bool
 	Backend              string
 	LuksDir              string
+	BitLockerDir         string
 	DynamicScriptsDir    string
 	Workdir              string
 	InspectionOutputFile string

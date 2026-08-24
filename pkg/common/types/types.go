@@ -40,6 +40,7 @@ type PrepareInput struct {
 	// so orchestrators can pass it through the pipeline JSON without losing it.
 	NetworkMap []NetworkMapping `json:"network_map,omitempty"`
 	LUKS       *LUKSSpec        `json:"luks,omitempty"`
+	BitLocker  *BitLockerSpec   `json:"bitlocker,omitempty"`
 	Options    PrepareOptions   `json:"options"`
 }
 
@@ -69,6 +70,10 @@ type NetworkMapping struct {
 type LUKSSpec struct {
 	KeyFiles map[string]string `json:"key_files,omitempty"`
 	Clevis   bool              `json:"clevis,omitempty"`
+}
+
+type BitLockerSpec struct {
+	KeyFiles map[string]string `json:"key_files,omitempty"`
 }
 
 type PrepareOptions struct {

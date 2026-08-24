@@ -62,6 +62,7 @@ Fsck failures are non-fatal: prepare logs a warning and continues.
 - `disk_dir` -- directory of `diskN.img` files from standalone `kc-copy --target-dir`; expanded to `disks` before open when `disks` is empty
 - `source` -- source hypervisor metadata (name, type, firmware hint, NICs, etc.)
 - `luks` -- optional LUKS decryption keys
+- `bitlocker` -- optional BitLocker passphrase key files (qemu backend only)
 - `options.root` -- root selection policy (see below)
 - `options.static_ips` -- static IPs to preserve (Windows)
 
@@ -85,7 +86,8 @@ and inspect disagree on which device owns a guest path, prepare wins.
 
 Example inputs: [examples/prepare-input-linux.json](examples/prepare-input-linux.json),
 [examples/prepare-input-disk-dir.json](examples/prepare-input-disk-dir.json),
-[examples/prepare-input-multiboot.json](examples/prepare-input-multiboot.json).
+[examples/prepare-input-multiboot.json](examples/prepare-input-multiboot.json),
+[examples/prepare-input-bitlocker.json](examples/prepare-input-bitlocker.json).
 Example outputs: [examples/prepare-output-complete.json](examples/prepare-output-complete.json),
 [examples/prepare-output-error-multiboot.json](examples/prepare-output-error-multiboot.json).
 

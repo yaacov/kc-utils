@@ -1,0 +1,21 @@
+{
+  "disks": [
+    {
+      "path": "/var/tmp/v2v/disk0.img",
+      "format": "raw"
+    }
+  ],
+  "source": {
+    "name": "win10-bitlocker",
+    "type": "vsphere",
+    "firmware_hint": "uefi"
+  },
+  "bitlocker": {
+    "key_files": {
+      "all": "/etc/bitlocker/recovery-key"
+    }
+  },
+  "options": {
+    "root": "first"
+  }
+}

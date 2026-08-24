@@ -101,6 +101,7 @@ func stringsTrimPrefixSlash(p string) string {
 
 func (g *Guest) DiskInfos() []types.DiskInfo { return g.backend.DiskInfos() }
 func (g *Guest) LVPaths() []string           { return g.backend.LVPaths() }
+func (g *Guest) LDMPaths() []string          { return g.backend.LDMPaths() }
 func (g *Guest) DiskPaths() []string         { return g.backend.DiskPaths() }
 
 func (g *Guest) ReadFile(guestPath string) ([]byte, error) {
@@ -199,6 +200,10 @@ func (g *Guest) FSTrim(mountpoint string) error {
 
 func (g *Guest) Decrypt(device, keyFile, mapperName string) (string, error) {
 	return g.backend.Decrypt(device, keyFile, mapperName)
+}
+
+func (g *Guest) DecryptBitLocker(device, keyFile, mapperName string) (string, error) {
+	return g.backend.DecryptBitLocker(device, keyFile, mapperName)
 }
 
 func (g *Guest) UnlockClevis(device, mapperName string) (string, error) {

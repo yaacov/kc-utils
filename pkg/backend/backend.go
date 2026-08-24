@@ -28,6 +28,7 @@ type Backend interface {
 
 	DiskInfos() []types.DiskInfo
 	LVPaths() []string
+	LDMPaths() []string
 	DiskPaths() []string
 
 	Mount(device, hostMountPoint, fstype string, readOnly bool) error
@@ -45,6 +46,8 @@ type Backend interface {
 
 	// Decrypt opens a LUKS mapping with a key file.
 	Decrypt(device, keyFile, mapperName string) (mappedPath string, err error)
+	// DecryptBitLocker opens a BitLocker mapping with a passphrase key file.
+	DecryptBitLocker(device, keyFile, mapperName string) (mappedPath string, err error)
 	// UnlockClevis unlocks a Clevis-bound LUKS volume (NBDE / Tang).
 	// Guestfs mode requires appliance networking (see EnvGuestfsNetwork).
 	UnlockClevis(device, mapperName string) (mappedPath string, err error)

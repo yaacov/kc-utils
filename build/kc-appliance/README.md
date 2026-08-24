@@ -7,7 +7,7 @@ the host over a virtio-serial port.
 
 We own this appliance end to end. It carries only what the host needs to inspect
 and mutate guest disks — the kernel, the virtio drivers, and the
-block/filesystem/LVM/LUKS/Clevis toolbox — plus the in-guest agent
+block/filesystem/LVM/LUKS/Clevis/LDM toolbox — plus the in-guest agent
 (`kc-guest-agent`) running as `/init`.
 
 ## Artifacts
@@ -94,7 +94,8 @@ full protocol and the host/guest logic split.
 | `kernel-core`, `kmod`   | vmlinuz, virtio modules, `modprobe`        |
 | `util-linux`            | `lsblk`, `blkid`, `mount`, `fstrim`, `chroot` |
 | `lvm2`                  | `pvscan`, `vgchange`, `lvs`                 |
-| `cryptsetup`            | LUKS open/close                            |
+| `cryptsetup`            | LUKS open/close, BitLocker (`--type bitlk`) |
+| `libldm`                | `ldmtool` — Windows LDM (dynamic disk) assembly |
 | `clevis`, `clevis-luks` | NBDE/Tang unlock (needs `-netdev` at launch) |
 | `e2fsprogs`, `xfsprogs`, `btrfs-progs` | `e2fsck`, `xfs_repair`, `btrfs check` |
 | `ntfs-3g`, `ntfsprogs`  | `ntfsfix`, NTFS mount                       |
@@ -102,4 +103,4 @@ full protocol and the host/guest logic split.
 | `glibc`, `bash`, `coreutils` | runtime for chrooted guest commands   |
 
 Keep this list in sync with the host backend's expectations (`discover.go`,
-`fscheck.go`, `crypt.go`, `run.go`).
+`ldm.go`, `fscheck.go`, `crypt.go`, `run.go`).

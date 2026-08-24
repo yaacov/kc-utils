@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 )
 
@@ -101,6 +102,10 @@ func (b *Backend) Setup(disks []types.DiskSpec, mountRoot string) error {
 	}
 	b.lvPaths = lvs
 
+	if err := b.checkUnsupportedWindowsVolumes(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -181,6 +186,7 @@ func (b *Backend) attachSession() error {
 
 func (b *Backend) DiskInfos() []types.DiskInfo { return b.diskInfos }
 func (b *Backend) LVPaths() []string           { return b.lvPaths }
+func (b *Backend) LDMPaths() []string          { return nil }
 func (b *Backend) DiskPaths() []string         { return b.diskPaths }
 
 func (b *Backend) Mount(device, hostMountPoint, _ string, _ bool) error {
@@ -355,6 +361,10 @@ func (b *Backend) Decrypt(device, keyFile, mapperName string) (string, error) {
 	b.cryptMaps = append(b.cryptMaps, mapperName)
 	slog.Info("guestfs LUKS decrypted with keyfile", "device", device, "mapper", mapped)
 	return mapped, nil
+}
+
+func (b *Backend) DecryptBitLocker(_, _, _ string) (string, error) {
+	return "", fmt.Errorf("BitLocker requires backend %q", backend.NameQEMU)
 }
 
 func (b *Backend) UnlockClevis(device, mapperName string) (string, error) {

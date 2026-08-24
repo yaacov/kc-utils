@@ -63,6 +63,7 @@ Fsck timing, per-filesystem check-vs-repair behavior, and backend differences:
 | Tool | Package | Used For |
 |------|---------|----------|
 | `clevis` | clevis | Tang/TPM-bound LUKS unlock |
+| `ldmtool` | libldm | Windows LDM (dynamic disk) assembly in kc-appliance only |
 | `guestfish` | guestfs-tools (Fedora: `libguestfs-tools`) | Guestfs backend (`--backend guestfs` / `V2V_backend=guestfs`) |
 
 For Windows conversions, populate the VirtIO-Win driver tree on the host at
