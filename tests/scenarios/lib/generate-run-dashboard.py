@@ -24,6 +24,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+CHART_JS_PATH = Path(__file__).resolve().parent / "chart.umd.min.js"
+
+
+def load_chart_js() -> str:
+    if not CHART_JS_PATH.is_file():
+        raise FileNotFoundError(
+            f"missing {CHART_JS_PATH} (Chart.js bundle for dashboards)"
+        )
+    return CHART_JS_PATH.read_text()
+
 
 def load_csv(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
@@ -467,13 +477,13 @@ function mkNet(canvasId,...series){{
 {chr(10).join(chart_calls)}
 """
 
+    chart_js = load_chart_js()
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{{box-sizing:border-box}}
 body{{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -519,6 +529,9 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
 </table>
 
 </div>
+<script>
+{chart_js}
+</script>
 <script>
 {app_js}
 </script>
