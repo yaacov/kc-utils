@@ -484,6 +484,10 @@ function mkNet(canvasId,...series){{
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
+<script>
+/* chart.js 4.4.1 UMD (vendored) */
+{chart_js}
+</script>
 <style>
 *,*::before,*::after{{box-sizing:border-box}}
 body{{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -529,9 +533,6 @@ hr{{border:none;border-top:1px solid #dee2e6;margin:24px 0}}
 </table>
 
 </div>
-<script>
-{chart_js}
-</script>
 <script>
 {app_js}
 </script>
