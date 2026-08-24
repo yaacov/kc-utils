@@ -15,18 +15,6 @@ Point Forklift at the kc-v2v container image and run migrations as usual.
 
 ## Naming: Forklift vs kc-utils
 
-Forklift keeps **virt-v2v** names for the conversion pod and cluster settings.
-kc-utils replaces only the **container image contents** (entrypoint `kc-v2v`).
-
-| Layer | Forklift / MTV name | kc-utils name | Notes |
-|-------|---------------------|---------------|--------|
-| Cluster setting (`oc mtv settings`) | `virt_v2v_image_fqin` | Image FQIN value, e.g. `quay.io/you/kc-v2v:tag` | There is **no** `kc-v2v` MTV setting |
-| Controller env (synced from setting) | `VIRT_V2V_IMAGE` | Same FQIN string | Operator deployment, not conversion-pod env |
-| Conversion pod label | `forklift.app=virt-v2v` | — | `oc get pods -l forklift.app=virt-v2v` |
-| Pod container name | `virt-v2v` | Runs `/usr/bin/kc-v2v` when using this image |
-| Conversion pod env | See [below](#environment-variables-by-app) | Read only by `kc-v2v` (`pkg/v2v/env`) | Stage binaries do not read Forklift env |
-| Local tests / Makefile | — | `KC_V2V_IMAGE` | Test helper only; scripts set `virt_v2v_image_fqin` from it |
-
 Upstream default image: `quay.io/kubev2v/forklift-virt-v2v`. To use kc-utils,
 set **`virt_v2v_image_fqin`** to your **`kc-v2v`** image — the pod is still
 called virt-v2v in MTV.
