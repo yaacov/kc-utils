@@ -49,10 +49,10 @@ mtv_setting_get() {
     | tail -1 | awk '{print $NF}'
 }
 
-# True if setting looks unset / empty.
+# True if setting looks unset / empty (MTV prints "(empty)" for cleared values).
 mtv_setting_is_empty() {
   local v="$1"
-  [[ -z "${v}" || "${v}" == "<none>" || "${v}" == "VALUE" || "${v}" == "null" ]]
+  [[ -z "${v}" || "${v}" == "<none>" || "${v}" == "(empty)" || "${v}" == "VALUE" || "${v}" == "null" || "${v}" == "-" ]]
 }
 
 require_bin() {
@@ -95,7 +95,16 @@ preflight_mtv_cluster() {
 # Call save_mtv_settings once, then restore_mtv_settings from EXIT trap.
 SAVED_VIRT_V2V_IMAGE=""
 SAVED_WAIT_FOR_REBOOT=""
+REF_VIRT_V2V_IMAGE=""
 _SETTINGS_SAVED=false
+
+image_sync_log() {
+  if [[ -n "${SUMMARY_LOG:-}" ]]; then
+    echo "$*" | tee -a "${SUMMARY_LOG}"
+  else
+    echo "$*"
+  fi
+}
 
 save_mtv_settings() {
   SAVED_VIRT_V2V_IMAGE="$(mtv_setting_get virt_v2v_image_fqin || true)"
@@ -103,6 +112,31 @@ save_mtv_settings() {
   _SETTINGS_SAVED=true
   echo "Saved virt_v2v_image_fqin=${SAVED_VIRT_V2V_IMAGE:-<empty>}"
   echo "Saved feature_windows_wait_for_reboot=${SAVED_WAIT_FOR_REBOOT:-<empty>}"
+}
+
+# Operator-default virt-v2v image for the ref leg. Optional REF_V2V_IMAGE in .env;
+# otherwise inferred from the controller deploy when it differs from KC_V2V_IMAGE.
+capture_ref_virt_v2v_image() {
+  local deploy_ref ns deploy deploy_img setting
+  REF_VIRT_V2V_IMAGE="${REF_V2V_IMAGE:-}"
+  if [[ -n "${REF_VIRT_V2V_IMAGE}" ]]; then
+    echo "REF virt-v2v image (from .env): ${REF_VIRT_V2V_IMAGE}"
+    return 0
+  fi
+  deploy_ref="$(forklift_controller_deploy_ref)"
+  [[ -n "${deploy_ref}" ]] || return 0
+  ns="${deploy_ref%%/*}"
+  deploy="${deploy_ref#*/}"
+  deploy_img="$(controller_deploy_virt_v2v_image "${ns}" "${deploy}")"
+  setting="$(mtv_setting_get virt_v2v_image_fqin || true)"
+  if mtv_setting_is_empty "${setting}" && [[ -n "${deploy_img}" ]]; then
+    REF_VIRT_V2V_IMAGE="${deploy_img}"
+  elif [[ -n "${deploy_img}" && "${deploy_img}" != "${KC_V2V_IMAGE:-}" ]]; then
+    REF_VIRT_V2V_IMAGE="${deploy_img}"
+  fi
+  if [[ -n "${REF_VIRT_V2V_IMAGE}" ]]; then
+    echo "REF virt-v2v image (inferred): ${REF_VIRT_V2V_IMAGE}"
+  fi
 }
 
 restore_mtv_settings() {
@@ -138,79 +172,191 @@ set_virt_v2v_image() {
     echo "ERROR: conversion image FQIN is empty. Set KC_V2V_IMAGE in tests/scenarios/.env." >&2
     exit 1
   fi
-  echo "Setting virt_v2v_image_fqin=${image}"
+  image_sync_log "Setting virt_v2v_image_fqin=${image}"
   oc mtv settings set --setting virt_v2v_image_fqin --value "${image}"
   wait_for_virt_v2v_image_sync "${image}"
 }
 
 # Clear the override so Forklift uses the operator default virt-v2v image.
 clear_virt_v2v_image() {
-  echo "Clearing virt_v2v_image_fqin (operator default)"
+  image_sync_log "Clearing virt_v2v_image_fqin (operator default)"
   oc mtv settings set --setting virt_v2v_image_fqin --value "" 2>/dev/null \
     || oc mtv settings unset --setting virt_v2v_image_fqin 2>/dev/null \
     || true
-  wait_for_virt_v2v_image_sync "" "${KC_V2V_IMAGE:-}"
+  if [[ -n "${REF_VIRT_V2V_IMAGE:-}" ]]; then
+    wait_for_virt_v2v_image_sync "${REF_VIRT_V2V_IMAGE}"
+  else
+    wait_for_virt_v2v_image_sync "" "${KC_V2V_IMAGE:-}"
+  fi
 }
 
-# Conversion pods take VIRT_V2V_IMAGE from the running forklift-controller, not
-# from the MTV setting alone. After set/clear, wait until a Ready controller
-# pod has the expected env (or, when clearing, any image other than $2).
+# Conversion pods use VIRT_V2V_IMAGE from the forklift-controller deployment
+# template. After set/clear, wait until rollout is done and deploy + MTV setting
+# match the expected converter image.
 wait_for_virt_v2v_image_sync() {
   local expected="$1"
   local not_image="${2:-}"
-  local attempts="${3:-60}"
+  local attempts="${3:-90}"
   local sleep_s="${4:-5}"
-  local i current ns
-  ns="$(forklift_controller_namespace)"
-  if [[ -z "${ns}" ]]; then
-    echo "WARNING: could not find forklift-controller; skipping VIRT_V2V_IMAGE wait." >&2
-    return 0
+  local i current deploy_ref ns deploy deploy_image rollout_ok setting
+  deploy_ref="$(forklift_controller_deploy_ref)"
+  if [[ -z "${deploy_ref}" ]]; then
+    image_sync_log "ERROR: could not find forklift-controller deployment; cannot verify VIRT_V2V_IMAGE." >&2
+    return 1
   fi
-  echo "Waiting for forklift-controller VIRT_V2V_IMAGE sync (ns=${ns})..."
+  ns="${deploy_ref%%/*}"
+  deploy="${deploy_ref#*/}"
+  image_sync_log "Waiting for forklift-controller rollout + VIRT_V2V_IMAGE sync (ns=${ns} deploy=${deploy})..."
   for i in $(seq 1 "${attempts}"); do
-    current="$(controller_pod_virt_v2v_image "${ns}")"
+    rollout_ok=false
+    if forklift_controller_rollout_complete "${ns}" "${deploy}"; then
+      rollout_ok=true
+    fi
+    deploy_image="$(controller_deploy_virt_v2v_image "${ns}" "${deploy}")"
+    current="$(controller_pod_virt_v2v_image "${ns}" "${deploy}")"
+    setting="$(mtv_setting_get virt_v2v_image_fqin || true)"
     if [[ -n "${expected}" ]]; then
-      if [[ "${current}" == "${expected}" ]]; then
-        echo "Controller VIRT_V2V_IMAGE=${current} (attempt ${i}/${attempts})"
+      if [[ "${rollout_ok}" == "true" && "${deploy_image}" == "${expected}" ]]; then
+        if [[ "${expected}" == "${KC_V2V_IMAGE:-}" ]]; then
+          if [[ "${setting}" == "${expected}" ]]; then
+            image_sync_log "Controller ready: deploy=${deploy_image} setting=${setting} pod=${current:-<n/a>} (attempt ${i}/${attempts})"
+            return 0
+          fi
+        elif mtv_setting_is_empty "${setting}"; then
+          image_sync_log "Controller ready: deploy=${deploy_image} setting=<empty> pod=${current:-<n/a>} (attempt ${i}/${attempts})"
+          return 0
+        fi
+      fi
+      image_sync_log "  [${i}/${attempts}] rollout=${rollout_ok} deploy=${deploy_image:-<empty>} setting=${setting:-<empty>} pod=${current:-<empty>} want=${expected}"
+    elif [[ "${rollout_ok}" == "true" && -n "${deploy_image}" && "${deploy_image}" != "${not_image}" ]]; then
+      if mtv_setting_is_empty "${setting}"; then
+        image_sync_log "Controller ready: deploy=${deploy_image} setting=<empty> pod=${current:-<n/a>} (attempt ${i}/${attempts})"
         return 0
       fi
-    elif [[ -n "${current}" && "${current}" != "${not_image}" ]]; then
-      echo "Controller VIRT_V2V_IMAGE=${current} (attempt ${i}/${attempts})"
-      return 0
+      image_sync_log "  [${i}/${attempts}] rollout=${rollout_ok} deploy=${deploy_image:-<empty>} setting=${setting:-<empty>} pod=${current:-<empty>} want=not ${not_image:-<kc>}"
+    else
+      image_sync_log "  [${i}/${attempts}] rollout=${rollout_ok} deploy=${deploy_image:-<empty>} setting=${setting:-<empty>} pod=${current:-<empty>} want=not ${not_image:-<kc>}"
     fi
     sleep "${sleep_s}"
   done
-  echo "ERROR: timed out waiting for controller VIRT_V2V_IMAGE (want='${expected:-<not ${not_image}>}', got='${current:-<empty>}')." >&2
+  image_sync_log "ERROR: timed out waiting for forklift-controller (want='${expected:-<not ${not_image}>}', deploy='${deploy_image:-<empty>}', setting='${setting:-<empty>}', pod='${current:-<empty>}')." >&2
   return 1
 }
 
-forklift_controller_namespace() {
+# Hard gate before creating a plan: conversion pods follow deploy VIRT_V2V_IMAGE.
+verify_converter_image_ready() {
+  local converter="$1"
+  local deploy_ref ns deploy deploy_image setting
+  deploy_ref="$(forklift_controller_deploy_ref)"
+  if [[ -z "${deploy_ref}" ]]; then
+    image_sync_log "ERROR: forklift-controller deployment not found" >&2
+    return 1
+  fi
+  ns="${deploy_ref%%/*}"
+  deploy="${deploy_ref#*/}"
+  deploy_image="$(controller_deploy_virt_v2v_image "${ns}" "${deploy}")"
+  setting="$(mtv_setting_get virt_v2v_image_fqin || true)"
+  case "${converter}" in
+    kc)
+      if [[ "${deploy_image}" != "${KC_V2V_IMAGE}" ]]; then
+        image_sync_log "ERROR: kc leg blocked — forklift-controller VIRT_V2V_IMAGE(deploy)=${deploy_image:-<empty>} but need ${KC_V2V_IMAGE} (virt_v2v_image_fqin=${setting:-<empty>}). Conversion pods use the controller deploy env, not the MTV setting alone." >&2
+        return 1
+      fi
+      if [[ "${setting}" != "${KC_V2V_IMAGE}" ]]; then
+        image_sync_log "ERROR: kc leg blocked — virt_v2v_image_fqin=${setting:-<empty>} != ${KC_V2V_IMAGE}" >&2
+        return 1
+      fi
+      ;;
+    ref)
+      if ! mtv_setting_is_empty "${setting}"; then
+        image_sync_log "ERROR: ref leg blocked — virt_v2v_image_fqin still ${setting}" >&2
+        return 1
+      fi
+      if [[ -n "${REF_VIRT_V2V_IMAGE:-}" ]]; then
+        if [[ "${deploy_image}" != "${REF_VIRT_V2V_IMAGE}" ]]; then
+          image_sync_log "ERROR: ref leg blocked — deploy=${deploy_image:-<empty>} want ${REF_VIRT_V2V_IMAGE}" >&2
+          return 1
+        fi
+      elif [[ -z "${deploy_image}" || "${deploy_image}" == "${KC_V2V_IMAGE:-}" ]]; then
+        image_sync_log "ERROR: ref leg blocked — deploy=${deploy_image:-<empty>} still matches kc or is unset; set REF_V2V_IMAGE in .env" >&2
+        return 1
+      fi
+      ;;
+    *)
+      image_sync_log "ERROR: unknown converter '${converter}'" >&2
+      return 1
+      ;;
+  esac
+  image_sync_log "Converter image OK (${converter}): deploy=${deploy_image} setting=${setting:-<empty>}"
+  return 0
+}
+
+forklift_controller_deploy_ref() {
   oc get deploy -A -o json 2>/dev/null \
     | jq -r '
         [
           .items[]
-          | select(
-              (.metadata.name | test("forklift-controller"))
-              or ([.spec.template.spec.containers[]?.env[]?.name] | index("VIRT_V2V_IMAGE"))
-            )
-          | .metadata.namespace
+          | select(.metadata.name | test("^(forklift-controller|konveyor-forklift)$"))
+          | "\(.metadata.namespace)/\(.metadata.name)"
+        ] | .[0] // empty
+      ' 2>/dev/null
+}
+
+forklift_controller_namespace() {
+  local ref
+  ref="$(forklift_controller_deploy_ref)"
+  [[ -n "${ref}" ]] || return 0
+  printf '%s' "${ref%%/*}"
+}
+
+forklift_controller_rollout_complete() {
+  local ns="$1" deploy="$2"
+  oc get "deployment/${deploy}" -n "${ns}" -o json 2>/dev/null \
+    | jq -e '
+        (.status.observedGeneration // 0) >= (.metadata.generation // 0)
+        and (.status.updatedReplicas // 0) == (.spec.replicas // 1)
+        and (.status.readyReplicas // 0) == (.spec.replicas // 1)
+        and (.status.availableReplicas // 0) == (.spec.replicas // 1)
+      ' >/dev/null 2>&1
+}
+
+controller_deploy_virt_v2v_image() {
+  local ns="$1" deploy="$2"
+  oc get "deployment/${deploy}" -n "${ns}" -o json 2>/dev/null \
+    | jq -r '
+        [
+          .spec.template.spec.containers[]?.env[]?
+          | select(.name == "VIRT_V2V_IMAGE")
+          | .value // empty
         ] | .[0] // empty
       ' 2>/dev/null
 }
 
 controller_pod_virt_v2v_image() {
-  local ns="$1"
-  oc get pods -n "${ns}" -o json 2>/dev/null \
+  local ns="$1" deploy="$2"
+  local selector
+  selector="$(oc get "deployment/${deploy}" -n "${ns}" -o json 2>/dev/null \
+    | jq -r '
+        .spec.selector.matchLabels
+        | to_entries
+        | map("\(.key)=\(.value)")
+        | join(",")
+      ' 2>/dev/null)"
+  [[ -n "${selector}" ]] || return 0
+  oc get pods -n "${ns}" -l "${selector}" -o json 2>/dev/null \
     | jq -r '
         [
           .items[]
-          | select(.metadata.name | test("forklift-controller"))
-          | select(.status.phase == "Running")
-          | select([.status.containerStatuses[]? | .ready] | any)
-          | .spec.containers[]?.env[]?
-          | select(.name == "VIRT_V2V_IMAGE")
-          | .value // empty
-        ] | .[0] // empty
+          | select(any(.status.conditions[]?; .type == "Ready" and .status == "True"))
+          | {ts: .metadata.creationTimestamp, env: [
+              .spec.containers[]?.env[]?
+              | select(.name == "VIRT_V2V_IMAGE")
+              | .value // empty
+            ] | .[0] // empty}
+        ]
+        | sort_by(.ts)
+        | last
+        | .env // empty
       ' 2>/dev/null
 }
 

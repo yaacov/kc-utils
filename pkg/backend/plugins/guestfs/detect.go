@@ -4,6 +4,7 @@ package guestfs
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -12,13 +13,19 @@ import (
 )
 
 func (b *Backend) checkUnsupportedWindowsVolumes() error {
+	out, err := b.session.remoteScript("-list-partitions\n")
+	if err != nil {
+		slog.Debug("guestfs list-partitions failed", "error", err)
+		return nil
+	}
+	all := parseListPartitions(string(out))
 	var issues []windowsvol.Issue
 	for _, diskPath := range b.diskPaths {
 		diskDev, err := b.diskDeviceName(diskPath)
 		if err != nil {
 			continue
 		}
-		issues = append(issues, b.scanDiskWindowsVolumes(diskDev)...)
+		issues = append(issues, b.scanDiskWindowsVolumes(diskDev, all)...)
 	}
 	if issue := windowsvol.FirstUnsupported(issues, backend.NameGuestfs); issue != nil {
 		return windowsvol.UnsupportedError(issue.Kind, issue.Device, backend.NameGuestfs)
@@ -26,18 +33,14 @@ func (b *Backend) checkUnsupportedWindowsVolumes() error {
 	return nil
 }
 
-func (b *Backend) scanDiskWindowsVolumes(diskDev string) []windowsvol.Issue {
-	out, err := b.session.remote("list-partitions")
-	if err != nil {
-		return nil
-	}
+func (b *Backend) scanDiskWindowsVolumes(diskDev string, allPartitions []string) []windowsvol.Issue {
 	var issues []windowsvol.Issue
-	for _, partDev := range partitionsForDisk(diskDev, parseListPartitions(string(out))) {
+	for _, partDev := range partitionsForDisk(diskDev, allPartitions) {
 		fsType := ""
-		if ftOut, ftErr := b.session.remote("vfs-type " + quoteGuestfish(partDev)); ftErr == nil {
+		if ftOut, ftErr := b.session.remoteScriptSoft("-vfs-type " + quoteGuestfish(partDev) + "\n"); ftErr == nil {
 			fsType = strings.TrimSpace(string(ftOut))
 		}
-		partNum := b.partitionNumber(partDev)
+		partNum := b.partitionNumber(diskDev, partDev)
 		if partNum <= 0 {
 			continue
 		}
@@ -49,8 +52,9 @@ func (b *Backend) scanDiskWindowsVolumes(diskDev string) []windowsvol.Issue {
 	return issues
 }
 
-func (b *Backend) partitionNumber(partDev string) int {
-	out, err := b.session.remote("part-to-partnum " + quoteGuestfish(partDev))
+func (b *Backend) partitionNumber(diskDev, partDev string) int {
+	script := "-part-to-partnum " + quoteGuestfish(diskDev) + " " + quoteGuestfish(partDev) + "\n"
+	out, err := b.session.remoteScript(script)
 	if err != nil {
 		return 0
 	}

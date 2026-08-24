@@ -6,7 +6,7 @@
 #
 # Modes (MODE):
 #   kc       Run once with KC_V2V_IMAGE (independent kc-v2v benchmark). Default.
-#   compare  Run twice: kc-v2v then operator-default virt-v2v (full compare).
+#   compare  Run twice: operator-default virt-v2v then kc-v2v (full compare).
 #
 # Prerequisites: oc, oc mtv, jq, tests/scenarios/.env configured, VDDK on cluster.
 #
@@ -106,7 +106,7 @@ Usage: MODE=kc|ref|compare $0
 
   MODE=kc       Independent kc-v2v benchmark (default)
   MODE=ref      Operator-default virt-v2v only
-  MODE=compare  kc-v2v then operator-default virt-v2v
+  MODE=compare  operator-default virt-v2v then kc-v2v
 
 Artifacts: ${ARTIFACT_PREFIX}-<converter>.log and -mem/
 EOF
@@ -626,12 +626,18 @@ run_converter_leg() {
       ;;
   esac
 
+  verify_converter_image_ready "${converter}" || return 1
+
   if [[ "${DISABLE_WAIT_FOR_REBOOT}" == "true" ]]; then
     disable_windows_wait_for_reboot
   fi
 
   log "VDDK: $(mtv_setting_get vddk_image)"
   log "virt_v2v_image_fqin: $(mtv_setting_get virt_v2v_image_fqin)"
+  deploy_ref="$(forklift_controller_deploy_ref)"
+  if [[ -n "${deploy_ref}" ]]; then
+    log "forklift-controller deploy=${deploy_ref#*/} VIRT_V2V_IMAGE(deploy)=$(controller_deploy_virt_v2v_image "${deploy_ref%%/*}" "${deploy_ref#*/}") pod=$(controller_pod_virt_v2v_image "${deploy_ref%%/*}" "${deploy_ref#*/}")"
+  fi
   log "feature_windows_wait_for_reboot: $(mtv_setting_get feature_windows_wait_for_reboot)"
   log "Default SC: $(oc get sc -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}')"
   log "Ceph: $(oc get cephcluster -n openshift-storage -o jsonpath='{.items[0].status.ceph.health}' 2>/dev/null || echo n/a)"
@@ -739,6 +745,7 @@ echo ""
 
 preflight_mtv_cluster
 save_mtv_settings
+capture_ref_virt_v2v_image
 
 cleanup() {
   if [[ "${_CLEANED_UP}" == "true" ]]; then
@@ -771,14 +778,14 @@ case "${MODE}" in
     run_converter_leg "ref" || overall_rc=$?
     ;;
   compare)
-    run_converter_leg "kc" || overall_rc=$?
+    run_converter_leg "ref" || overall_rc=$?
     if [[ "${overall_rc}" -ne 0 ]]; then
-      echo "kc leg failed — skipping ref (default) leg."
+      echo "ref leg failed — skipping kc leg."
     else
       echo ""
-      echo "kc leg OK. Starting ref (operator default) leg..."
+      echo "ref leg OK. Starting kc leg..."
       echo ""
-      run_converter_leg "ref" || overall_rc=$?
+      run_converter_leg "kc" || overall_rc=$?
     fi
     ;;
 esac

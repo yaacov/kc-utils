@@ -156,7 +156,7 @@ Manual MTV scenario tests live under
 make build-kc-v2v-image push-kc-v2v-image
 cp tests/scenarios/.env.example tests/scenarios/.env   # set KC_V2V_IMAGE, GOVC_*, etc.
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh          # independent kc-v2v
-MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # kc then operator default
+MODE=compare ./tests/scenarios/test-mtv-benchmark.sh     # ref then kc-v2v
 ./tests/scenarios/clean-env.sh          # delete NS + reset MTV settings
 ```
 

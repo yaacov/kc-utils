@@ -24,7 +24,7 @@ cp tests/scenarios/.env.example tests/scenarios/.env   # GOVC_*, optional VM pin
 # Independent kc-v2v benchmark (stores logs + mem/CPU/net + pod logs + HTML)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 
-# Full compare in one session: kc-v2v then operator-default virt-v2v
+# Full compare in one session: operator-default virt-v2v then kc-v2v
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 ```
 
@@ -37,7 +37,7 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 | Variable | Default | Description |
 |---|---|---|
-| `MODE` | `kc` | `kc` = independent kc run; `compare` = kc then ref |
+| `MODE` | `kc` | `kc` = independent kc run; `compare` = ref then kc |
 | `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
 | `NS` | yes | Namespace to create for the test |
 | `PROVIDER` | yes | vSphere provider name |

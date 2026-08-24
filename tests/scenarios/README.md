@@ -50,7 +50,7 @@ cp tests/scenarios/.env.example tests/scenarios/.env
 # Independent kc-v2v benchmark (logs + mem/CPU/net + pod logs + HTML)
 MODE=kc ./tests/scenarios/test-mtv-benchmark.sh
 
-# Full compare: kc-v2v then operator-default virt-v2v
+# Full compare: operator-default virt-v2v then kc-v2v
 MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 
 # Clean up after a run (default: delete namespace + reset MTV settings)
