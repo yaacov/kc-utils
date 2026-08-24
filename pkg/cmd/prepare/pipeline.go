@@ -87,24 +87,12 @@ func Run(cfg *Config) error {
 	}()
 
 	output.Disks = g.DiskInfos()
-	lvPaths := g.LVPaths()
-	var allPartDevices []string
-	for _, d := range output.Disks {
-		for _, p := range d.Partitions {
-			allPartDevices = append(allPartDevices, p.DevicePath)
-		}
-	}
-	slog.Info("guest disk layout",
-		"disks", len(output.Disks),
-		"partitions", len(allPartDevices),
-		"lvs", len(lvPaths),
-	)
-
-	candidateDevices := append([]string{}, allPartDevices...)
-	candidateDevices = append(candidateDevices, lvPaths...)
-
-	unlocked := decryptDisks(g, cfg.Input.LUKS, candidateDevices)
-	lvPaths, output.Disks = rescanAfterDecrypt(g, unlocked, lvPaths, output.Disks)
+	layout := unlockGuestVolumes(g, cfg, output.Disks)
+	output.Disks = layout.disks
+	lvPaths := layout.lvPaths
+	ldmPaths := layout.ldmPaths
+	unlocked := layout.unlocked
+	allPartDevices := layout.allPartDevices
 
 	for _, d := range output.Disks {
 		for _, p := range d.Partitions {
@@ -121,6 +109,7 @@ func Run(cfg *Config) error {
 	)
 
 	discoverDevices := append([]string{}, lvPaths...)
+	discoverDevices = append(discoverDevices, ldmPaths...)
 	discoverDevices = append(discoverDevices, unlocked...)
 	candidates, err := root.Discover(g, output.Disks, discoverDevices)
 	if err != nil {
@@ -156,6 +145,7 @@ func Run(cfg *Config) error {
 	)
 
 	mountLVs := append([]string{}, lvPaths...)
+	mountLVs = append(mountLVs, ldmPaths...)
 	mountLVs = append(mountLVs, unlocked...)
 	if err := planAndMount(g, cfg, &chosen, allPartDevices, mountLVs, output); err != nil {
 		return err
@@ -224,6 +214,64 @@ func writeMultibootError(cfg *Config, output *types.PrepareOutput, mb *root.Mult
 	_ = types.WriteJSON(cfg.OutputPath, cfg.Pipeline)
 }
 
+type guestVolumeLayout struct {
+	disks          []types.DiskInfo
+	lvPaths        []string
+	ldmPaths       []string
+	unlocked       []string
+	allPartDevices []string
+}
+
+func unlockGuestVolumes(g *guest.Guest, cfg *Config, disks []types.DiskInfo) guestVolumeLayout {
+	lvPaths := g.LVPaths()
+	ldmPaths := g.LDMPaths()
+	var allPartDevices []string
+	for _, d := range disks {
+		for _, p := range d.Partitions {
+			allPartDevices = append(allPartDevices, p.DevicePath)
+		}
+	}
+	slog.Info("guest disk layout",
+		"disks", len(disks),
+		"partitions", len(allPartDevices),
+		"lvs", len(lvPaths),
+		"ldm", len(ldmPaths),
+	)
+
+	candidateDevices := append([]string{}, allPartDevices...)
+	candidateDevices = append(candidateDevices, lvPaths...)
+	candidateDevices = append(candidateDevices, ldmPaths...)
+
+	unlocked := decryptDisks(g, cfg.Input.LUKS, candidateDevices)
+	lvPaths, disks = rescanAfterDecrypt(g, unlocked, lvPaths, disks)
+	ldmPaths = g.LDMPaths()
+
+	candidateDevices = append([]string{}, allPartDevices...)
+	candidateDevices = append(candidateDevices, lvPaths...)
+	candidateDevices = append(candidateDevices, ldmPaths...)
+	for _, d := range disks {
+		for _, p := range d.Partitions {
+			if !containsDevice(candidateDevices, p.DevicePath) {
+				candidateDevices = append(candidateDevices, p.DevicePath)
+			}
+		}
+	}
+	candidateDevices = append(candidateDevices, unlocked...)
+
+	bitlkUnlocked := decryptBitLocker(g, cfg.Input.BitLocker, candidateDevices)
+	lvPaths, disks = rescanAfterDecrypt(g, bitlkUnlocked, lvPaths, disks)
+	ldmPaths = g.LDMPaths()
+	unlocked = append(unlocked, bitlkUnlocked...)
+
+	return guestVolumeLayout{
+		disks:          disks,
+		lvPaths:        lvPaths,
+		ldmPaths:       ldmPaths,
+		unlocked:       unlocked,
+		allPartDevices: allPartDevices,
+	}
+}
+
 func rescanAfterDecrypt(g *guest.Guest, unlocked, lvPaths []string, disks []types.DiskInfo) ([]string, []types.DiskInfo) {
 	if len(unlocked) == 0 {
 		return lvPaths, disks
@@ -282,6 +330,50 @@ func decryptDisks(g *guest.Guest, luks *types.LUKSSpec, candidateDevices []strin
 		}
 	}
 	return unlocked
+}
+
+func decryptBitLocker(g *guest.Guest, spec *types.BitLockerSpec, candidateDevices []string) []string {
+	var unlocked []string
+	if spec == nil || len(spec.KeyFiles) == 0 {
+		return unlocked
+	}
+	for device, keyFile := range spec.KeyFiles {
+		if device == "" || device == "all" || strings.HasPrefix(device, "all-") {
+			for _, d := range candidateDevices {
+				ft, err := g.FSType(d)
+				if err != nil || !strings.EqualFold(ft, "bitlocker") {
+					continue
+				}
+				mapper := "v2v-bitlk-" + sanitizeMapper(d)
+				mapped, err := g.DecryptBitLocker(d, keyFile, mapper)
+				if err != nil {
+					slog.Debug("BitLocker keyfile try failed", "device", d, "error", err)
+					continue
+				}
+				slog.Info("BitLocker decrypted with keyfile", "device", d, "mapper", mapped)
+				unlocked = append(unlocked, mapped)
+			}
+			continue
+		}
+		mapper := "v2v-bitlk-" + sanitizeMapper(device)
+		mapped, err := g.DecryptBitLocker(device, keyFile, mapper)
+		if err != nil {
+			slog.Warn("BitLocker decrypt failed", "device", device, "error", err)
+			continue
+		}
+		slog.Info("BitLocker decrypted with keyfile", "device", device, "mapper", mapped)
+		unlocked = append(unlocked, mapped)
+	}
+	return unlocked
+}
+
+func containsDevice(devices []string, device string) bool {
+	for _, d := range devices {
+		if d == device {
+			return true
+		}
+	}
+	return false
 }
 
 func planAndMount(g *guest.Guest, cfg *Config, chosen *types.RootCandidate, allPartDevices, lvPaths []string, output *types.PrepareOutput) error {

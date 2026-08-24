@@ -21,6 +21,8 @@ type Backend struct {
 	diskDevices []string // appliance device per disk index: /dev/vda, /dev/vdb, ...
 	diskInfos   []types.DiskInfo
 	lvPaths     []string
+	ldmPaths    []string
+	ldmActive   bool
 
 	mounts      []mountEntry // recorded eager mounts, torn down in reverse
 	probeActive string
@@ -73,6 +75,7 @@ func NewMounted(disks []types.DiskSpec, mountRoot string, diskInfos []types.Disk
 	if err := b.ensureApplianceRoot(); err != nil {
 		return nil, err
 	}
+	b.activateLDM()
 	if err := b.remountFromDiskInfos(); err != nil {
 		return nil, err
 	}
@@ -119,6 +122,20 @@ func (b *Backend) Setup(disks []types.DiskSpec, mountRoot string) error {
 			)
 		}
 	}
+
+	if err := b.checkWindowsVolumes(); err != nil {
+		return err
+	}
+
+	b.activateLDM()
+	ldmParts, ldmPaths, err := b.discoverLDMVolumes()
+	if err != nil {
+		slog.Warn("LDM discovery failed", "error", err)
+	} else if len(ldmPaths) > 0 {
+		slog.Info("LDM volumes discovered", "volumes", len(ldmPaths), "paths", ldmPaths)
+		b.mergeLDMIntoDiskInfos(ldmParts)
+	}
+	b.ldmPaths = ldmPaths
 
 	lvs, err := b.discoverLVs()
 	if err != nil {
@@ -191,6 +208,7 @@ func (b *Backend) ensureApplianceRoot() error {
 
 func (b *Backend) DiskInfos() []types.DiskInfo { return b.diskInfos }
 func (b *Backend) LVPaths() []string           { return b.lvPaths }
+func (b *Backend) LDMPaths() []string          { return b.ldmPaths }
 func (b *Backend) DiskPaths() []string         { return b.diskPaths }
 
 // Sync flushes the guest's in-memory writes to the attached virtio-blk devices

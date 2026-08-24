@@ -28,6 +28,7 @@ const (
 	EnvCopyConcurrency              = config.EnvCopyConcurrency
 	EnvOffline                      = config.EnvOffline
 	EnvBackend                      = config.EnvBackend
+	EnvBitLockerDir                 = config.EnvBitLockerDir
 
 	DefaultCopyConcurrency      = config.DefaultCopyConcurrency
 	DefaultCaBundle             = config.DefaultCaBundle
@@ -36,6 +37,7 @@ const (
 	DefaultInspectionOutputFile = config.DefaultInspectionOutputFile
 	DefaultDynamicScriptsDir    = config.DefaultDynamicScriptsDir
 	DefaultLuksDir              = config.DefaultLuksDir
+	DefaultBitLockerDir         = config.DefaultBitLockerDir
 	DefaultMountRoot            = config.DefaultMountRoot
 	BlockGlob                   = config.BlockGlob
 	FSGlob                      = config.FSGlob

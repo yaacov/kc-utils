@@ -16,6 +16,10 @@ func BuildPrepareInput(cfg *Config, disks []DiskInfo, source types.SourceSpec) (
 	if err != nil {
 		return types.PrepareInput{}, err
 	}
+	bitlkSpec, err := BuildBitLockerSpec(cfg)
+	if err != nil {
+		return types.PrepareInput{}, err
+	}
 
 	var diskSpecs []types.DiskSpec
 	for _, d := range disks {
@@ -28,9 +32,10 @@ func BuildPrepareInput(cfg *Config, disks []DiskInfo, source types.SourceSpec) (
 	}
 
 	return types.PrepareInput{
-		Disks:  diskSpecs,
-		Source: source,
-		LUKS:   luksSpec,
+		Disks:     diskSpecs,
+		Source:    source,
+		LUKS:      luksSpec,
+		BitLocker: bitlkSpec,
 		Options: types.PrepareOptions{
 			TmpDir:                 cfg.Workdir,
 			StaticIPs:              staticIPs,

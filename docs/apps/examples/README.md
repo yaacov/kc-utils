@@ -20,6 +20,7 @@ work directory; adjust for your environment.
 | [prepare-input-windows.json](prepare-input-windows.json) | kc-prepare | Windows guest + static IPs |
 | [prepare-input-multiboot.json](prepare-input-multiboot.json) | kc-prepare | Multiboot with `options.root=first` (also the default when omitted) |
 | [prepare-input-luks.json](prepare-input-luks.json) | kc-prepare | LUKS keyfile mapping |
+| [prepare-input-bitlocker.json](prepare-input-bitlocker.json) | kc-prepare | BitLocker passphrase mapping (qemu backend) |
 | [prepare-output-complete.json](prepare-output-complete.json) | converters, kc-finalize | Example `prepare` section of PipelineData |
 | [prepare-output-error-multiboot.json](prepare-output-error-multiboot.json) | orchestrator | Explicit `options.root=single` multiboot failure + candidates |
 | [convert-output-linux.json](convert-output-linux.json) | kc-finalize | Example `convert` section (Linux) of PipelineData |

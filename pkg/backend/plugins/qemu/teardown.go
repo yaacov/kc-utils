@@ -42,6 +42,7 @@ func (b *Backend) ReleaseDevices() error {
 			}
 		}
 		b.cryptMaps = nil
+		b.removeLDM()
 		if _, err := b.session.client.run("vgchange", "-an"); err != nil {
 			slog.Debug("qemu vgchange -an", "error", err)
 		}

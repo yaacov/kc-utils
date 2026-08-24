@@ -342,6 +342,9 @@ backend; build its appliance separately with `make build-appliance` and point
 | **KVM / accel** | Not required | KVM preferred (TCG fallback) | KVM/HVF preferred (TCG fallback) |
 | **Container image size** | Smaller (no QEMU, no kernel) | Larger (QEMU + appliance kernel + initramfs) | Appliance built separately |
 | **Isolation** | Weak (guest FS drivers in host kernel) | Strong (VM boundary) | Strong (VM boundary) |
+| **Windows LDM (dynamic disk)** | Error — use `qemu` | Error — use `qemu` | `ldmtool` in appliance |
+| **BitLocker** | Error — use `qemu` | Error — use `qemu` | `cryptsetup --type bitlk` in appliance |
+| **Storage Spaces** | Error | Error | Error |
 | **Debugging** | Easy (files visible under mount root) | Harder (guestfish API or appliance shell) | Agent socket + debug PTY channel |
 
 ## Pod security (Forklift / MTV)
@@ -380,6 +383,24 @@ candidates. Keyfile unlock uses `cryptsetup-open` with `--keys-from-stdin`.
 
 The `qemu` backend unlocks Clevis inside its appliance with the same Tang
 reachability requirements (`Exec clevis luks unlock` + user networking at launch).
+
+### Windows LDM and BitLocker (`--backend qemu`)
+
+Windows **dynamic disks** (LDM) and **BitLocker**-encrypted volumes are supported
+only on the `qemu` backend. The appliance runs `ldmtool create all` after virtio
+disks attach, discovers `/dev/mapper/ldm_*` mapper devices, and probes them for
+`Windows/System32/config/SYSTEM` like LVM logical volumes. `direct` and `guestfs`
+fail fast at setup with `windows volume <kind> on <device> requires backend "qemu"`.
+
+BitLocker passphrases are supplied in `PrepareInput.bitlocker.key_files` (same
+`all` / per-device pattern as `luks`). kc-v2v scans `/etc/bitlocker` by default
+(`V2V_BITLOCKER_DIR`). Unlock runs inside the appliance with
+`cryptsetup open --type bitlk`; TPM-only volumes are not supported.
+
+**Storage Spaces** is unsupported on every backend.
+
+Rebuild the appliance after pulling LDM support: `make build-appliance` (adds
+`libldm` / `ldmtool` to the initramfs).
 
 ### NTFS mounts on RHEL/CentOS/UBI
 

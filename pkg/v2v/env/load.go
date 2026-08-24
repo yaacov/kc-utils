@@ -19,6 +19,7 @@ func Load() (*Config, error) {
 		Workdir:              DefaultWorkdir,
 		InspectionOutputFile: DefaultInspectionOutputFile,
 		LuksDir:              DefaultLuksDir,
+		BitLockerDir:         DefaultBitLockerDir,
 		DynamicScriptsDir:    DefaultDynamicScriptsDir,
 		MountRoot:            DefaultMountRoot,
 		LogLevel:             "info",
@@ -43,6 +44,7 @@ func Load() (*Config, error) {
 	flag.StringVar(&cfg.Workdir, "work-dir", DefaultWorkdir, "working directory")
 	flag.StringVar(&cfg.InspectionOutputFile, "inspection-output-file", DefaultInspectionOutputFile, "inspection XML path")
 	flag.StringVar(&cfg.LuksDir, "luks-dir", DefaultLuksDir, "LUKS key directory")
+	flag.StringVar(&cfg.BitLockerDir, "bitlocker-dir", envOr(EnvBitLockerDir, DefaultBitLockerDir), "BitLocker passphrase directory")
 	flag.StringVar(&cfg.DynamicScriptsDir, "dynamic-scripts-dir", DefaultDynamicScriptsDir, "dynamic scripts directory")
 	flag.BoolVar(&cfg.VsphereVmwareDriverRemoval, "vsphere-vmware-driver-removal", getEnvBool(EnvVsphereVmwareDriverRemoval, false), "VMware driver removal")
 	flag.BoolVar(&cfg.WindowsRegistryNetworkConfig, "windows-registry-network-config", getEnvBool(EnvWindowsRegistryNetworkConfig, false), "registry network config")

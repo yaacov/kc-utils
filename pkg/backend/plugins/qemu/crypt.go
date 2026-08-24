@@ -72,9 +72,45 @@ func (b *Backend) CloseCrypt(mapperName string) error {
 	return err
 }
 
-// RescanBlock re-activates LVM after LUKS unlock so LVs on unlocked devices
-// appear in LVPaths.
+// DecryptBitLocker opens a BitLocker volume with a passphrase key file.
+func (b *Backend) DecryptBitLocker(device, keyFile, mapperName string) (string, error) {
+	keyData, err := os.ReadFile(keyFile)
+	if err != nil {
+		return "", fmt.Errorf("read BitLocker keyfile %s: %w", keyFile, err)
+	}
+	keyData = bytes.TrimRight(keyData, "\r\n")
+	keyData = append(keyData, '\n')
+
+	applianceKey := "/tmp/.kc-bitlk-key-" + mapperName
+	if err := b.session.client.writeFile(applianceKey, keyData, 0o600); err != nil {
+		return "", fmt.Errorf("upload BitLocker keyfile: %w", err)
+	}
+	defer func() { _ = b.session.client.remove(applianceKey, false) }()
+
+	if _, err := b.session.client.run("cryptsetup", "open", "--type", "bitlk",
+		"--key-file", applianceKey, device, mapperName); err != nil {
+		return "", fmt.Errorf("cryptsetup bitlk open %s: %w", device, err)
+	}
+	mapped := "/dev/mapper/" + mapperName
+	if !b.mapperPresent(mapped) {
+		return "", fmt.Errorf("cryptsetup bitlk open %s: mapper %s not created", device, mapped)
+	}
+	b.cryptMaps = append(b.cryptMaps, mapperName)
+	slog.Info("qemu BitLocker decrypted", "device", device, "mapper", mapped)
+	return mapped, nil
+}
+
+// RescanBlock re-discovers LDM and LVM after unlock so mapper paths stay current.
 func (b *Backend) RescanBlock() error {
+	if b.ldmActive {
+		ldmParts, ldmPaths, err := b.discoverLDMVolumes()
+		if err != nil {
+			return fmt.Errorf("rescan LDM after decrypt: %w", err)
+		}
+		b.refreshLDMInDiskInfos(ldmParts)
+		b.ldmPaths = ldmPaths
+		slog.Info("qemu rescan LDM", "volumes", len(ldmPaths), "paths", ldmPaths)
+	}
 	lvs, err := b.discoverLVs()
 	if err != nil {
 		return fmt.Errorf("rescan LVs after decrypt: %w", err)

@@ -44,6 +44,7 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 #   lvm2                 pvscan, vgchange, lvs
 #   cryptsetup           LUKS open/close
 #   clevis, clevis-luks  NBDE/Tang unlock
+#   libldm               Windows LDM (dynamic disk) offline assembly (ldmtool)
 #   e2fsprogs xfsprogs   e2fsck, xfs_repair
 #   btrfs-progs          btrfs check
 #   ntfs-3g ntfsprogs    ntfsfix, ntfs-3g mount
@@ -58,7 +59,7 @@ RUN dnf install -y \
         --nodocs \
         kernel-core kmod \
         glibc bash coreutils \
-        util-linux lvm2 cryptsetup \
+        util-linux lvm2 cryptsetup libldm \
         clevis clevis-luks \
         e2fsprogs xfsprogs btrfs-progs \
         ntfs-3g ntfsprogs dosfstools && \

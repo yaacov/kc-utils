@@ -10,11 +10,13 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/yaacov/kc-utils/pkg/backend"
 	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/disk"
 	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/fstype"
 	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/luks"
 	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/lvm"
 	"github.com/yaacov/kc-utils/pkg/backend/plugins/direct/mount"
+	"github.com/yaacov/kc-utils/pkg/backend/windowsvol"
 	"github.com/yaacov/kc-utils/pkg/common/types"
 )
 
@@ -95,11 +97,17 @@ func (b *Backend) Setup(disks []types.DiskSpec, mountRoot string) error {
 		}
 	}
 
+	if issue := windowsvol.FirstUnsupported(windowsvol.ScanDiskInfos(b.diskInfos, windowsvol.HostPartProbe), backend.NameDirect); issue != nil {
+		_ = b.Teardown()
+		return windowsvol.UnsupportedError(issue.Kind, issue.Device, backend.NameDirect)
+	}
+
 	return nil
 }
 
 func (b *Backend) DiskInfos() []types.DiskInfo { return b.diskInfos }
 func (b *Backend) LVPaths() []string           { return b.lvPaths }
+func (b *Backend) LDMPaths() []string          { return nil }
 func (b *Backend) DiskPaths() []string         { return b.diskPaths }
 
 func (b *Backend) Mount(device, hostMountPoint, ft string, readOnly bool) error {
@@ -159,6 +167,10 @@ func (b *Backend) Decrypt(device, keyFile, mapperName string) (string, error) {
 	}
 	b.cryptMaps = append(b.cryptMaps, mapperName)
 	return mapped, nil
+}
+
+func (b *Backend) DecryptBitLocker(_, _, _ string) (string, error) {
+	return "", fmt.Errorf("BitLocker requires backend %q", backend.NameQEMU)
 }
 
 func (b *Backend) UnlockClevis(device, mapperName string) (string, error) {
