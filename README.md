@@ -24,11 +24,10 @@ for creating the target VM.
   (`guestfs`), or a QEMU appliance with in-guest agent (`qemu`).
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
-On OpenShift MTV cold migrations, kc-v2v beats virt-v2v wall time
-(about 3.5 minutes faster on RHEL, about 6 minutes faster on Windows) while
-using less peak memory and far less peak CPU, and transferring roughly
-57 % / 38 % less network data (RHEL / Windows) by converting disks in-pod
-instead of a separate DiskTransferV2v stream.
+On OpenShift MTV cold migrations (three VMs in one plan), kc-v2v is faster
+end-to-end than virt-v2v, with lower peak memory and CPU on most guests and
+less network traffic. See the [baseline tables and dashboard](docs/architecture/ref-baseline/README.md) for
+the latest archived run.
 
 **[Dashboard](https://htmlpreview.github.io/?https://github.com/yaacov/kc-utils/blob/main/docs/architecture/ref-baseline/dashboard.html)**
 ([source](docs/architecture/ref-baseline/dashboard.html)):

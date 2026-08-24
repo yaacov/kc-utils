@@ -1,0 +1,381 @@
+==========================================
+MTV cold migration benchmark — ref
+==========================================
+Mode: compare
+Log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref.log
+Mem: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem
+NS=mtv-kc-v2v-bench SKIP_CLEANUP=true
+
+Clearing virt_v2v_image_fqin (operator default)
+Waiting for forklift-controller rollout + VIRT_V2V_IMAGE sync (ns=konveyor-forklift deploy=forklift-controller)...
+Controller ready: deploy=quay.io/yaacov/forklift-virt-v2v:devel-amd64 setting=<empty> pod=<n/a> (attempt 1/90)
+Converter image OK (ref): deploy=quay.io/yaacov/forklift-virt-v2v:devel-amd64 setting=(empty)
+VDDK: quay.io/yaacov/vddk:8.0.0
+virt_v2v_image_fqin: (empty)
+forklift-controller deploy=forklift-controller VIRT_V2V_IMAGE(deploy)=quay.io/yaacov/forklift-virt-v2v:devel-amd64 pod=
+feature_windows_wait_for_reboot: false
+Default SC: ocs-storagecluster-ceph-rbd-virtualization
+Ceph: HEALTH_OK
+
+Creating providers...
+
+VM1=mtv-func-rhel9-4-uefi
+VM2=mtv-func-win2019
+VM3=mtv-func-rhel9
+
+Running 3 VMs in one plan (plan-bench); conversion pods sampled in parallel.
+==========================================
+RUN: VMs=mtv-func-rhel9-4-uefi,mtv-func-win2019,mtv-func-rhel9 plan=plan-bench converter=ref
+==========================================
+No target namespace specified, using plan namespace: mtv-kc-v2v-bench
+plan/plan-bench created
+Waiting for plan Ready...
+plan.forklift.konveyor.io/plan-bench condition met
+Migration started at 2026-08-24T12:34:40Z
+--- Monitoring plan plan-bench (vm1=mtv-func-rhel9-4-uefi vm2=mtv-func-win2019 vm3=mtv-func-rhel9) ---
+  Memory/net monitor (vm1) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm1-virt-v2v-memory.csv (every 10s)
+  Memory/net monitor (vm2) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm2-virt-v2v-memory.csv (every 10s)
+  Memory/net monitor (vm3) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm3-virt-v2v-memory.csv (every 10s)
+  [step-change] 0m02s plan=Ready vm1=? vm2=? vm3=? vm1:[] vm2:[] vm3:[]
+  [step-change] 0m13s plan=Executing vm1=AllocateDisks vm2=AllocateDisks vm3=AllocateDisks vm1:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+  [step-change] 0m25s plan=Executing vm1=AllocateDisks vm2=AllocateDisks vm3=AllocateDisks vm1:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+  [step-change] 0m36s plan=Executing vm1=AllocateDisks vm2=ConvertGuest vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm3] +0m46s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=?Mi cgroup=?Mi cpu=?m rx=55270 tx=30780 phase=Pending
+  [step-change] 0m47s plan=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm2] +0m48s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=?Mi cpu=?m rx=61102 tx=33036 phase=Pending
+    [mon vm1] +0m58s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=?Mi cgroup=321Mi cpu=?m rx=63210 tx=37137 phase=Running
+  [06/180] 0m59s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +1m09s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=?Mi cgroup=763Mi cpu=?m rx=1296952 tx=201785 phase=Running
+  [07/180] 1m10s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +1m11s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=831Mi cpu=?m rx=2138631 tx=269353 phase=Running
+    [mon vm1] +1m21s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=232Mi cgroup=915Mi cpu=302m rx=22107837 tx=954992 phase=Running
+  [08/180] 1m22s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +1m32s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=428Mi cgroup=971Mi cpu=1266m rx=32022652 tx=1375123 phase=Running
+  [09/180] 1m33s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +1m34s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=539Mi cgroup=681Mi cpu=1341m rx=44228878 tx=1920494 phase=Running
+  [10/180] 1m44s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +1m44s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=566Mi cgroup=954Mi cpu=256m rx=62699578 tx=2918038 phase=Running
+  [11/180] 1m56s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +1m59s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=430Mi cgroup=1003Mi cpu=368m rx=72071308 tx=3187407 phase=Running
+    [mon vm2] +2m02s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=535Mi cgroup=714Mi cpu=299m rx=112034740 tx=5260636 phase=Running
+  [12/180] 2m07s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +2m11s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=566Mi cgroup=901Mi cpu=282m rx=109468539 tx=5129170 phase=Running
+  [13/180] 2m19s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +2m22s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=431Mi cgroup=1046Mi cpu=383m rx=114136286 tx=5249319 phase=Running
+    [mon vm2] +2m25s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=536Mi cgroup=769Mi cpu=404m rx=147771076 tx=6912676 phase=Running
+  [14/180] 2m30s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +2m33s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=546Mi cgroup=947Mi cpu=276m rx=149404474 tx=7122439 phase=Running
+  [15/180] 2m42s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +2m44s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=434Mi cgroup=1083Mi cpu=584m rx=151524715 tx=7176166 phase=Running
+    [mon vm2] +2m47s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=641Mi cgroup=1308Mi cpu=1126m rx=242061681 tx=7524913 phase=Running
+  [16/180] 2m53s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +2m56s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=546Mi cgroup=1149Mi cpu=329m rx=291474367 tx=8476439 phase=Running
+  [17/180] 3m04s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +3m07s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=432Mi cgroup=1350Mi cpu=881m rx=273659576 tx=8104129 phase=Running
+    [mon vm2] +3m10s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=641Mi cgroup=1079Mi cpu=1126m rx=242072146 tx=7543514 phase=Running
+  [18/180] 3m16s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +3m19s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=789Mi cgroup=1187Mi cpu=573m rx=374050182 tx=9644967 phase=Running
+  [19/180] 3m27s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +3m29s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=675Mi cgroup=1584Mi cpu=731m rx=359837133 tx=9093489 phase=Running
+    [mon vm2] +3m32s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=928Mi cgroup=1194Mi cpu=1135m rx=242152846 tx=7561271 phase=Running
+  [20/180] 3m38s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +3m41s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=984Mi cgroup=1190Mi cpu=746m rx=411986189 tx=10177017 phase=Running
+  [21/180] 3m50s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +3m52s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=756Mi cgroup=1710Mi cpu=833m rx=405452468 tx=9648492 phase=Running
+    [mon vm2] +3m55s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1002Mi cgroup=1196Mi cpu=1170m rx=242155834 tx=7576854 phase=Running
+  [22/180] 4m01s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +4m04s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1011Mi cgroup=1271Mi cpu=1209m rx=476696059 tx=10871509 phase=Running
+  [23/180] 4m12s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m14s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=856Mi cgroup=1775Mi cpu=1261m rx=454156133 tx=10176932 phase=Running
+    [mon vm2] +4m17s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1096Mi cgroup=1330Mi cpu=1236m rx=242372998 tx=7597821 phase=Running
+  [24/180] 4m24s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +4m26s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1188Mi cgroup=1448Mi cpu=1590m rx=476811293 tx=10892068 phase=Running
+  [25/180] 4m35s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m36s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=856Mi cgroup=2059Mi cpu=1261m rx=481200635 tx=10525673 phase=Running
+    [mon vm2] +4m39s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1183Mi cgroup=1297Mi cpu=1530m rx=242461861 tx=7620343 phase=Running
+  [26/180] 4m46s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +4m48s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1301Mi cgroup=1685Mi cpu=1339m rx=508705001 tx=11633781 phase=Running
+  [27/180] 4m57s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m59s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1075Mi cgroup=2218Mi cpu=1505m rx=481220483 tx=10540435 phase=Running
+    [mon vm2] +5m01s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=984Mi cgroup=519Mi cpu=1278m rx=244887288 tx=7821314 phase=Running
+  [step-change] 5m09s plan=Executing vm1=ConvertGuest vm2=CopyDisksVirtV2V vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm1] +5m10s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1359Mi cgroup=1814Mi cpu=2510m rx=539824068 tx=12403733 phase=Running
+  [step-change] 5m20s plan=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm3] +5m21s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1162Mi cgroup=2323Mi cpu=1455m rx=503075648 tx=11038511 phase=Running
+    [mon vm2] +5m23s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=302Mi cgroup=827Mi cpu=1269m rx=634178277 tx=10324417 phase=Running
+  [30/180] 5m32s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest
+    [mon vm1] +5m33s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=328Mi cgroup=1058Mi cpu=1418m rx=947601821 tx=14374719 phase=Running
+    [mon vm3] +5m43s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1172Mi cgroup=2105Mi cpu=2662m rx=523198184 tx=11489841 phase=Running
+  [31/180] 5m43s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest
+    [mon vm2] +5m46s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=362Mi cgroup=737Mi cpu=210m rx=1184274876 tx=13809494 phase=Running
+  [32/180] 5m54s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest
+    [mon vm1] +5m55s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=367Mi cgroup=1075Mi cpu=201m rx=1499768832 tx=16511884 phase=Running
+    [mon vm3] +6m05s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1261Mi cgroup=2187Mi cpu=2118m rx=543810031 tx=11959828 phase=Running
+  [33/180] 6m06s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest
+    [mon vm2] +6m08s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=370Mi cgroup=789Mi cpu=208m rx=1725713511 tx=16371756 phase=Running
+    [mon vm1] +6m17s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=366Mi cgroup=1074Mi cpu=103m rx=2057694179 tx=18939016 phase=Running
+  [34/180] 6m17s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=ConvertGuest
+    [mon vm3] +6m28s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=178Mi cgroup=1070Mi cpu=1914m rx=546516332 tx=12252336 phase=Running
+  [step-change] 6m28s plan=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending]
+    [mon vm2] +6m30s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=343Mi cgroup=837Mi cpu=205m rx=2268176837 tx=18994179 phase=Running
+    [mon vm1] +6m39s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=367Mi cgroup=1075Mi cpu=109m rx=2563273481 tx=21191045 phase=Running
+  [36/180] 6m40s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +6m50s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=200Mi cgroup=1431Mi cpu=53m rx=959840484 tx=13983214 phase=Running
+  [37/180] 6m51s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +6m52s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=353Mi cgroup=910Mi cpu=206m rx=2712633879 tx=20605244 phase=Running
+    [mon vm1] +7m02s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=372Mi cgroup=1521Mi cpu=147m rx=2990549077 tx=24161698 phase=Running
+  [38/180] 7m02s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +7m13s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=222Mi cgroup=1441Mi cpu=170m rx=1402454050 tx=15645210 phase=Running
+  [39/180] 7m14s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +7m15s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=293Mi cgroup=896Mi cpu=176m rx=3176194487 tx=22213229 phase=Running
+    [mon vm1] +7m25s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=378Mi cgroup=1847Mi cpu=173m rx=3435639946 tx=26213167 phase=Running
+  [40/180] 7m25s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +7m35s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=222Mi cgroup=1441Mi cpu=151m rx=1838729631 tx=17610495 phase=Running
+  [41/180] 7m36s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +7m38s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=295Mi cgroup=706Mi cpu=178m rx=3613915542 tx=24634042 phase=Running
+  [42/180] 7m48s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +7m48s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=385Mi cgroup=2074Mi cpu=192m rx=3894374267 tx=28474874 phase=Running
+    [mon vm3] +7m58s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=224Mi cgroup=1442Mi cpu=157m rx=2270615058 tx=19245299 phase=Running
+  [43/180] 7m59s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +8m01s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=293Mi cgroup=671Mi cpu=176m rx=4080538161 tx=26831013 phase=Running
+  [44/180] 8m11s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +8m11s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=388Mi cgroup=2111Mi cpu=177m rx=4324393168 tx=30867255 phase=Running
+    [mon vm3] +8m21s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=224Mi cgroup=1494Mi cpu=157m rx=2707717668 tx=21119610 phase=Running
+  [45/180] 8m22s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +8m24s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=293Mi cgroup=810Mi cpu=175m rx=4542647369 tx=28501708 phase=Running
+  [46/180] 8m33s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +8m34s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=403Mi cgroup=2213Mi cpu=186m rx=4781329645 tx=33498753 phase=Running
+    [mon vm3] +8m44s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=212Mi cgroup=1899Mi cpu=164m rx=3097878722 tx=23222190 phase=Running
+  [47/180] 8m45s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +8m47s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=263Mi cgroup=737Mi cpu=179m rx=5016844211 tx=30708268 phase=Running
+  [48/180] 8m56s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +8m57s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=404Mi cgroup=2314Mi cpu=184m rx=5219287557 tx=36243241 phase=Running
+    [mon vm3] +9m07s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=221Mi cgroup=2189Mi cpu=256m rx=3505400545 tx=24826128 phase=Running
+  [49/180] 9m07s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +9m09s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=268Mi cgroup=703Mi cpu=174m rx=5488478416 tx=32912612 phase=Running
+  [50/180] 9m19s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +9m20s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=394Mi cgroup=2263Mi cpu=219m rx=5657998045 tx=38310509 phase=Running
+    [mon vm3] +9m30s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=240Mi cgroup=2246Mi cpu=250m rx=3910959252 tx=26284429 phase=Running
+  [51/180] 9m30s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +9m32s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=250Mi cgroup=853Mi cpu=178m rx=5960387903 tx=34977677 phase=Running
+  [52/180] 9m42s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +9m43s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=403Mi cgroup=2282Mi cpu=188m rx=6089390253 tx=40697918 phase=Running
+  [53/180] 9m53s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +9m53s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=250Mi cgroup=2091Mi cpu=236m rx=4353816660 tx=28161577 phase=Running
+    [mon vm2] +9m55s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=257Mi cgroup=821Mi cpu=176m rx=6418887344 tx=37052299 phase=Running
+  [54/180] 10m05s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +10m06s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=403Mi cgroup=2037Mi cpu=184m rx=6543995234 tx=43081704 phase=Running
+  [55/180] 10m16s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +10m16s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=260Mi cgroup=1859Mi cpu=266m rx=4730588263 tx=30031390 phase=Running
+    [mon vm2] +10m20s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=270Mi cgroup=717Mi cpu=175m rx=6938098666 tx=39202624 phase=Running
+  [56/180] 10m27s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +10m31s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=399Mi cgroup=1807Mi cpu=181m rx=6844418123 tx=44641700 phase=Running
+  [57/180] 10m39s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +10m41s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=263Mi cgroup=2105Mi cpu=266m rx=5214807586 tx=32289722 phase=Running
+    [mon vm2] +10m43s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=266Mi cgroup=580Mi cpu=182m rx=7457762723 tx=41990043 phase=Running
+  [58/180] 10m50s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +10m54s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=237Mi cgroup=2004Mi cpu=123m rx=6844419603 tx=44642500 phase=Running
+  [59/180] 11m02s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +11m04s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=263Mi cgroup=2068Mi cpu=290m rx=5717993387 tx=34537194 phase=Running
+    [mon vm2] +11m06s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=278Mi cgroup=725Mi cpu=188m rx=7986140393 tx=44955830 phase=Running
+  [60/180] 11m13s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +11m17s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=569Mi cgroup=1888Mi cpu=1318m rx=6844420871 tx=44643224 phase=Running
+  [61/180] 11m25s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +11m27s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=265Mi cgroup=2114Mi cpu=307m rx=6224213856 tx=37218151 phase=Running
+    [mon vm2] +11m29s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=261Mi cgroup=922Mi cpu=201m rx=8515707129 tx=47675099 phase=Running
+  [62/180] 11m36s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +11m40s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=827Mi cgroup=1536Mi cpu=1420m rx=6844422393 tx=44644066 phase=Running
+  [63/180] 11m47s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +11m50s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=268Mi cgroup=2083Mi cpu=316m rx=6672676031 tx=39368867 phase=Running
+    [mon vm2] +11m52s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=269Mi cgroup=808Mi cpu=201m rx=9052453436 tx=50497932 phase=Running
+  [64/180] 11m59s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +12m03s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1075Mi cgroup=1461Mi cpu=1942m rx=6844423809 tx=44644870 phase=Running
+  [65/180] 12m10s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +12m13s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=269Mi cgroup=2177Mi cpu=282m rx=7122023016 tx=41529179 phase=Running
+    [mon vm2] +12m15s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=271Mi cgroup=749Mi cpu=198m rx=9581491217 tx=53525964 phase=Running
+  [66/180] 12m22s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +12m27s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1196Mi cgroup=1367Mi cpu=1699m rx=6844424993 tx=44645510 phase=Running
+  [67/180] 12m33s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +12m36s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=271Mi cgroup=2136Mi cpu=307m rx=7619548845 tx=43936426 phase=Running
+    [mon vm2] +12m37s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=269Mi cgroup=672Mi cpu=198m rx=10088684988 tx=56473048 phase=Running
+  [68/180] 12m45s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +12m50s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1226Mi cgroup=1749Mi cpu=1992m rx=6844426557 tx=44646394 phase=Running
+  [69/180] 12m56s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +12m59s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=272Mi cgroup=1935Mi cpu=311m rx=8114069939 tx=46091284 phase=Running
+    [mon vm2] +13m00s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=401Mi cgroup=710Mi cpu=218m rx=10566620662 tx=59273780 phase=Running
+  [70/180] 13m08s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +13m13s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=1377Mi cgroup=930Mi cpu=2505m rx=6844427931 tx=44647156 phase=Running
+  [71/180] 13m19s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +13m22s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=267Mi cgroup=1976Mi cpu=290m rx=8595468594 tx=48304396 phase=Running
+    [mon vm2] +13m23s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=401Mi cgroup=968Mi cpu=218m rx=11019704228 tx=61992020 phase=Running
+  [72/180] 13m30s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +13m37s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=428Mi cgroup=1220Mi cpu=1040m rx=6844429199 tx=44647880 phase=Running
+  [73/180] 13m42s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +13m44s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=274Mi cgroup=2295Mi cpu=310m rx=9083010222 tx=50407369 phase=Running
+    [mon vm2] +13m46s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=273Mi cgroup=883Mi cpu=202m rx=11074023801 tx=62724157 phase=Running
+  [74/180] 13m53s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +13m59s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=578Mi cgroup=1456Mi cpu=944m rx=6844430721 tx=44648722 phase=Running
+  [75/180] 14m05s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +14m07s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=279Mi cgroup=2097Mi cpu=359m rx=9583774712 tx=52728169 phase=Running
+    [mon vm2] +14m09s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=300Mi cgroup=720Mi cpu=57m rx=11074025199 tx=62725075 phase=Running
+  [76/180] 14m16s  Status=Executing vm1=CopyDisksVirtV2V vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm1] +14m22s pod=plan-bench-vm-1051-5d9gc node=qemtvd-07-2vn4h-worker-0-9n99r top=668Mi cgroup=1678Mi cpu=962m rx=6844432095 tx=44649484 phase=Running
+  [step-change] 14m28s plan=Executing vm1=CreateVM vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Running] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending]
+    [mon vm3] +14m30s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=280Mi cgroup=2170Mi cpu=344m rx=10131289616 tx=55332207 phase=Running
+    [mon vm2] +14m32s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=536Mi cgroup=1026Mi cpu=1127m rx=11074026573 tx=62725837 phase=Running
+  Peak conversion memory (vm1): metrics-server=1377Mi  cgroup=2314Mi
+  Network totals (vm1, cumulative at last sample): rx=6527Mi  tx=42Mi
+  [step-change] 14m39s plan=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending]
+  [79/180] 14m51s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +14m54s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=281Mi cgroup=1959Mi cpu=322m rx=10375234142 tx=56627146 phase=Running
+    [mon vm2] +14m55s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=731Mi cgroup=1131Mi cpu=1199m rx=11074027947 tx=62726599 phase=Running
+  [80/180] 15m02s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [81/180] 15m14s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +15m17s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=211Mi cgroup=2102Mi cpu=174m rx=10396480983 tx=56708946 phase=Running
+    [mon vm2] +15m18s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=976Mi cgroup=1082Mi cpu=1325m rx=11074029279 tx=62727319 phase=Running
+  [82/180] 15m25s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [83/180] 15m37s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +15m41s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=424Mi cgroup=2143Mi cpu=1119m rx=10396482505 tx=56709788 phase=Running
+    [mon vm2] +15m42s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1021Mi cgroup=884Mi cpu=1135m rx=11074030653 tx=62728081 phase=Running
+  [84/180] 15m48s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [85/180] 16m00s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +16m05s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=425Mi cgroup=2078Mi cpu=1146m rx=10396483837 tx=56710508 phase=Running
+    [mon vm2] +16m05s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1051Mi cgroup=1203Mi cpu=1070m rx=11074032027 tx=62728843 phase=Running
+  [86/180] 16m11s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [87/180] 16m23s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm3] +16m28s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=729Mi cgroup=1924Mi cpu=1159m rx=10396485211 tx=56711270 phase=Running
+    [mon vm2] +16m28s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1126Mi cgroup=1184Mi cpu=1350m rx=11074033359 tx=62729563 phase=Running
+  [88/180] 16m34s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [89/180] 16m46s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +16m51s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=1096Mi cgroup=1165Mi cpu=1168m rx=11074034881 tx=62730461 phase=Running
+    [mon vm3] +16m51s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=782Mi cgroup=1727Mi cpu=1268m rx=10396486691 tx=56712126 phase=Running
+  [90/180] 16m57s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [91/180] 17m09s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+    [mon vm2] +17m15s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=251Mi cgroup=409Mi cpu=819m rx=11074036213 tx=62731181 phase=Running
+    [mon vm3] +17m15s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1056Mi cgroup=1658Mi cpu=2509m rx=10396488065 tx=56712888 phase=Running
+  [92/180] 17m20s  Status=Executing vm1=Completed vm2=CopyDisksVirtV2V vm3=CopyDisksVirtV2V
+  [step-change] 17m31s plan=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending]
+    [mon vm3] +17m38s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1069Mi cgroup=1555Mi cpu=1536m rx=10396489249 tx=56713528 phase=Running
+    [mon vm2] +17m39s pod=plan-bench-vm-1021-sszlx node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=?Mi cpu=?m rx=? tx=? phase=Succeeded
+  [94/180] 17m43s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  Peak conversion memory (vm2): metrics-server=1183Mi  cgroup=1330Mi
+  Network totals (vm2, cumulative at last sample): rx=10561Mi  tx=59Mi
+  [95/180] 17m54s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +18m01s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1207Mi cgroup=1465Mi cpu=2109m rx=10396490919 tx=56714450 phase=Running
+  [96/180] 18m06s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [97/180] 18m17s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +18m24s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=1291Mi cgroup=1536Mi cpu=3342m rx=10396492251 tx=56715170 phase=Running
+  [98/180] 18m29s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [99/180] 18m41s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +18m47s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=347Mi cgroup=786Mi cpu=2090m rx=10396493625 tx=56715932 phase=Running
+  [100/180] 18m52s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [101/180] 19m04s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +19m11s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=347Mi cgroup=920Mi cpu=2090m rx=10396495105 tx=56716732 phase=Running
+  [102/180] 19m15s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [103/180] 19m27s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +19m34s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=426Mi cgroup=1110Mi cpu=942m rx=10396496331 tx=56717414 phase=Running
+  [104/180] 19m38s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [105/180] 19m49s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +19m57s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=549Mi cgroup=1246Mi cpu=962m rx=10396497705 tx=56718176 phase=Running
+  [106/180] 20m01s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [107/180] 20m12s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +20m20s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=549Mi cgroup=1393Mi cpu=962m rx=10396499185 tx=56718976 phase=Running
+  [108/180] 20m24s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+  [109/180] 20m35s  Status=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V
+    [mon vm3] +20m43s pod=plan-bench-vm-1052-67jln node=qemtvd-07-2vn4h-worker-0-w8r2g top=645Mi cgroup=1527Mi cpu=980m rx=10396500559 tx=56719738 phase=Running
+  [step-change] 20m47s plan=Executing vm1=Completed vm2=Completed vm3=CreateVM vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Running]
+  Peak conversion memory (vm3): metrics-server=1291Mi  cgroup=2323Mi
+  Network totals (vm3, cumulative at last sample): rx=9914Mi  tx=54Mi
+  [step-change] 20m58s plan=Succeeded vm1=Completed vm2=Completed vm3=Completed vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed]
+
+Migration ended at 2026-08-24T12:55:39Z
+Migration lifetime: 20m59s (start=2026-08-24T12:34:40Z end=2026-08-24T12:55:39Z)
+  Plan plan-bench finished: status=Succeeded duration=20m59s
+  Pipeline step timings (plan-bench / mtv-func-rhel9-4-uefi):
+    Initialize: Completed  dur=0m8s  started=2026-08-24T12:34:41Z  completed=2026-08-24T12:34:49Z
+    DiskAllocation: Completed  dur=0m28s  started=2026-08-24T12:34:49Z  completed=2026-08-24T12:35:17Z
+    ImageConversion: Completed  dur=4m40s  started=2026-08-24T12:35:17Z  completed=2026-08-24T12:39:57Z
+    DiskTransferV2v: Completed  dur=9m9s  started=2026-08-24T12:39:57Z  completed=2026-08-24T12:49:06Z
+    VirtualMachineCreation: Completed  dur=0m3s  started=2026-08-24T12:49:06Z  completed=2026-08-24T12:49:09Z
+  Pipeline step timings (plan-bench / mtv-func-win2019):
+    Initialize: Completed  dur=0m8s  started=2026-08-24T12:34:41Z  completed=2026-08-24T12:34:49Z
+    DiskAllocation: Completed  dur=0m19s  started=2026-08-24T12:34:49Z  completed=2026-08-24T12:35:08Z
+    ImageConversion: Completed  dur=4m35s  started=2026-08-24T12:35:08Z  completed=2026-08-24T12:39:43Z
+    DiskTransferV2v: Completed  dur=12m25s  started=2026-08-24T12:39:43Z  completed=2026-08-24T12:52:08Z
+    VirtualMachineCreation: Completed  dur=0m3s  started=2026-08-24T12:52:08Z  completed=2026-08-24T12:52:11Z
+  Pipeline step timings (plan-bench / mtv-func-rhel9):
+    Initialize: Completed  dur=0m8s  started=2026-08-24T12:34:42Z  completed=2026-08-24T12:34:50Z
+    DiskAllocation: Completed  dur=0m19s  started=2026-08-24T12:34:50Z  completed=2026-08-24T12:35:09Z
+    ImageConversion: Completed  dur=5m51s  started=2026-08-24T12:35:09Z  completed=2026-08-24T12:41:00Z
+    DiskTransferV2v: Completed  dur=14m25s  started=2026-08-24T12:41:00Z  completed=2026-08-24T12:55:25Z
+    VirtualMachineCreation: Completed  dur=0m3s  started=2026-08-24T12:55:25Z  completed=2026-08-24T12:55:28Z
+  VM details:
+
+=========================================================================================================
+MIGRATION PLAN
+Plan: plan-bench
+Migration: plan-bench-d5tg7
+
+=========================================================================================================
+VM: mtv-func-rhel9-4-uefi (vmID= vm-1051)
+Phase: Completed  Status: Succeeded
+OS: rhel9_64Guest
+Started: 2026-08-24T12:34:41Z  Completed: 2026-08-24T12:49:09Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:34:41Z  2026-08-24T12:34:49Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:34:49Z  2026-08-24T12:35:17Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:35:17Z  2026-08-24T12:39:57Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T12:39:57Z  2026-08-24T12:49:06Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T12:49:06Z  2026-08-24T12:49:09Z           100.0%  
+
+=========================================================================================================
+VM: mtv-func-win2019 (vmID= vm-1021)
+Phase: Completed  Status: Succeeded
+OS: windows2019srv_64Guest
+Started: 2026-08-24T12:34:41Z  Completed: 2026-08-24T12:52:11Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:34:41Z  2026-08-24T12:34:49Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:34:49Z  2026-08-24T12:35:08Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:35:08Z  2026-08-24T12:39:43Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T12:39:43Z  2026-08-24T12:52:08Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T12:52:08Z  2026-08-24T12:52:11Z           100.0%  
+
+=========================================================================================================
+VM: mtv-func-rhel9 (vmID= vm-1052)
+Phase: Completed  Status: Succeeded
+OS: rhel9_64Guest
+Started: 2026-08-24T12:34:42Z  Completed: 2026-08-24T12:55:28Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:34:42Z  2026-08-24T12:34:50Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:34:50Z  2026-08-24T12:35:09Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:35:09Z  2026-08-24T12:41:00Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T12:41:00Z  2026-08-24T12:55:25Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T12:55:25Z  2026-08-24T12:55:28Z           100.0%  
+
+  Saving conversion pod log (vm1): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm1-plan-bench-vm-1051-5d9gc.log
+  Saving conversion pod log (vm2): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm2-plan-bench-vm-1021-sszlx.log
+  Saving conversion pod log (vm3): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem/vm3-plan-bench-vm-1052-67jln.log
+RESULT vm1: status=Completed total=14m39s vm=mtv-func-rhel9-4-uefi converter=ref
+RESULT vm2: status=Completed total=17m31s vm=mtv-func-win2019 converter=ref
+RESULT vm3: status=Completed total=20m59s vm=mtv-func-rhel9 converter=ref
+
+==========================================
+LEG SUMMARY (ref)
+==========================================
+Image: (empty)
+Plan plan-bench: status=Succeeded
+VM1 (mtv-func-rhel9-4-uefi): status=Completed exit=0
+VM2 (mtv-func-win2019): status=Completed exit=0
+VM3 (mtv-func-rhel9): status=Completed exit=0
+Full log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref.log
+Memory CSVs + pod logs: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-ref-mem
+

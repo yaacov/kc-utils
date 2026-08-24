@@ -1,12 +1,12 @@
 # MTV Cold Migration — ref vs kc-v2v Baseline
 
 Cold-migration benchmark comparing the default virt-v2v image (**ref**) against
-the kc-v2v replacement image (**kc-v2v**). The current runner puts three VMs in
-one MTV plan and samples the conversion pods in parallel. Archived numbers
-below are from an earlier sequential (RHEL then Windows) baseline.
+the kc-v2v replacement image (**kc-v2v**). The runner migrates three VMware VMs
+in one MTV plan and samples each conversion pod in parallel while the plan runs.
 
-Each run migrates three VMware VMs to OpenShift Virtualization while sampling
-CPU, memory, and network traffic of each conversion pod every ~10 s.
+Each run migrates `mtv-func-rhel9-4-uefi`, `mtv-func-win2019`, and
+`mtv-func-rhel9` to OpenShift Virtualization while sampling CPU, memory, and
+network traffic of each conversion pod every ~10 s.
 
 **Runnable script:** [`tests/scenarios/test-mtv-benchmark.sh`](../../../tests/scenarios/test-mtv-benchmark.sh)
 (`MODE=kc` or `MODE=compare`). See also the
@@ -39,6 +39,7 @@ MODE=compare ./tests/scenarios/test-mtv-benchmark.sh
 |---|---|---|
 | `MODE` | `kc` | `kc` = independent kc run; `compare` = ref then kc |
 | `KC_V2V_IMAGE` | yes | kc-v2v image FQIN |
+| `REF_V2V_IMAGE` | no | Operator-default virt-v2v FQIN (inferred when unset) |
 | `NS` | yes | Namespace to create for the test |
 | `PROVIDER` | yes | vSphere provider name |
 | `GOVC_*` | yes | vSphere credentials |
@@ -80,63 +81,84 @@ Parse kc-v2v pod logs with
 
 | Run | Image | Timestamp | Directory |
 |---|---|---|---|
-| **ref** | operator default (virt-v2v) | 2026-08-10T10:30:43Z | `runs/ref-20260810T103043Z*` |
-| **kc-v2v** | kc-v2v image under test | 2026-08-10T10:30:43Z | `runs/kc-20260810T103043Z*` |
+| **ref** | operator default (virt-v2v) | 2026-08-24T12:34:40Z | `runs/ref-20260824T123342Z*` |
+| **kc-v2v** | kc-v2v image under test | 2026-08-24T12:57:45Z | `runs/kc-20260824T123342Z*` |
 
-Cluster: qemtvd-07 · cold migration · VDDK 8.0.0 · Ceph HEALTH_OK  
-Compare session: `test-mtv-benchmark-20260810T103043Z` · VMs: `mtv-func-rhel9-4-uefi`, `mtv-func-win2019`
+Compare session: `test-mtv-benchmark-20260824T123342Z` · VMs:
+`mtv-func-rhel9-4-uefi`, `mtv-func-win2019`, `mtv-func-rhel9` ·
+`feature_windows_wait_for_reboot=false`
 
 ---
 
 ## Results
 
-### Summary
+### Plan lifetime (three VMs in one plan)
 
-| VM | Image | Status | Wall time | Peak mem (cgroup) | Peak CPU | Net RX | Net TX |
-|---|---|---|---|---|---|---|---|
-| RHEL | ref | Succeeded | 16m 08s | 3497 Mi | 3527 m | 6526 Mi | 38 Mi |
-| RHEL | kc-v2v | Succeeded | 12m 27s | 1976 Mi | 1080 m | 2790 Mi | 9 Mi |
-| Windows | ref | Succeeded | 19m 37s | 2834 Mi | 1895 m | 10564 Mi | 61 Mi |
-| Windows | kc-v2v | Succeeded | 13m 44s | 1434 Mi | 1207 m | 6498 Mi | 22 Mi |
-
-### Pipeline block timings
-
-#### RHEL
-
-| Block | ref | kc-v2v | Delta |
+| | ref (virt-v2v) | kc-v2v | Δ (kc − ref) |
 |---|---|---|---|
-| ImageConversion | 5m 36s | 11m 28s | +5m 52s |
-| DiskTransferV2v | 9m 42s | 2s | −9m 40s |
-| **Combined** | **15m 18s** | **11m 30s** | **−3m 48s** |
-| Plan wall (all steps) | 16m 08s | 12m 27s | −3m 41s |
+| Start (UTC) | 2026-08-24T12:34:40Z | 2026-08-24T12:57:45Z | |
+| End (UTC) | 2026-08-24T12:55:39Z | 2026-08-24T13:15:28Z | |
+| Lifetime | 20m 59s | 17m 43s | **−3m 16s (−16%)** |
 
-#### Windows
+### Per-VM wall time
 
-| Block | ref | kc-v2v | Delta |
+| VM | ref (virt-v2v) | kc-v2v | Δ (kc − ref) |
 |---|---|---|---|
-| ImageConversion | 5m 44s | 12m 59s | +7m 15s |
-| DiskTransferV2v | 13m 4s | 3s | −13m 1s |
-| **Combined** | **18m 48s** | **13m 2s** | **−5m 46s** |
-| Plan wall (all steps) | 19m 37s | 13m 44s | −5m 53s |
+| RHEL 9 UEFI (`mtv-func-rhel9-4-uefi`) | 14m 39s | 14m 29s | −10s |
+| Windows 2019 (`mtv-func-win2019`) | 17m 31s | 15m 04s | **−2m 27s** |
+| RHEL 9 (`mtv-func-rhel9`) | 20m 59s | 17m 33s | **−3m 26s** |
 
-### Peak resource comparison
+### Peak resource usage (conversion pod cgroup RSS / CPU)
 
 | VM | ref peak mem | kc peak mem | ref peak CPU | kc peak CPU |
 |---|---|---|---|---|
-| RHEL | 3497 Mi | 1976 Mi | 3527 m | 1080 m |
-| Windows | 2834 Mi | 1434 Mi | 1895 m | 1207 m |
+| RHEL 9 UEFI | 2314 Mi | 1704 Mi | 2510 m | 1052 m |
+| Windows 2019 | 1330 Mi | 1885 Mi | 1530 m | 405 m |
+| RHEL 9 | 2323 Mi | 1406 Mi | 3342 m | 1041 m |
 
-### Network totals
+### Network RX (last sample, cumulative)
 
-| VM | ref RX | kc RX | ref TX | kc TX |
-|---|---|---|---|---|
-| RHEL | 6526 Mi | 2790 Mi | 38 Mi | 9 Mi |
-| Windows | 10564 Mi | 6498 Mi | 61 Mi | 22 Mi |
+| VM | ref RX | kc RX | Less with kc-v2v |
+|---|---|---|---|
+| RHEL 9 UEFI | 6527 Mi | 2791 Mi | 57% |
+| Windows 2019 | 10561 Mi | 6499 Mi | 38% |
+| RHEL 9 | 9914 Mi | 6472 Mi | 35% |
 
-kc-v2v transfers **57 % less data for RHEL** and **38 % less for Windows**
-because it performs disk conversion locally inside the pod (longer
-ImageConversion) instead of streaming raw disk data to a separate
-DiskTransferV2v step.
+### Pipeline block timings
+
+Plan wall = Initialize → VirtualMachineCreation. kc-v2v folds NFC copy and
+guest conversion into `ImageConversion`; virt-v2v spends most copy time in
+`DiskTransferV2v` after a shorter conversion phase.
+
+#### RHEL 9 UEFI
+
+| Block | ref | kc-v2v | Delta |
+|---|---|---|---|
+| ImageConversion | 4m 40s | 13m 37s | +8m 57s |
+| DiskTransferV2v | 9m 09s | 3s | −9m 06s |
+| **Combined** | **13m 49s** | **13m 40s** | **−9s** |
+| VM wall | 14m 39s | 14m 29s | −10s |
+
+#### Windows 2019
+
+| Block | ref | kc-v2v | Delta |
+|---|---|---|---|
+| ImageConversion | 4m 35s | 14m 21s | +9m 46s |
+| DiskTransferV2v | 12m 25s | 4s | −12m 21s |
+| **Combined** | **17m 00s** | **14m 25s** | **−2m 35s** |
+| VM wall | 17m 31s | 15m 04s | −2m 27s |
+
+#### RHEL 9
+
+| Block | ref | kc-v2v | Delta |
+|---|---|---|---|
+| ImageConversion | 5m 51s | 16m 44s | +10m 53s |
+| DiskTransferV2v | 14m 25s | 5s | −14m 20s |
+| **Combined** | **20m 16s** | **16m 49s** | **−3m 27s** |
+| VM wall | 20m 59s | 17m 33s | −3m 26s |
+
+kc-v2v transfers less data over the network because it converts disks in-pod
+instead of streaming raw disk data through a separate `DiskTransferV2v` step.
 
 ---
 

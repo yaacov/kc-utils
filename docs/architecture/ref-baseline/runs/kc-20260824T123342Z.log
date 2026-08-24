@@ -1,0 +1,348 @@
+==========================================
+MTV cold migration benchmark — kc
+==========================================
+Mode: compare
+Log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc.log
+Mem: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem
+NS=mtv-kc-v2v-bench SKIP_CLEANUP=true
+
+Setting virt_v2v_image_fqin=quay.io/yaacov/kc-v2v:devel-amd64
+Waiting for forklift-controller rollout + VIRT_V2V_IMAGE sync (ns=konveyor-forklift deploy=forklift-controller)...
+  [1/90] rollout=true deploy=quay.io/yaacov/forklift-virt-v2v:devel-amd64 setting=quay.io/yaacov/kc-v2v:devel-amd64 pod=<empty> want=quay.io/yaacov/kc-v2v:devel-amd64
+  [2/90] rollout=true deploy=quay.io/yaacov/forklift-virt-v2v:devel-amd64 setting=quay.io/yaacov/kc-v2v:devel-amd64 pod=<empty> want=quay.io/yaacov/kc-v2v:devel-amd64
+Controller ready: deploy=quay.io/yaacov/kc-v2v:devel-amd64 setting=quay.io/yaacov/kc-v2v:devel-amd64 pod=<n/a> (attempt 3/90)
+Converter image OK (kc): deploy=quay.io/yaacov/kc-v2v:devel-amd64 setting=quay.io/yaacov/kc-v2v:devel-amd64
+VDDK: quay.io/yaacov/vddk:8.0.0
+virt_v2v_image_fqin: quay.io/yaacov/kc-v2v:devel-amd64
+forklift-controller deploy=forklift-controller VIRT_V2V_IMAGE(deploy)=quay.io/yaacov/kc-v2v:devel-amd64 pod=
+feature_windows_wait_for_reboot: false
+Default SC: ocs-storagecluster-ceph-rbd-virtualization
+Ceph: HEALTH_OK
+
+Creating providers...
+
+VM1=mtv-func-rhel9-4-uefi
+VM2=mtv-func-win2019
+VM3=mtv-func-rhel9
+
+Running 3 VMs in one plan (plan-bench); conversion pods sampled in parallel.
+==========================================
+RUN: VMs=mtv-func-rhel9-4-uefi,mtv-func-win2019,mtv-func-rhel9 plan=plan-bench converter=kc
+==========================================
+No target namespace specified, using plan namespace: mtv-kc-v2v-bench
+plan/plan-bench created
+Waiting for plan Ready...
+plan.forklift.konveyor.io/plan-bench condition met
+Migration started at 2026-08-24T12:57:45Z
+--- Monitoring plan plan-bench (vm1=mtv-func-rhel9-4-uefi vm2=mtv-func-win2019 vm3=mtv-func-rhel9) ---
+  Memory/net monitor (vm1) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm1-virt-v2v-memory.csv (every 10s)
+  Memory/net monitor (vm2) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm2-virt-v2v-memory.csv (every 10s)
+  Memory/net monitor (vm3) -> /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm3-virt-v2v-memory.csv (every 10s)
+  [step-change] 0m02s plan=Ready vm1=? vm2=? vm3=? vm1:[] vm2:[] vm3:[]
+  [step-change] 0m13s plan=Executing vm1=AllocateDisks vm2=AllocateDisks vm3=AllocateDisks vm1:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Running ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+  [step-change] 0m25s plan=Executing vm1=AllocateDisks vm2=AllocateDisks vm3=AllocateDisks vm1:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Pending ImageConversion=Pending DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+  [step-change] 0m36s plan=Executing vm1=CreateGuestConversionPod vm2=CreateGuestConversionPod vm3=CreateGuestConversionPod vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+  [05/180] 0m48s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +0m57s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=?Mi cgroup=23Mi cpu=?m rx=4439808 tx=83948 phase=Pending
+    [mon vm3] +0m58s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=16Mi cpu=?m rx=3232404 tx=78163 phase=Pending
+    [mon vm1] +0m58s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=?Mi cgroup=24Mi cpu=?m rx=3231897 tx=76233 phase=Pending
+  [06/180] 0m59s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [07/180] 1m10s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +1m20s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=?Mi cgroup=51Mi cpu=?m rx=11879722 tx=119360 phase=Running
+    [mon vm3] +1m20s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=27Mi cpu=?m rx=3248783 tx=91151 phase=Running
+    [mon vm1] +1m21s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=?Mi cgroup=29Mi cpu=?m rx=3248831 tx=90657 phase=Running
+  [08/180] 1m22s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [09/180] 1m33s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +1m43s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=25Mi cgroup=56Mi cpu=4m rx=11971339 tx=135136 phase=Running
+    [mon vm3] +1m43s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=28Mi cpu=?m rx=3309140 tx=106071 phase=Running
+    [mon vm1] +1m44s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=21Mi cgroup=31Mi cpu=2m rx=3303607 tx=104203 phase=Running
+  [10/180] 1m45s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [11/180] 1m56s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +2m05s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=25Mi cgroup=73Mi cpu=3m rx=132662961 tx=550348 phase=Running
+    [mon vm3] +2m06s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=45Mi cpu=3m rx=133161026 tx=674355 phase=Running
+    [mon vm1] +2m07s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=21Mi cgroup=56Mi cpu=2m rx=177060741 tx=937471 phase=Running
+  [12/180] 2m07s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [13/180] 2m19s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +2m30s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=22Mi cgroup=48Mi cpu=59m rx=342659232 tx=1615519 phase=Running
+  [14/180] 2m30s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +2m31s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=28Mi cgroup=46Mi cpu=121m rx=281874147 tx=1046786 phase=Running
+    [mon vm1] +2m32s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=24Mi cgroup=59Mi cpu=66m rx=346893815 tx=1660015 phase=Running
+  [15/180] 2m42s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +2m53s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=22Mi cgroup=27Mi cpu=79m rx=348006949 tx=1659403 phase=Running
+    [mon vm2] +2m53s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=62Mi cpu=226m rx=422632929 tx=1532976 phase=Running
+  [16/180] 2m53s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm1] +2m55s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=31Mi cpu=76m rx=348165752 tx=1681761 phase=Running
+  [17/180] 3m04s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [18/180] 3m16s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +3m16s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=31Mi cgroup=67Mi cpu=242m rx=586549078 tx=2090718 phase=Running
+    [mon vm3] +3m16s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=47Mi cpu=5m rx=351353128 tx=1689523 phase=Running
+    [mon vm1] +3m17s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=25Mi cgroup=46Mi cpu=5m rx=350214115 tx=1703213 phase=Running
+  [19/180] 3m27s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [20/180] 3m39s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +3m39s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=58Mi cpu=251m rx=783047284 tx=2678530 phase=Running
+    [mon vm3] +3m39s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=20Mi cgroup=44Mi cpu=10m rx=351369967 tx=1703439 phase=Running
+    [mon vm1] +3m40s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=25Mi cgroup=35Mi cpu=8m rx=350230416 tx=1716245 phase=Running
+  [21/180] 3m50s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [22/180] 4m01s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m02s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=44Mi cpu=2m rx=351380830 tx=1716454 phase=Running
+    [mon vm2] +4m03s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=46Mi cpu=405m rx=965921537 tx=3266771 phase=Running
+    [mon vm1] +4m03s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=25Mi cgroup=36Mi cpu=3m rx=350242941 tx=1730404 phase=Running
+  [23/180] 4m13s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [24/180] 4m24s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m25s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=37Mi cpu=3m rx=494459015 tx=2288782 phase=Running
+    [mon vm2] +4m26s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=49Mi cpu=400m rx=1166812234 tx=3873511 phase=Running
+    [mon vm1] +4m26s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=47Mi cpu=37m rx=533613492 tx=2413242 phase=Running
+  [25/180] 4m35s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [26/180] 4m47s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +4m48s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=22Mi cgroup=35Mi cpu=71m rx=713748511 tx=3083664 phase=Running
+    [mon vm1] +4m49s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=52Mi cpu=240m rx=782787978 tx=3299324 phase=Running
+    [mon vm2] +4m49s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=62Mi cpu=403m rx=1364827866 tx=4489729 phase=Running
+  [27/180] 4m58s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [28/180] 5m10s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +5m11s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=39Mi cpu=274m rx=953005115 tx=3933469 phase=Running
+    [mon vm1] +5m12s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=31Mi cgroup=49Mi cpu=293m rx=1002957562 tx=4126261 phase=Running
+    [mon vm2] +5m12s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=45Mi cpu=404m rx=1583362567 tx=5145584 phase=Running
+  [29/180] 5m21s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [30/180] 5m32s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +5m33s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=37Mi cpu=265m rx=1286445432 tx=5453995 phase=Running
+    [mon vm1] +5m35s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=49Mi cpu=112m rx=1002969125 tx=4140281 phase=Running
+    [mon vm2] +5m35s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=34Mi cpu=374m rx=1764736239 tx=5771813 phase=Running
+  [31/180] 5m44s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [32/180] 5m55s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +5m56s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=13Mi cgroup=46Mi cpu=124m rx=1604834782 tx=6802947 phase=Running
+    [mon vm1] +5m58s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=49Mi cpu=1m rx=1002980071 tx=4153167 phase=Running
+    [mon vm2] +5m58s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=57Mi cpu=256m rx=1944150988 tx=6365103 phase=Running
+  [33/180] 6m06s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [34/180] 6m18s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +6m19s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=16Mi cgroup=49Mi cpu=111m rx=1839880662 tx=7926035 phase=Running
+    [mon vm2] +6m20s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=47Mi cpu=382m rx=2111370046 tx=6924759 phase=Running
+    [mon vm1] +6m21s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=47Mi cpu=3m rx=1096901679 tx=4590829 phase=Running
+  [35/180] 6m29s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [36/180] 6m40s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +6m42s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=48Mi cpu=49m rx=1839891419 tx=7938751 phase=Running
+    [mon vm2] +6m43s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=37Mi cpu=399m rx=2396450016 tx=7771819 phase=Running
+    [mon vm1] +6m44s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=50Mi cpu=84m rx=1337861411 tx=5569057 phase=Running
+  [37/180] 6m52s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [38/180] 7m03s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +7m05s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=16Mi cgroup=50Mi cpu=1m rx=1967948307 tx=8549401 phase=Running
+    [mon vm2] +7m06s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=57Mi cpu=228m rx=2713414221 tx=8787363 phase=Running
+    [mon vm1] +7m07s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=43Mi cpu=222m rx=1567436090 tx=6476335 phase=Running
+  [39/180] 7m15s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [40/180] 7m26s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +7m30s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=16Mi cgroup=51Mi cpu=72m rx=2194948321 tx=9541239 phase=Running
+    [mon vm1] +7m31s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=43Mi cpu=35m rx=1567447450 tx=6490039 phase=Running
+    [mon vm2] +7m31s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=64Mi cpu=197m rx=3061986913 tx=9943931 phase=Running
+  [41/180] 7m38s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [42/180] 7m49s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +7m52s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=16Mi cgroup=53Mi cpu=211m rx=2434424778 tx=10508173 phase=Running
+    [mon vm1] +7m53s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=43Mi cpu=2m rx=1567458462 tx=6502859 phase=Running
+    [mon vm2] +7m53s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=58Mi cpu=171m rx=3376566339 tx=10964043 phase=Running
+  [43/180] 8m01s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [44/180] 8m12s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +8m15s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=16Mi cgroup=39Mi cpu=167m rx=2744543208 tx=11987063 phase=Running
+    [mon vm2] +8m16s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=34Mi cpu=257m rx=3580125555 tx=11585845 phase=Running
+    [mon vm1] +8m16s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=43Mi cpu=2m rx=1579374813 tx=6578973 phase=Running
+  [45/180] 8m24s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [46/180] 8m35s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +8m38s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=43Mi cpu=91m rx=3090321482 tx=13731807 phase=Running
+    [mon vm1] +8m39s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=26Mi cgroup=42Mi cpu=79m rx=1764408377 tx=7390567 phase=Running
+    [mon vm2] +8m39s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=64Mi cpu=394m rx=3772947861 tx=12188585 phase=Running
+  [47/180] 8m46s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [48/180] 8m58s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +9m01s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=29Mi cpu=99m rx=3275425606 tx=14566277 phase=Running
+    [mon vm1] +9m02s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=28Mi cgroup=47Mi cpu=241m rx=1939359120 tx=8077485 phase=Running
+    [mon vm2] +9m02s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=41Mi cpu=395m rx=3958673188 tx=12807497 phase=Running
+  [49/180] 9m09s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [50/180] 9m21s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +9m24s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=29Mi cpu=2m rx=3275435836 tx=14578837 phase=Running
+    [mon vm1] +9m25s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=38Mi cpu=267m rx=2127204266 tx=8851443 phase=Running
+    [mon vm2] +9m25s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=32Mi cgroup=58Mi cpu=381m rx=4147111022 tx=13422023 phase=Running
+  [51/180] 9m32s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [52/180] 9m43s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +9m47s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=44Mi cpu=3m rx=3382719833 tx=15094701 phase=Running
+    [mon vm1] +9m48s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=55Mi cpu=240m rx=2201495248 tx=9181195 phase=Running
+    [mon vm2] +9m48s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=49Mi cpu=388m rx=4325828109 tx=14026823 phase=Running
+  [53/180] 9m55s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [54/180] 10m06s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +10m10s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=48Mi cpu=157m rx=3555434188 tx=15821301 phase=Running
+    [mon vm1] +10m11s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=55Mi cpu=19m rx=2201506732 tx=9195229 phase=Running
+    [mon vm2] +10m11s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=63Mi cpu=365m rx=4487732128 tx=14552331 phase=Running
+  [55/180] 10m18s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [56/180] 10m29s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +10m33s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=19Mi cgroup=32Mi cpu=202m rx=3782172996 tx=16844055 phase=Running
+    [mon vm1] +10m34s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=61Mi cpu=1m rx=2361636642 tx=9923489 phase=Running
+    [mon vm2] +10m34s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=31Mi cgroup=63Mi cpu=344m rx=4678767912 tx=15175651 phase=Running
+  [57/180] 10m41s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [58/180] 10m52s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +10m56s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=43Mi cpu=200m rx=3976361309 tx=17639851 phase=Running
+    [mon vm2] +10m57s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=63Mi cpu=396m rx=4915423678 tx=15931393 phase=Running
+    [mon vm1] +10m58s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=48Mi cpu=145m rx=2553679965 tx=10728467 phase=Running
+  [59/180] 11m03s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [60/180] 11m15s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +11m18s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=27Mi cpu=204m rx=4193718884 tx=18584157 phase=Running
+    [mon vm2] +11m20s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=32Mi cgroup=64Mi cpu=396m rx=5141810942 tx=16689565 phase=Running
+    [mon vm1] +11m20s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=40Mi cpu=272m rx=2749053851 tx=11483999 phase=Running
+  [61/180] 11m26s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [62/180] 11m37s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +11m41s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=33Mi cpu=228m rx=4460803362 tx=19778897 phase=Running
+    [mon vm2] +11m43s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=43Mi cpu=285m rx=5344589605 tx=17385497 phase=Running
+    [mon vm1] +11m43s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=36Mi cpu=243m rx=2926999568 tx=12204681 phase=Running
+  [63/180] 11m49s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [64/180] 12m00s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm2] +12m07s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=30Mi cgroup=52Mi cpu=231m rx=5579318696 tx=18138849 phase=Running
+    [mon vm3] +12m07s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=32Mi cpu=87m rx=4847592397 tx=21580213 phase=Running
+    [mon vm1] +12m09s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=50Mi cpu=267m rx=2927011635 tx=12219679 phase=Running
+  [65/180] 12m12s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [66/180] 12m23s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +12m31s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=27Mi cpu=97m rx=5196437903 tx=23255075 phase=Running
+    [mon vm2] +12m32s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=46Mi cpu=270m rx=5845158288 tx=18971111 phase=Running
+    [mon vm1] +12m34s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=51Mi cpu=2m rx=2927035262 tx=12236177 phase=Running
+  [67/180] 12m35s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [68/180] 12m46s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +12m54s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=36Mi cpu=98m rx=5533014152 tx=24880647 phase=Running
+    [mon vm2] +12m55s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=44Mi cpu=219m rx=6078066945 tx=19813089 phase=Running
+    [mon vm1] +12m57s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=27Mi cgroup=1210Mi cpu=1m rx=2927036594 tx=12236897 phase=Running
+  [69/180] 12m57s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [70/180] 13m09s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +13m17s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=22Mi cgroup=43Mi cpu=95m rx=5767919160 tx=25870945 phase=Running
+    [mon vm2] +13m17s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=39Mi cpu=277m rx=6350653302 tx=20741989 phase=Running
+    [mon vm1] +13m20s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=400Mi cgroup=1704Mi cpu=471m rx=2927038116 tx=12237739 phase=Running
+  [71/180] 13m20s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [72/180] 13m32s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +13m39s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=62Mi cpu=271m rx=5948114646 tx=26494145 phase=Running
+    [mon vm2] +13m40s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=60Mi cpu=254m rx=6584752248 tx=21455901 phase=Running
+    [mon vm1] +13m43s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=862Mi cgroup=1491Mi cpu=935m rx=2927039342 tx=12238421 phase=Running
+  [73/180] 13m43s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [74/180] 13m54s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+    [mon vm3] +14m02s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=19Mi cgroup=39Mi cpu=241m rx=6115950162 tx=27110897 phase=Running
+    [mon vm2] +14m03s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=29Mi cgroup=36Mi cpu=254m rx=6815342906 tx=22170363 phase=Running
+    [mon vm1] +14m06s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=932Mi cgroup=1549Mi cpu=1052m rx=2927040716 tx=12239183 phase=Running
+  [75/180] 14m06s  Status=Executing vm1=ConvertGuest vm2=ConvertGuest vm3=ConvertGuest
+  [step-change] 14m17s plan=Executing vm1=CreateVM vm2=ConvertGuest vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Running] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm3] +14m25s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=37Mi cpu=194m rx=6358710164 tx=28036433 phase=Running
+    [mon vm2] +14m26s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=277Mi cgroup=1098Mi cpu=342m rx=6815344238 tx=22171083 phase=Running
+  [step-change] 14m29s plan=Executing vm1=Completed vm2=ConvertGuest vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm1] +14m30s pod=plan-bench-vm-1051-hjp6s node=qemtvd-07-2vn4h-worker-0-9n99r top=?Mi cgroup=?Mi cpu=?m rx=? tx=? phase=Succeeded
+  [78/180] 14m40s  Status=Executing vm1=Completed vm2=ConvertGuest vm3=ConvertGuest
+  Peak conversion memory (vm1): metrics-server=932Mi  cgroup=1704Mi
+  Network totals (vm1, cumulative at last sample): rx=2791Mi  tx=11Mi
+    [mon vm3] +14m48s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=21Mi cgroup=55Mi cpu=261m rx=6615812944 tx=29173261 phase=Running
+    [mon vm2] +14m49s pod=plan-bench-vm-1021-9grlj node=qemtvd-07-2vn4h-worker-0-w8r2g top=277Mi cgroup=1885Mi cpu=342m rx=6815345718 tx=22171883 phase=Running
+  [79/180] 14m52s  Status=Executing vm1=Completed vm2=ConvertGuest vm3=ConvertGuest
+  Peak conversion memory (vm2): metrics-server=277Mi  cgroup=1885Mi
+  Network totals (vm2, cumulative at last sample): rx=6499Mi  tx=21Mi
+  [step-change] 15m03s plan=Executing vm1=Completed vm2=Completed vm3=ConvertGuest vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Running DiskTransferV2v=Pending VirtualMachineCreation=Pending]
+    [mon vm3] +15m11s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=18Mi cgroup=32Mi cpu=235m rx=6787077348 tx=29971101 phase=Running
+  [81/180] 15m15s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [82/180] 15m26s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+    [mon vm3] +15m34s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=17Mi cgroup=449Mi cpu=58m rx=6787097211 tx=29983105 phase=Running
+  [83/180] 15m38s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [84/180] 15m49s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+    [mon vm3] +15m57s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=410Mi cgroup=1144Mi cpu=559m rx=6787098585 tx=29983867 phase=Running
+  [85/180] 16m01s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [86/180] 16m12s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+    [mon vm3] +16m20s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=509Mi cgroup=1165Mi cpu=1031m rx=6787100149 tx=29984751 phase=Running
+  [87/180] 16m23s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [88/180] 16m35s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+    [mon vm3] +16m44s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=808Mi cgroup=1406Mi cpu=948m rx=6787101523 tx=29985513 phase=Running
+  [89/180] 16m46s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [90/180] 16m58s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+    [mon vm3] +17m07s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=1008Mi cgroup=1130Mi cpu=1041m rx=6787102939 tx=29986317 phase=Running
+  [91/180] 17m09s  Status=Executing vm1=Completed vm2=Completed vm3=ConvertGuest
+  [step-change] 17m21s plan=Executing vm1=Completed vm2=Completed vm3=CopyDisksVirtV2V vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Running VirtualMachineCreation=Pending]
+    [mon vm3] +17m32s pod=plan-bench-vm-1052-5htrr node=qemtvd-07-2vn4h-worker-0-ckbmc top=?Mi cgroup=?Mi cpu=?m rx=? tx=? phase=Succeeded
+  [step-change] 17m32s plan=Succeeded vm1=Completed vm2=Completed vm3=Completed vm1:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm2:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed] vm3:[Initialize=Completed DiskAllocation=Completed ImageConversion=Completed DiskTransferV2v=Completed VirtualMachineCreation=Completed]
+  Peak conversion memory (vm3): metrics-server=1008Mi  cgroup=1406Mi
+  Network totals (vm3, cumulative at last sample): rx=6472Mi  tx=28Mi
+
+Migration ended at 2026-08-24T13:15:28Z
+Migration lifetime: 17m43s (start=2026-08-24T12:57:45Z end=2026-08-24T13:15:28Z)
+  Plan plan-bench finished: status=Succeeded duration=17m43s
+  Pipeline step timings (plan-bench / mtv-func-rhel9-4-uefi):
+    Initialize: Completed  dur=0m11s  started=2026-08-24T12:57:46Z  completed=2026-08-24T12:57:57Z
+    DiskAllocation: Completed  dur=0m22s  started=2026-08-24T12:57:57Z  completed=2026-08-24T12:58:19Z
+    ImageConversion: Completed  dur=13m37s  started=2026-08-24T12:58:19Z  completed=2026-08-24T13:11:56Z
+    DiskTransferV2v: Completed  dur=0m3s  started=2026-08-24T13:11:56Z  completed=2026-08-24T13:11:59Z
+    VirtualMachineCreation: Completed  dur=0m4s  started=2026-08-24T13:11:59Z  completed=2026-08-24T13:12:03Z
+  Pipeline step timings (plan-bench / mtv-func-win2019):
+    Initialize: Completed  dur=0m11s  started=2026-08-24T12:57:47Z  completed=2026-08-24T12:57:58Z
+    DiskAllocation: Completed  dur=0m21s  started=2026-08-24T12:57:58Z  completed=2026-08-24T12:58:19Z
+    ImageConversion: Completed  dur=14m21s  started=2026-08-24T12:58:19Z  completed=2026-08-24T13:12:40Z
+    DiskTransferV2v: Completed  dur=0m4s  started=2026-08-24T13:12:40Z  completed=2026-08-24T13:12:44Z
+    VirtualMachineCreation: Completed  dur=0m0s  started=2026-08-24T13:12:44Z  completed=2026-08-24T13:12:44Z
+  Pipeline step timings (plan-bench / mtv-func-rhel9):
+    Initialize: Completed  dur=0m11s  started=2026-08-24T12:57:47Z  completed=2026-08-24T12:57:58Z
+    DiskAllocation: Completed  dur=0m21s  started=2026-08-24T12:57:58Z  completed=2026-08-24T12:58:19Z
+    ImageConversion: Completed  dur=16m44s  started=2026-08-24T12:58:19Z  completed=2026-08-24T13:15:03Z
+    DiskTransferV2v: Completed  dur=0m5s  started=2026-08-24T13:15:03Z  completed=2026-08-24T13:15:08Z
+    VirtualMachineCreation: Completed  dur=0m6s  started=2026-08-24T13:15:08Z  completed=2026-08-24T13:15:14Z
+  VM details:
+
+=========================================================================================================
+MIGRATION PLAN
+Plan: plan-bench
+Migration: plan-bench-z869q
+
+=========================================================================================================
+VM: mtv-func-rhel9-4-uefi (vmID= vm-1051)
+Phase: Completed  Status: Succeeded
+OS: rhel9_64Guest
+Started: 2026-08-24T12:57:46Z  Completed: 2026-08-24T13:12:03Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:57:46Z  2026-08-24T12:57:57Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:57:57Z  2026-08-24T12:58:19Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:58:19Z  2026-08-24T13:11:56Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T13:11:56Z  2026-08-24T13:11:59Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T13:11:59Z  2026-08-24T13:12:03Z           100.0%  
+
+=========================================================================================================
+VM: mtv-func-win2019 (vmID= vm-1021)
+Phase: Completed  Status: Succeeded
+OS: windows2019srv_64Guest
+Started: 2026-08-24T12:57:47Z  Completed: 2026-08-24T13:12:44Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:57:47Z  2026-08-24T12:57:58Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:57:58Z  2026-08-24T12:58:19Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:58:19Z  2026-08-24T13:12:40Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T13:12:40Z  2026-08-24T13:12:44Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T13:12:44Z  2026-08-24T13:12:44Z           100.0%  
+
+=========================================================================================================
+VM: mtv-func-rhel9 (vmID= vm-1052)
+Phase: Completed  Status: Succeeded
+OS: rhel9_64Guest
+Started: 2026-08-24T12:57:47Z  Completed: 2026-08-24T13:15:14Z
+
+Pipeline:
+PHASE      NAME                    STARTED               COMPLETED             PROGRESS         
+────────────────────────────────────────────────────────────────────────────────────────────────
+Completed  Initialize              2026-08-24T12:57:47Z  2026-08-24T12:57:58Z           100.0%  
+Completed  DiskAllocation          2026-08-24T12:57:58Z  2026-08-24T12:58:19Z           100.0%  
+Completed  ImageConversion         2026-08-24T12:58:19Z  2026-08-24T13:15:03Z           100.0%  
+Completed  DiskTransferV2v         2026-08-24T13:15:03Z  2026-08-24T13:15:08Z           100.0%  
+Completed  VirtualMachineCreation  2026-08-24T13:15:08Z  2026-08-24T13:15:14Z           100.0%  
+
+  Saving conversion pod log (vm1): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm1-plan-bench-vm-1051-hjp6s.log
+  Saving conversion pod log (vm2): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm2-plan-bench-vm-1021-9grlj.log
+  Saving conversion pod log (vm3): /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem/vm3-plan-bench-vm-1052-5htrr.log
+RESULT vm1: status=Completed total=14m29s vm=mtv-func-rhel9-4-uefi converter=kc
+RESULT vm2: status=Completed total=15m04s vm=mtv-func-win2019 converter=kc
+RESULT vm3: status=Completed total=17m33s vm=mtv-func-rhel9 converter=kc
+
+==========================================
+LEG SUMMARY (kc)
+==========================================
+Image: quay.io/yaacov/kc-v2v:devel-amd64
+Plan plan-bench: status=Succeeded
+VM1 (mtv-func-rhel9-4-uefi): status=Completed exit=0
+VM2 (mtv-func-win2019): status=Completed exit=0
+VM3 (mtv-func-rhel9): status=Completed exit=0
+Full log: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc.log
+Memory CSVs + pod logs: /Users/yzamir/Projects/yaacov/kc-utils/tests/scenarios/runs/test-mtv-benchmark-20260824T123342Z-kc-mem
+
