@@ -20,7 +20,7 @@ for creating the target VM.
   [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
   directly into target PVCs.
 - Guest filesystem operations go through a pluggable backend: host-kernel
-  mounts (`direct`), a [libguestfs](https://libguestfs.org/) appliance
+  mounts (`direct`), a libguestfs appliance
   (`guestfs`), or a QEMU appliance with in-guest agent (`qemu`).
 
 **[Benchmark](docs/architecture/ref-baseline/README.md)** :
