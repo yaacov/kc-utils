@@ -22,4 +22,3 @@ The `Configure` function collects all registered `Contributor` plugins, filters 
 | `ContributorConfig` | Context passed to each contributor: mount root, offline mode, driver files, static IPs, options, version |
 | `Contributor` | Interface for firstboot script plugins with `Priority`, `ShouldRun`, `Generate`, `Name`, and `UsesBatch` methods |
 | `Contributors` | Global plugin registry of `Contributor` implementations |
-| `DefaultUsesBatch` | Helper that returns false, suitable for PowerShell-based contributors |

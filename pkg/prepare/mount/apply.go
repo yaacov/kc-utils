@@ -13,12 +13,7 @@ import (
 
 // Apply mounts specs in path-length order and updates disk partition mount points.
 func Apply(g *guest.Guest, specs []MountSpec, disks []types.DiskInfo) error {
-	sorted := append([]MountSpec{}, specs...)
-	sort.Slice(sorted, func(i, j int) bool {
-		return len(sorted[i].GuestMP) < len(sorted[j].GuestMP)
-	})
-
-	for _, spec := range sorted {
+	for _, spec := range SortSpecs(specs) {
 		slog.Info("mounting filesystem",
 			"device", spec.DevicePath,
 			"mountpoint", spec.GuestMP,

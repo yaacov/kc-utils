@@ -43,4 +43,3 @@ dir, or other INF forms beyond those SourceDisksFiles/CatalogFile directives.
 | `FindBestOSDirWithPrefs` | Like `FindBestOSDir` but also considers handler preference and fallback lists |
 | `MatchOSVersion` | Reports whether a virtio-win directory name matches a requested OS version via canonical aliases |
 | `CanonicalOSVersions` | Maps a Windows product name or directory token to its set of canonical aliases |
-| `NormalizeOSProductName` | Cleans registry product name strings for case-insensitive substring matching |

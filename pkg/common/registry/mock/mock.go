@@ -8,13 +8,6 @@ import (
 	"github.com/yaacov/kc-utils/pkg/common/registry"
 )
 
-// MockEditor creates mock hives for testing.
-type MockEditor struct{}
-
-func (e *MockEditor) OpenHive(hivePath string) (registry.Hive, error) {
-	return NewMockHive(), nil
-}
-
 // Op records a write operation.
 type Op struct {
 	Action string

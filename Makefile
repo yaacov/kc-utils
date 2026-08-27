@@ -137,10 +137,17 @@ deadcode-install:
 	GOBIN=$(GOBIN) $(GO) install golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION)
 	@echo "deadcode installed successfully."
 
-## Report unreachable functions (-test includes test-only entry points)
+## Fail if unreachable functions exist (-test includes test-only entry points)
 deadcode: $(DEADCODE_STAMP)
 	@echo "Running deadcode..."
-	$(DEADCODE_BIN) -test ./...
+	@out="$$($(DEADCODE_BIN) -test ./...)"; \
+	status=$$?; \
+	if [ $$status -ne 0 ]; then exit $$status; fi; \
+	if [ -n "$$out" ]; then \
+		printf '%s\n' "$$out"; \
+		echo "deadcode: unreachable functions found"; \
+		exit 1; \
+	fi
 
 $(DEADCODE_STAMP):
 	$(MAKE) deadcode-install

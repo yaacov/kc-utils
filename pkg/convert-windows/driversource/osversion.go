@@ -20,11 +20,6 @@ func MatchOSVersion(dirVer, requested string) bool {
 	return false
 }
 
-// NormalizeOSProductName cleans registry product names for substring matching.
-func NormalizeOSProductName(requested string) string {
-	return version.NormalizeProductName(requested)
-}
-
 // CanonicalOSVersions maps a guest product name or by-os directory token to the
 // virtio-win driver directory name for that version only. There is no shared
 // alias bucket (Server 2008 does not match Vista, Win7 does not match 2k8R2, …).

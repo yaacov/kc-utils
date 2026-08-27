@@ -93,8 +93,9 @@ In both modes:
 
 ### CI (`.github/workflows/ci.yml`)
 
-- Correct `needs:` chains; Go version matches `go.mod`; golangci-lint version
-  matches `GOLANGCI_LINT_VERSION` in the Makefile; module/build cache handled.
+- Correct `needs:` chains; Go version matches `go.mod`; golangci-lint and
+  deadcode versions match `GOLANGCI_LINT_VERSION` / `DEADCODE_VERSION` in the
+  Makefile; module/build cache handled.
 
 ### Linter config (`.golangci.yml`)
 
