@@ -138,7 +138,7 @@ make cross-all      # amd64, arm64, ppc64le, s390x
 make test                 # unit tests (full tree on any Unix host)
 make test-container       # unit tests in a Linux container (kernel integration)
 make lint                 # golangci-lint (auto-installs pinned golangci-lint)
-make deadcode             # optional whole-program unreachable-function check
+make deadcode             # unreachable-function check (CI)
 make check                # fmt + vet + lint + unit tests
 make test-e2e             # shell e2e tests (see below)
 make test-e2e-container   # e2e in a Fedora container (all test-e2e scripts)
@@ -273,6 +273,7 @@ deterministic and do not depend on the guest booting successfully.
 ## PR checklist
 
 - [ ] `make lint` passes
+- [ ] `make deadcode` passes
 - [ ] `make test` passes (`make test-container` on macOS for linux-only packages)
 - [ ] `make test-e2e-container` passes (full e2e in Fedora container)
 - [ ] Keep the change focused

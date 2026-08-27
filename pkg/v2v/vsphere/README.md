@@ -12,7 +12,7 @@ Disk ordering follows the libvirt bus priority (SCSI > SATA > IDE > NVMe), then 
 |------|---------|
 | `connect.go` | `sdkURL`, `credentials`, `connect`, `ConnectHost`, `datacenterName` -- vCenter URL parsing, explicit-or-secret auth, govmomi client with TLS policy and thumbprint fallback |
 | `disks.go` | `disksFromDevices` and helpers -- extracts and sorts VMDK paths from VM device list, resolves snapshot chains |
-| `inventory.go` | `Inventory`, `LoadInventory`, `ResetCache` -- top-level VM metadata query with in-process caching |
+| `inventory.go` | `Inventory`, `LoadInventory` -- top-level VM metadata query with in-process caching |
 
 ## Key exports
 
@@ -21,4 +21,3 @@ Disk ordering follows the libvirt bus priority (SCSI > SATA > IDE > NVMe), then 
 | `Inventory` | Struct holding VM moref, disk paths, NICs, firmware hint, guest ID/name, and hostname |
 | `LoadInventory` | Queries vCenter for VM metadata given a `*config.Config`; results are cached per URL+VM+fingerprint key |
 | `ConnectHost` | Connects to `https://host/sdk` with `v2vtls.Policy` and vCenter fingerprint |
-| `ResetCache` | Clears the inventory cache (used in tests) |

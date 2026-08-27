@@ -87,24 +87,6 @@ func TargetsFromDir(dir string, n int) []Target {
 	return targets
 }
 
-// HasEmptyTargets reports whether any conversion-pod mount point exists with empty content.
-func HasEmptyTargets() (bool, error) {
-	targets, err := DiscoverTargets()
-	if err != nil {
-		return false, err
-	}
-	for _, t := range targets {
-		empty, err := isTargetEmpty(t)
-		if err != nil {
-			return false, err
-		}
-		if empty {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 // EmptyTargets returns targets that still need data copied.
 func EmptyTargets() ([]Target, error) {
 	targets, err := DiscoverTargets()

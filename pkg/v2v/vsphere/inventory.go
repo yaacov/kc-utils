@@ -162,12 +162,3 @@ func firmwareHint(raw string) string {
 		return "bios"
 	}
 }
-
-// ResetCache clears the inventory cache (tests).
-func ResetCache() {
-	cache.Lock()
-	defer cache.Unlock()
-	cache.key = ""
-	cache.inv = nil
-	cache.err = nil
-}

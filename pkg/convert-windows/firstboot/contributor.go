@@ -33,6 +33,3 @@ type Contributor interface {
 
 // Contributors is the global registry for firstboot script contributors.
 var Contributors = plugin.NewRegistry[string, Contributor]()
-
-// DefaultUsesBatch returns false for PowerShell contributors.
-func DefaultUsesBatch(_ *ContributorConfig) bool { return false }
