@@ -16,8 +16,9 @@ This package implements the `kc-copy` binary's core logic.
    Linux `stat` reports size 0 for block devices — or filesystem images
    smaller than 1 MiB).
 
-2. **NFC export** — connects to vSphere using credentials from
-   `/etc/secret/accessKeyId` and `/etc/secret/secretKey`, locates the VM by
+2. **NFC export** — connects to vSphere using `--username`/`--password` (or
+   JSON `username`/`password`) when set, otherwise `--password-file` then
+   `/etc/secret/accessKeyId` and `/etc/secret/secretKey`. Locates the VM by
    name, and starts an NFC export lease via govmomi. vCenter SDK TLS comes from
    `CopyInput.insecure` and `CopyInput.ca_cert` (`pkg/v2v/tls.CopyTLS`), with
    optional vCenter thumbprint fallback (`fingerprint`). ESXi NFC disk

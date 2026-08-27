@@ -55,7 +55,7 @@ import (
 	// Plugin registrations: guest agent + firstboot + package sources
 	_ "github.com/yaacov/kc-utils/pkg/common/firstboot/plugins/systemd"
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/guestagent/plugins/agent/qemuga"
-	_ "github.com/yaacov/kc-utils/pkg/convert-linux/guestagent/plugins/packagesource/directory"
+	pkgdir "github.com/yaacov/kc-utils/pkg/convert-linux/guestagent/plugins/packagesource/directory"
 
 	// Plugin registrations: NIC naming preservation
 	_ "github.com/yaacov/kc-utils/pkg/convert-linux/nicnaming/plugins/dhclient"
@@ -71,11 +71,15 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations (use local packages only)")
+	packagesDir := flag.String("packages-dir", pkgdir.DefaultBasePath, "host kc-packages tree (qemu-guest-agent RPMs/DEBs)")
+	_ = flag.String("virtio-win-dir", "", "ignored (Windows converter)")
 	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs|qemu)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
 	logger.Init(*logLevel)
+
+	pkgdir.Configure(*packagesDir)
 
 	if *inputFile == "" {
 		fmt.Fprintln(os.Stderr, "error: --input is required")

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/yaacov/kc-utils/pkg/common/types"
@@ -102,6 +103,12 @@ func TestHostMountFromGuest(t *testing.T) {
 	}
 	if got := hostMountFromGuest("/mnt/root", "/boot"); got != "/mnt/root/boot" {
 		t.Errorf("hostMountFromGuest /boot = %q", got)
+	}
+	if got := hostMountFromGuest("/mnt/root", "/../../proc"); got != "/mnt/root/proc" {
+		t.Errorf("hostMountFromGuest traversal = %q, want confined under mountRoot", got)
+	}
+	if got := hostMountFromGuest("/mnt/root", "../../etc"); got != "/mnt/root/etc" {
+		t.Errorf("hostMountFromGuest relative traversal = %q", got)
 	}
 }
 
@@ -257,5 +264,44 @@ func TestOrderMountPlans(t *testing.T) {
 	}
 	if !reflect.DeepEqual(plans, want) {
 		t.Errorf("orderMountPlans = %+v, want %+v", plans, want)
+	}
+}
+
+func TestMountEntriesFromDiskInfos(t *testing.T) {
+	infos := []types.DiskInfo{
+		{Partitions: []types.PartitionInfo{
+			{DevicePath: "/dev/vda3", MountPoint: "/", FSType: "xfs"},
+			{DevicePath: "/dev/vda4", MountPoint: "/boot", FSType: "xfs"},
+			{DevicePath: "/dev/vda2", MountPoint: "/boot/efi", FSType: "vfat"},
+		}},
+	}
+	got := mountEntriesFromDiskInfos("/tmp/kc-guest", infos)
+	want := []mountEntry{
+		{Device: "/dev/vda3", AppliancePath: "/mnt/guest"},
+		{Device: "/dev/vda4", AppliancePath: "/mnt/guest/boot"},
+		{Device: "/dev/vda2", AppliancePath: "/mnt/guest/boot/efi"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("mountEntriesFromDiskInfos = %+v, want %+v", got, want)
+	}
+
+	escaped := []types.DiskInfo{
+		{Partitions: []types.PartitionInfo{
+			{DevicePath: "/dev/vda1", MountPoint: "/", FSType: "xfs"},
+			{DevicePath: "/dev/vda9", MountPoint: "/../../proc", FSType: "xfs"},
+		}},
+	}
+	got = mountEntriesFromDiskInfos("/tmp/kc-guest", escaped)
+	var sawConfined bool
+	for _, e := range got {
+		if e.AppliancePath == "/proc" || strings.HasPrefix(e.AppliancePath, "/proc/") {
+			t.Fatalf("traversal mount recorded as %q", e.AppliancePath)
+		}
+		if e.Device == "/dev/vda9" && e.AppliancePath == "/mnt/guest/proc" {
+			sawConfined = true
+		}
+	}
+	if !sawConfined {
+		t.Fatalf("expected confined /mnt/guest/proc entry, got %+v", got)
 	}
 }

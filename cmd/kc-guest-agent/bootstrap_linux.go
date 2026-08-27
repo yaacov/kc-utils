@@ -61,6 +61,9 @@ func run(port string, asInit bool) error {
 		}
 		mountCoreFilesystems()
 		loadKernelModules()
+		if err := registerBinfmt(); err != nil {
+			return fmt.Errorf("binfmt: %w", err)
+		}
 		// Interactive debug channel: a second virtio-serial port with bash on a
 		// PTY. Independent of the agent protocol; failures stay in this goroutine.
 		go serveChannel(debugPortName, []string{"/bin/bash", "-i"})

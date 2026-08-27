@@ -10,7 +10,7 @@ Disk ordering follows the libvirt bus priority (SCSI > SATA > IDE > NVMe), then 
 
 | File | Purpose |
 |------|---------|
-| `connect.go` | `sdkURL`, `credentials`, `connect`, `ConnectHost`, `datacenterName` -- vCenter URL parsing, secret-based auth, govmomi client with TLS policy and thumbprint fallback |
+| `connect.go` | `sdkURL`, `credentials`, `connect`, `ConnectHost`, `datacenterName` -- vCenter URL parsing, explicit-or-secret auth, govmomi client with TLS policy and thumbprint fallback |
 | `disks.go` | `disksFromDevices` and helpers -- extracts and sorts VMDK paths from VM device list, resolves snapshot chains |
 | `inventory.go` | `Inventory`, `LoadInventory`, `ResetCache` -- top-level VM metadata query with in-process caching |
 

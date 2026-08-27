@@ -24,7 +24,7 @@ Wire protocol (agent port): length-prefixed JSON frames, `pkg/qemuagent/proto`.
 One request → one response, serialized by a mutex in `client.go`.
 
 The debug port is a raw byte channel, not JSON. Attach while the appliance is
-up with `socat` / `nc`; see
+up with `socat`; see
 [Interactive debug shell](../../../../docs/architecture/backends.md#interactive-debug-shell).
 Local cookbook: [docs/debug/README.md](../../../../docs/debug/README.md).
 
@@ -35,8 +35,10 @@ Local cookbook: [docs/debug/README.md](../../../../docs/debug/README.md).
 under TCG a concrete CPU model (`cortex-a72` / `max`). An arm64 appliance boots
 near-native on an arm64 Mac; an x86_64 appliance runs under TCG there.
 
-`RunCommand` chroots into the guest and runs the guest's *own* binaries, so
-converting an x86_64 guest needs an x86_64 appliance (TCG on Apple Silicon).
+`RunCommand` chroots into the guest and runs the guest's own binaries. When the
+guest ELF is a foreign ISA, appliance **binfmt_misc** + qemu-user-static runs
+it; identity (kernel/arch/OS) still comes from the guest filesystem. Override
+with `KC_APPLIANCE_ARCH=<guest>` for a same-ISA TCG appliance.
 
 ## Cross-stage VM sharing
 
@@ -62,7 +64,7 @@ single-stage run boots its own VM and remounts from the recorded disk infos
 | `device.go`   | `DeviceRead`/`DeviceWrite` via `PRead`/`PWrite` |
 | `fscheck.go`  | `FSType`/`BlkidAttr`/`FSCheck` (fsck command mapping) |
 | `crypt.go`    | `Decrypt`, `UnlockClevis`, `CloseCrypt`, `RescanBlock` |
-| `run.go`      | `RunCommand`: bind `/proc /sys /dev`, chroot, exec |
+| `run.go`      | `RunCommand`: bind `/proc /sys /dev`, ensure `/dev/fd`, chroot, exec |
 | `probe.go`    | `ProbeMount`/`ProbeUnmount`: RO-mount + copy OS markers to the host |
 | `teardown.go` | `UnmountFilesystems`, `ReleaseDevices`, `Teardown*` |
 

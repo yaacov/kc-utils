@@ -5,38 +5,64 @@ prepare are still live under `/mnt/guest`. CLI contracts:
 [`kc-convert-linux.md`](../apps/kc-convert-linux.md),
 [`kc-convert-windows.md`](../apps/kc-convert-windows.md).
 
+## Stage local packages
+
+Defaults live under `/usr/share/` (kc-v2v image). On a laptop, stage into
+`$IMGDIR` and pass that path to the converter.
+
+Linux qemu-guest-agent RPMs (this demo VM):
+
+```sh
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
+
+# layout: $IMGDIR/kc-packages/rpm/el{8,9,10}/x86_64/qemu-guest-agent-*.rpm
+build/kc-v2v/stage-linux-packages.sh "$IMGDIR/kc-packages"
+```
+
+Windows virtio-win (only if prepare picked `kc-convert-windows`). Needs
+`bsdtar` (`brew install libarchive` on macOS):
+
+```sh
+# drivers: $IMGDIR/virtio-win/drivers/by-os/
+# qemu-ga: $IMGDIR/virtio-win/guest-agent/
+# optional ISO cache: VIRTIO_WIN_CACHE_DIR=$WORKDIR/virtio-win-cache
+build/kc-v2v/stage-virtio-win.sh "$IMGDIR/virtio-win"
+```
+
+`--offline` skips network firstboot package installs. Local files are still
+used when present. Virtio-win copy into the guest does not need the network;
+without a staged tree Windows convert cannot find drivers.
+
 ## Run
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
+# from the repo root (make build → bin/)
+export PATH="$PWD/bin:$PATH"
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
 # KC_QEMU_* still set from start-appliance.md
 
-CONVERTER=$(jq -r '.prepare.converter' "$WORKDIR/pipeline.json")
+CONVERTER=$(jq -r '.prepare.converter' "$IMGDIR/pipeline.json")
+echo "running $CONVERTER"
 
 "$CONVERTER" \
   --backend qemu \
-  --input "$WORKDIR/pipeline.json" \
-  --output "$WORKDIR/pipeline.json" \
+  --input "$IMGDIR/pipeline.json" \
+  --output "$IMGDIR/pipeline.json" \
   --mount-root /tmp/kc-guest \
   --offline \
+  --packages-dir "$IMGDIR/kc-packages" \
+  --virtio-win-dir "$IMGDIR/virtio-win" \
   --log-level info
 ```
 
-`--offline` skips network firstboot package installs. Use it on a laptop
-unless you staged local packages:
-
-- Linux RHEL-family: `/usr/share/kc-packages/rpm/el{8,9,10}/x86_64/`
-  ([kc-convert-linux.md](../apps/kc-convert-linux.md#qemu-guest-agent-installation))
-- Windows: virtio-win tree on the **host** at
-  `/usr/share/virtio-win/drivers/by-os/`
-  ([CONTRIBUTING.md](../../community/CONTRIBUTING.md)). Convert copies those
-  files into the guest through the appliance; `--offline` does not remove that
-  requirement.
-
 Linux virtio injection chroots into the guest's own tools (`dracut`,
-`update-initramfs`, …) inside the appliance. On Apple Silicon that is TCG and
-can take a long time. Keep the debug shell attached if you want to watch
-`/mnt/guest`.
+`update-initramfs`, …) inside the appliance. On Apple Silicon the appliance is
+arm64 (`KC_APPLIANCE_ARCH=arm64`, HVF); x86 guest tools run via binfmt/qemu-user.
+Keep the debug shell attached if you want to watch `/mnt/guest`.
 
 If qemu died after prepare, omit `KC_QEMU_*` and run the same command:
 convert boots a new appliance and remounts from `pipeline.json`
@@ -74,7 +100,7 @@ and firstboot scripts under `Program Files/Guestfs/Firstboot`.
 On the host:
 
 ```sh
-jq '.convert' "$WORKDIR/pipeline.json"
+jq '.convert' "$IMGDIR/pipeline.json"
 ```
 
 Continue with [finalize.md](finalize.md).

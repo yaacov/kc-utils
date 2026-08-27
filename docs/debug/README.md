@@ -10,12 +10,12 @@ This is not the CLI contract. Stage flags and JSON live under
 The in-appliance binary: [`docs/apps/kc-guest-agent.md`](../apps/kc-guest-agent.md).
 
 ```text
-1. fetch-vmware-disks.md    kc-copy → diskN.img
+1. fetch-vmware-disks.md    kc-copy → diskN.img; boot guest with IDE+e1000
 2. start-appliance.md       hold qemu + attach debug.sock
 3. prepare.md               kc-prepare --backend qemu (adopts)
 4. convert.md               kc-convert-* (same appliance)
 5. finalize.md              kc-finalize, then stop qemu
-6. boot-guest-qemu-x86.md   qemu-system-x86_64 boots the guest
+6. boot-guest-qemu-x86.md   qemu-system-x86_64 boots the converted guest (virtio)
 ```
 
 Do **not** use `direct` or `guestfs` here (Linux-only, root / libguestfs).
@@ -26,37 +26,34 @@ Do **not** enable kc-v2v qcow2 overlays; convert in place on the raw
 
 | Tool | macOS | Linux |
 |------|-------|-------|
-| `qemu-system-x86_64` | `brew install qemu` | distro `qemu-system-x86` (or equivalent) |
+| `qemu-system-aarch64` / `qemu-system-x86_64` | `brew install qemu` | distro `qemu-system-*` |
 | `jq` | `brew install jq` | distro `jq` |
-| `python3` | Xcode CLT or `brew install python` | distro `python3` (agent Ping wait in [start-appliance.md](start-appliance.md)) |
-| attach client | BSD `nc` (stock) | `socat` |
-| kc binaries | `make build` → `bin/` | same |
+| attach client | `brew install socat` | distro `socat` |
+| kc binaries | `make build` → `bin/` (`export PATH="$PWD/bin:$PATH"` from the repo root) | same |
 | appliance | `make build-appliance` | same |
 
-VMware x86 guests on Apple Silicon (or any arm64 host) need an **amd64**
-appliance so convert can chroot into guest-arch binaries. That appliance runs
-under TCG (slow, expected):
-
-```sh
-export KC_APPLIANCE_ARCH=amd64
-ARCHES=amd64 make build-appliance
-```
-
-Native x86 Linux uses KVM. An arm64 Mac converting an arm64 guest can use HVF
-and `KC_APPLIANCE_ARCH=arm64`; this cookbook assumes x86 VMware VMs.
+The appliance matches the **host** CPU. On Apple Silicon that is **arm64**
+(HVF). Convert chroots into the disk and runs foreign guest binaries via
+**binfmt / qemu-user**.
 
 ```sh
 cd /path/to/kc-utils
-export KC_APPLIANCE_DIR=$PWD/bin/appliance
 export PATH="$PWD/bin:$PATH"
+export KC_APPLIANCE_DIR=$PWD/bin/appliance
+# Host architecture: arm64 on Apple Silicon / arm64 Linux; amd64 on x86_64 Linux.
+export KC_APPLIANCE_ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+make build
+ARCHES=$KC_APPLIANCE_ARCH make build-appliance
 ```
 
 ## Workdir
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
-mkdir -p "$WORKDIR"
-# diskN.img, prepare-input.json, pipeline.json live here
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=$WORKDIR/$GOVC_VM
+mkdir -p "$IMGDIR"
+# diskN.img, prepare-input.json, pipeline.json live in $IMGDIR
 ```
 
 ## Held appliance (main path)
@@ -84,29 +81,20 @@ previous VM.
 ## Attach the debug shell
 
 You are in the **appliance** (initramfs), not the converted guest. After
-prepare, guest filesystems appear under `/mnt/guest`. Detach with `exit` or by
-closing the client; bash respawns.
+prepare, guest filesystems appear under `/mnt/guest`. Guest `exit` / Ctrl-D
+only ends that bash; QEMU keeps `debug.sock` open so the agent starts a new
+shell and `socat` stays connected. Leave with **Ctrl-]** (`escape=0x1d`).
+Bash starts again on the next attach.
 
 ```sh
-if [ -n "${KC_QEMU_DEBUG_SOCK-}" ] && [ -S "$KC_QEMU_DEBUG_SOCK" ]; then
-    sock=$KC_QEMU_DEBUG_SOCK
-else
-    set -- /tmp/kc-qemu-*/debug.sock
-    if [ "$#" -ne 1 ] || [ ! -S "$1" ]; then
-        echo "pick a debug socket and set sock=/tmp/kc-qemu-XXX/debug.sock:" >&2
-        [ "$#" -gt 0 ] && ls -1 "$@"
-        exit 1
-    fi
-    sock=$1
+# If unset: ls /tmp/kc-qemu-*/debug.sock and pick one
+# (start-appliance.md exports KC_QEMU_DEBUG_SOCK).
+sock=$KC_QEMU_DEBUG_SOCK
+if [ -z "$sock" ]; then
+  sock=$(ls /tmp/kc-qemu-*/debug.sock 2>/dev/null | awk 'NR==1')
 fi
-
-# Linux (socat)
-socat UNIX-CONNECT:"$sock" STDIO,raw,echo=0
-
-# macOS (BSD nc); restore the tty after
-stty raw -echo
-nc -U "$sock"
-stty sane
+# Ctrl-] leaves socat (exit / Ctrl-D only respawn bash)
+socat UNIX-CONNECT:"$sock" STDIO,raw,echo=0,escape=0x1d
 ```
 
 Keep flags in [start-appliance.md](start-appliance.md) aligned with

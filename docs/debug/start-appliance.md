@@ -5,8 +5,8 @@ virtio-blk, then log in through `debug.sock`. This is **not** booting the
 converted guest — that is [boot-guest-qemu-x86.md](boot-guest-qemu-x86.md).
 
 The in-appliance binary is [`kc-guest-agent`](../apps/kc-guest-agent.md)
-(`/init`): it serves the agent protocol and binds `/bin/bash -i` to
-`org.kc-utils.debug`.
+(`/init`): it serves the agent protocol and starts `/bin/bash -i` on
+`org.kc-utils.debug` when a host client connects.
 
 Keep this qemu command aligned with
 [`qemuArgs` in launch.go](../../pkg/backend/plugins/qemu/launch.go).
@@ -16,13 +16,14 @@ Keep this qemu command aligned with
 ```sh
 cd /path/to/kc-utils
 export KC_APPLIANCE_DIR=$PWD/bin/appliance
+export KC_APPLIANCE_ARCH=arm64
 
-# x86 VMware guests (required on Apple Silicon / arm64 hosts):
-export KC_APPLIANCE_ARCH=amd64
-ARCHES=amd64 make build-appliance
+# arm64 + HVF on Apple Silicon (x86 guests run tools via binfmt/qemu-user).
+ARCHES=arm64 make build-appliance
 ```
 
-Artifacts: `$KC_APPLIANCE_DIR/amd64/{vmlinuz,initramfs.img}`.
+Artifacts: `$KC_APPLIANCE_DIR/arm64/{vmlinuz,initramfs.img}`. Keep flags aligned
+with [`qemuArgs` in launch.go](../../pkg/backend/plugins/qemu/launch.go).
 
 ## Launch (held)
 
@@ -30,78 +31,64 @@ QEMU creates the unix sockets; only the directory is created first. Redirect
 serial to a file so the process can sit in the background across prepare /
 convert / finalize.
 
+Apple Silicon / arm64 Linux — default path. HVF on macOS, KVM on Linux:
+
 ```sh
-export WORKDIR=~/kc-debug/my-vm
-mkdir -p "$WORKDIR"
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
+export KC_APPLIANCE_DIR=${KC_APPLIANCE_DIR:-$PWD/bin/appliance}
+export KC_APPLIANCE_ARCH=arm64
+mkdir -p "$IMGDIR"
 SOCKDIR=$(mktemp -d /tmp/kc-qemu-XXXXXX)
 
-# Linux x86 with KVM: accel=kvm and -cpu host
-# Apple Silicon / no KVM: accel=tcg and -cpu max (below)
+if [ ! -s "$KC_APPLIANCE_DIR/arm64/vmlinuz" ]; then
+  echo "missing $KC_APPLIANCE_DIR/arm64/vmlinuz — from the repo: ARCHES=arm64 make build-appliance" >&2
+  exit 1
+fi
 
-qemu-system-x86_64 \
-  -machine q35,accel=tcg \
-  -cpu max \
+case "$(uname -s)" in
+  Darwin) ACCEL=hvf ;;
+  *)      ACCEL=kvm ;;
+esac
+
+qemu-system-aarch64 \
+  -machine virt,accel=$ACCEL \
+  -cpu host \
   -m 2048 \
   -smp 4 \
-  -kernel "$KC_APPLIANCE_DIR/amd64/vmlinuz" \
-  -initrd "$KC_APPLIANCE_DIR/amd64/initramfs.img" \
-  -append 'console=ttyS0 panic=1 loglevel=4' \
+  -kernel "$KC_APPLIANCE_DIR/arm64/vmlinuz" \
+  -initrd "$KC_APPLIANCE_DIR/arm64/initramfs.img" \
+  -append 'console=ttyAMA0 panic=1 loglevel=4' \
   -nodefaults \
   -no-reboot \
   -display none \
-  -serial "file:$WORKDIR/appliance-console.log" \
+  -serial "file:$IMGDIR/appliance-console.log" \
   -chardev "socket,id=kcagent,path=$SOCKDIR/agent.sock,server=on,wait=off" \
   -device virtio-serial \
   -device virtserialport,chardev=kcagent,name=org.kc-utils.agent \
   -chardev "socket,id=kcdebug,path=$SOCKDIR/debug.sock,server=on,wait=off" \
   -device virtserialport,chardev=kcdebug,name=org.kc-utils.debug \
-  -drive "if=none,id=disk0,file=$WORKDIR/disk0.img,format=raw,cache=writeback" \
+  -drive "if=none,id=disk0,file=$IMGDIR/disk0.img,format=raw,cache=writeback" \
   -device virtio-blk-pci,drive=disk0 \
   &
 # add another -drive/-device pair per extra diskN.img (disk1 → /dev/vdb, …)
 
+# arm64 Linux uses accel=kvm (selected above); macOS uses HVF.
+# x86 Linux / TCG fallback: qemu-system-x86_64 -machine q35,accel=kvm|tcg
+#   -cpu host|max, $KC_APPLIANCE_DIR/amd64/{vmlinuz,initramfs.img}, console=ttyS0.
+
 export KC_QEMU_PID=$!
 export KC_QEMU_SOCK=$SOCKDIR/agent.sock
 export KC_QEMU_DEBUG_SOCK=$SOCKDIR/debug.sock
-
-# Agent Ping: length-prefixed JSON {"op":"ping"} (same framing as pkg/qemuagent/proto).
-agent_ping() {
-  python3 -c '
-import json, socket, struct, sys
-s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-s.settimeout(2)
-s.connect(sys.argv[1])
-body = b"{\"op\":\"ping\"}"
-s.sendall(struct.pack(">I", len(body)) + body)
-hdr = s.recv(4)
-if len(hdr) != 4:
-    raise SystemExit(1)
-n = struct.unpack(">I", hdr)[0]
-resp = json.loads(s.recv(n) or b"{}")
-raise SystemExit(1 if resp.get("err") else 0)
-' "$1"
-}
-
-# Wait until the agent answers Ping (not only debug.sock). TCG boot can take minutes.
-deadline=$((SECONDS + 300))
-while true; do
-  if ! kill -0 "$KC_QEMU_PID" 2>/dev/null; then
-    echo "qemu exited before agent ready; see $WORKDIR/appliance-console.log" >&2
-    exit 1
-  fi
-  if [ -S "$KC_QEMU_SOCK" ] && agent_ping "$KC_QEMU_SOCK"; then
-    break
-  fi
-  if [ "$SECONDS" -ge "$deadline" ]; then
-    echo "appliance not ready after 300s; see $WORKDIR/appliance-console.log" >&2
-    exit 1
-  fi
-  sleep 1
-done
 ```
 
+First boot of a new initramfs can take a minute even with HVF; if attach or
+prepare fails immediately, wait and retry, or check
+`$IMGDIR/appliance-console.log`.
+
 A comma in a disk path must be doubled in the `-drive` value (QEMU option
-separator). Extra disks: `id=disk1`, `file=$WORKDIR/disk1.img`, then
+separator). Extra disks: `id=disk1`, `file=$IMGDIR/disk1.img`, then
 `-device virtio-blk-pci,drive=disk1`. Order is `/dev/vda`, `/dev/vdb`, ….
 
 Leave this process running. Stages adopt it via `KC_QEMU_*` and must not
@@ -133,7 +120,8 @@ Success:
 - `lsblk -J` lists partitions
 - port names include `org.kc-utils.agent` and `org.kc-utils.debug`
 
-Detach with `exit`. Bash respawns for the next connect. Kernel messages are
-in `$WORKDIR/appliance-console.log`, not on this channel.
+Guest `exit` / Ctrl-D only respawns bash; leave socat with **Ctrl-]**
+(`escape=0x1d` in the attach snippet).
+Kernel messages are in `$IMGDIR/appliance-console.log`, not on this channel.
 
 Continue with [prepare.md](prepare.md) from another terminal, same env.

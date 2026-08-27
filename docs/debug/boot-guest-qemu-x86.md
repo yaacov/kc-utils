@@ -3,7 +3,7 @@
 A **second** qemu: the converted **guest** OS, not the kc appliance. There is
 no `debug.sock` here. Confirm virtio and bootloader from the appliance debug
 shell in [finalize.md](finalize.md) **before** killing that VM; after this
-launch, use the guest serial console (Linux) or a display (Windows).
+launch, use the guest VGA window.
 
 On Apple Silicon this is TCG and slow. Success is a kernel/login or Windows
 boot screen, not performance.
@@ -11,31 +11,27 @@ boot screen, not performance.
 ## Firmware from TargetMeta
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
-jq -r '.target.target_firmware' "$WORKDIR/pipeline.json"
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
+jq -r '.target.target_firmware' "$IMGDIR/pipeline.json"
 # bios | uefi
 ```
 
 ## BIOS guest
 
 ```sh
-# Linux x86 with KVM: accel=kvm -cpu host
-# Apple Silicon / no KVM: accel=tcg -cpu max (below)
-
 qemu-system-x86_64 \
   -machine q35,accel=tcg \
   -cpu max \
   -m 4096 \
   -smp 4 \
-  -drive if=virtio,file="$WORKDIR/disk0.img",format=raw \
+  -drive if=virtio,file="$IMGDIR/disk0.img",format=raw \
   -netdev user,id=net0 \
-  -device virtio-net-pci,netdev=net0 \
-  -nographic
+  -device virtio-net-pci,netdev=net0
 ```
 
-Add another `-drive if=virtio,file=...,format=raw` per extra disk. `-nographic`
-ties the guest serial console to this terminal (typical after Linux convert
-enabled a serial console).
+Add another `-drive if=virtio,file=...,format=raw` per extra disk.
 
 ## UEFI guest
 
@@ -59,14 +55,10 @@ qemu-system-x86_64 \
   -m 4096 \
   -smp 4 \
   -drive if=pflash,format=raw,readonly=on,file="$OVMF" \
-  -drive if=virtio,file="$WORKDIR/disk0.img",format=raw \
+  -drive if=virtio,file="$IMGDIR/disk0.img",format=raw \
   -netdev user,id=net0 \
-  -device virtio-net-pci,netdev=net0 \
-  -nographic
+  -device virtio-net-pci,netdev=net0
 ```
-
-Windows is easier with a display instead of `-nographic` (drop it, or use
-`-display cocoa` on Mac / GTK/SDL on Linux).
 
 ## If it does not boot
 

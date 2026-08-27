@@ -21,6 +21,11 @@ const (
 	ioctlTIOCGPTN   = 0x80045430 // _IOR('T', 0x30, unsigned int)
 	ioctlTIOCSPTLCK = 0x40045431 // _IOW('T', 0x31, int)
 
+	// poll(2) events (linux/poll.h). The syscall package only exports EPOLL*.
+	pollIn  = 0x1
+	pollOut = 0x4
+	pollHup = 0x10
+
 	// drainTimeout bounds the post-exit PTY drain in runOnChannel. Normally
 	// the last slave close unblocks the drain within milliseconds; the bound
 	// protects against a slow consumer or a stray slave holder stalling the
@@ -29,8 +34,11 @@ const (
 )
 
 // serveChannel binds a virtio-serial port to an interactive app (getty-style):
-// open the port, run argv on a PTY, and respawn when the process exits or the
-// host disconnects. Never returns; intended to run as a PID-1 goroutine.
+// wait until a host client is connected, run argv on a PTY, and loop when the
+// process exits or the host disconnects. Never returns; intended to run as a
+// PID-1 goroutine. Bash is not started while debug.sock has no client (an
+// unconnected virtio-serial read is EOF and would otherwise spawn/kill a
+// shell every 200ms).
 func serveChannel(portName string, argv []string) {
 	for {
 		if err := serveChannelOnce(portName, argv); err != nil {
@@ -49,7 +57,59 @@ func serveChannelOnce(portName string, argv []string) error {
 	if err != nil {
 		return fmt.Errorf("open %s: %w", dev, err)
 	}
+	if err := waitHostConnected(f); err != nil {
+		_ = f.Close()
+		return err
+	}
 	return runOnChannel(f, argv)
+}
+
+// waitHostConnected blocks until the virtio-serial host is attached.
+// Linux virtio_console sets POLLHUP while host_connected is false; QEMU's
+// unix chardev (server=on,wait=off) stays in that state until nc/socat
+// connects to debug.sock.
+func waitHostConnected(f *os.File) error {
+	fd := int(f.Fd())
+	for {
+		revents, err := pollFD(fd, pollIn|pollOut|pollHup, 1000)
+		if err != nil {
+			if err == syscall.EINTR {
+				continue
+			}
+			return fmt.Errorf("poll debug port: %w", err)
+		}
+		if hostConnected(revents) {
+			return nil
+		}
+	}
+}
+
+func hostConnected(revents int16) bool {
+	return revents != 0 && revents&pollHup == 0
+}
+
+type pollFd struct {
+	Fd      int32
+	Events  int16
+	Revents int16
+}
+
+func pollFD(fd int, events int16, timeoutMs int) (int16, error) {
+	pfd := pollFd{Fd: int32(fd), Events: events}
+	ts := syscall.Timespec{Sec: int64(timeoutMs / 1000), Nsec: int64(timeoutMs%1000) * 1e6}
+	_, _, errno := syscall.Syscall6(
+		syscall.SYS_PPOLL,
+		uintptr(unsafe.Pointer(&pfd)),
+		1,
+		uintptr(unsafe.Pointer(&ts)),
+		0,
+		0,
+		0,
+	)
+	if errno != 0 {
+		return 0, errno
+	}
+	return pfd.Revents, nil
 }
 
 // runOnChannel takes ownership of rw, runs argv with a PTY whose master is
@@ -69,7 +129,11 @@ func runOnChannel(rw io.ReadWriteCloser, argv []string) error {
 	cmd.Stdin = slave
 	cmd.Stdout = slave
 	cmd.Stderr = slave
-	cmd.Env = append(os.Environ(), "TERM=xterm")
+	cmd.Env = append(os.Environ(),
+		"TERM=xterm-256color",
+		// ANSI colors pass through socat raw; bash -i has no /root/.bashrc here.
+		`PS1=\[\e[01;32m\]\u@\h\[\e[00m\]:\[\e[01;34m\]\w\[\e[00m\]# `,
+	)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setsid:  true,
 		Setctty: true,

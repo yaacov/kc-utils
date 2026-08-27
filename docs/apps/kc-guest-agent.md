@@ -39,9 +39,16 @@ When the binary is `/init` (or `--init` is set):
    PTY), `/run`, `/tmp`. Failures are non-fatal (already mounted).
 3. `modprobe`s virtio drivers (`virtio`, `virtio_pci`, `virtio_console`,
    `virtio_blk`, `virtio_scsi`, `virtio_net`). Failures are non-fatal.
-4. Starts `/bin/bash -i` on virtio-serial port `org.kc-utils.debug` (PTY,
-   respawned on exit or host disconnect). Independent of the JSON protocol.
-5. Serves the agent protocol on `--port`, reopening after each clean
+4. If `qemu-*-static` is packaged, mounts `binfmt_misc` and registers those
+   interpreters with the **F** (fix-binary) flag so `chroot` can exec a guest
+   ELF whose ISA is not the appliance's. Missing interpreters are a no-op;
+   packaged qemu-user that fails to register is a fatal init error (otherwise
+   later guest commands are `Exec format error`).
+5. Waits for a host client on virtio-serial port `org.kc-utils.debug`, then
+   starts `/bin/bash -i` on a PTY. Independent of the JSON protocol. Bash is
+   not spawned until something connects to `debug.sock`; after disconnect it
+   waits for the next client.
+6. Serves the agent protocol on `--port`, reopening after each clean
    disconnect so pipeline stages can reconnect.
 
 The named node `/dev/virtio-ports/<name>` is a udev artifact. With no udevd
@@ -70,7 +77,7 @@ planning, and conversion logic stay host-side.
 ## Debug channel
 
 Port name `org.kc-utils.debug`, bridged by QEMU to `debug.sock` next to the
-agent socket. Attach from the host with `socat` (Linux) or `nc -U` (macOS).
+agent socket. Attach from the host with `socat`.
 You are in the **appliance** initramfs, not the converted guest. After prepare
 mounts filesystems they appear under `/mnt/guest`.
 

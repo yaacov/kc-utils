@@ -14,24 +14,26 @@ is picked up (same shape as
 [prepare-input-disk-dir.json](../apps/examples/prepare-input-disk-dir.json)):
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
 # KC_QEMU_SOCK / KC_QEMU_PID / KC_QEMU_DEBUG_SOCK already set
 # (see start-appliance.md)
 
-cat > "$WORKDIR/prepare-input.json" <<EOF
+cat > "$IMGDIR/prepare-input.json" <<EOF
 {
-  "disk_dir": "$WORKDIR",
+  "disk_dir": "$IMGDIR",
   "source": {
-    "name": "my-vm",
+    "name": "$GOVC_VM",
     "type": "vmware",
-    "firmware_hint": "uefi"
+    "firmware_hint": "bios"
   },
   "options": {
-    "tmp_dir": "$WORKDIR/tmp"
+    "tmp_dir": "$IMGDIR/tmp"
   }
 }
 EOF
-mkdir -p "$WORKDIR/tmp"
+mkdir -p "$IMGDIR/tmp"
 ```
 
 Set `firmware_hint` to `bios` or `uefi` if you know it; prepare also detects
@@ -44,10 +46,13 @@ firmware from the disk. Explicit `disks` list instead of `disk_dir`:
 ## Run (adopts the held appliance)
 
 ```sh
+# from the repo root (make build → bin/)
+export PATH="$PWD/bin:$PATH"
+
 kc-prepare \
   --backend qemu \
-  --input "$WORKDIR/prepare-input.json" \
-  --output "$WORKDIR/pipeline.json" \
+  --input "$IMGDIR/prepare-input.json" \
+  --output "$IMGDIR/pipeline.json" \
   --mount-root /tmp/kc-guest \
   --log-level info
 ```
@@ -77,7 +82,7 @@ On the host:
 
 ```sh
 jq '{converter: .prepare.converter, inspect: .prepare.inspect, firmware: .prepare.firmware, root_device: .prepare.root_device}' \
-  "$WORKDIR/pipeline.json"
+  "$IMGDIR/pipeline.json"
 ```
 
 `.prepare.converter` is `kc-convert-linux` or `kc-convert-windows`. Continue

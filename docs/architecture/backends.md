@@ -239,9 +239,22 @@ With acceleration the machine uses `-cpu host`; under TCG a concrete model
 (`cortex-a72` on arm64, `max` on x86_64). An arm64 appliance boots near-native on
 an arm64 Mac; an x86_64 appliance runs under TCG there.
 
-`RunCommand` chroots into the guest and runs the guest's *own* (guest-arch)
-binaries. Converting an x86_64 guest therefore needs an x86_64 appliance — on
-Apple Silicon that means TCG for the convert stage.
+`RunCommand` chroots into the guest and runs the guest's own binaries. Guest
+kernel, arch, and OS still come from the mounted filesystem (inspect,
+`DetectArch`, explicit `dracut` kernel version) — not from the appliance
+`uname`. When the guest ELF ISA is not the appliance's, the agent has
+registered **binfmt_misc** with qemu-user-static (`F` flag); chroot mounts
+(`/proc`, `/sys`, `/dev`) are the same as same-ISA convert. `--no-hostonly`
+keeps dracut from treating appliance `/sys` as the target machine.
+
+The appliance defaults to host `GOARCH` (`KC_APPLIANCE_ARCH` unset), so an
+Apple Silicon Mac can convert an x86_64 disk under HVF. Set
+`KC_APPLIANCE_ARCH` to the guest arch to boot a same-ISA TCG appliance if
+binfmt convert fails. First-cut interpreters are **x86_64/i386 ↔ aarch64**
+only (ppc64le/s390x stay same-ISA).
+
+guestfs and direct do not get this binfmt; foreign-ISA `RunInGuest` there still
+needs a same-ISA environment (or host binfmt for direct).
 
 ### VM/session lifecycle
 
@@ -268,48 +281,36 @@ converted guest): [../debug/README.md](../debug/README.md). Agent CLI:
 [kc-guest-agent.md](../apps/kc-guest-agent.md).
 
 A second virtio-serial port (`org.kc-utils.debug`) is always attached. PID 1
-runs `/bin/bash -i` on a PTY bound to that port and respawns it when the process
-exits or the host disconnects. This is independent of the framed agent protocol,
-so you can inspect the appliance **while prepare (or convert/finalize) is
-running**.
+starts `/bin/bash -i` on a PTY only after a host client connects to
+`debug.sock`, and waits for the next connect after disconnect. This is
+independent of the framed agent protocol, so you can inspect the appliance
+**while prepare (or convert/finalize) is running**.
 
 The host socket sits next to the agent socket: `/tmp/kc-qemu-*/debug.sock`. Boot
 logs include `debug_socket`; a parent process also exports `KC_QEMU_DEBUG_SOCK`.
 
 1. Start a qemu-backed run as usual (`kc-prepare --backend qemu …` or `kc-v2v`
    with `V2V_backend=qemu`) and wait until logs show `qemu appliance ready`.
-2. Find the socket: `"$KC_QEMU_DEBUG_SOCK"` if set, otherwise the single
-   `/tmp/kc-qemu-*/debug.sock` (the attach snippet below rejects multiple
-   matches — with several runs going, pick one explicitly).
+2. Find the socket: `"$KC_QEMU_DEBUG_SOCK"` if set, otherwise
+   `ls /tmp/kc-qemu-*/debug.sock` and pick one (several runs can leave
+   stale siblings).
 3. Attach from a second terminal (raw TTY so the guest PTY owns line discipline):
 
 ```sh
-if [ -n "${KC_QEMU_DEBUG_SOCK-}" ]; then
-    sock=$KC_QEMU_DEBUG_SOCK
-else
-    set -- /tmp/kc-qemu-*/debug.sock
-    # exactly one live match: a stale sibling from another run must not win
-    if [ "$#" -ne 1 ] || [ ! -S "$1" ]; then
-        echo "pick a debug socket and set sock=/tmp/kc-qemu-XXX/debug.sock:" >&2
-        [ "$#" -gt 0 ] && ls -1 "$@"
-        exit 1
-    fi
-    sock=$1
+# If unset: ls /tmp/kc-qemu-*/debug.sock and pick one
+sock=$KC_QEMU_DEBUG_SOCK
+if [ -z "$sock" ]; then
+  sock=$(ls /tmp/kc-qemu-*/debug.sock 2>/dev/null | awk 'NR==1')
 fi
-
-# Linux (socat)
-socat UNIX-CONNECT:"$sock" STDIO,raw,echo=0
-
-# macOS (BSD nc); restore the tty after
-stty raw -echo
-nc -U "$sock"
-stty sane
+socat UNIX-CONNECT:"$sock" STDIO,raw,echo=0,escape=0x1d
 ```
 
 You are in the **appliance** (initramfs), not the converted guest. Once prepare
-has mounted filesystems they appear under `/mnt/guest`. Detach with `exit` or by
-closing the client; bash respawns for the next connect. Kernel boot messages
-stay on `-serial stdio` (captured for diagnostics) and are not this channel.
+has mounted filesystems they appear under `/mnt/guest`. Guest `exit` / Ctrl-D
+only ends that bash; QEMU keeps `debug.sock` open so the agent starts a new
+shell and `socat` stays connected. Leave with **Ctrl-]** (`escape=0x1d`).
+Kernel boot messages stay on `-serial stdio` (captured for diagnostics) and
+are not this channel.
 
 Changing the in-guest agent requires rebuilding the initramfs
 (`make build-appliance`); host-side qemu launch changes alone are not enough.

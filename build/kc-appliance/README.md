@@ -50,16 +50,25 @@ the dracut-built `/boot` initramfs, the RPM database, systemd (the agent is
 and kernel driver categories a virtio VM never instantiates (gpu, sound, usb,
 hid, input, hwmon, …). Filesystem, block, md/LVM, crypto, and virtio modules are
 kept. This takes the arm64 initramfs from ~184M to ~84M with no loss of function
-(verified by `TestE2EApplianceRoundTrip`).
+(verified by `TestE2EApplianceRoundTrip`). qemu-user-static for the foreign ISA
+is kept (not trimmed) so convert can exec guest ELFs; expect several extra
+megabytes. Check `ls -la bin/appliance/<arch>/initramfs.img` after a rebuild.
 
-### Cross-architecture
+### Build-time vs runtime binfmt
 
-Building an `amd64` appliance on an arm64 host (or vice-versa) needs binfmt/
-qemu-user emulation registered:
+Two different qemu-user uses:
 
-- **macOS (podman machine):** already registered inside the VM — cross builds
-  work out of the box.
-- **Linux:** `podman run --rm --privileged tonistiigi/binfmt --install all`.
+- **Build-time:** building an `amd64` appliance on an arm64 host (or vice-versa)
+  needs binfmt registered in the **container builder**:
+  - **macOS (podman machine):** already registered inside the VM — cross builds
+    work out of the box.
+  - **Linux:** `podman run --rm --privileged tonistiigi/binfmt --install all`.
+- **Runtime:** the appliance ships qemu-user-static for the *other* ISA
+  (arm64 image → x86_64+i386; amd64 image → aarch64). `kc-guest-agent` registers
+  those interpreters at PID 1 so `chroot` can run guest tools whose ELF does not
+  match the appliance kernel. This is how a host-arch appliance converts a
+  foreign-ISA disk. `KC_APPLIANCE_ARCH=<guest>` still boots a same-ISA appliance
+  if that path fails.
 
 ## How it boots
 
@@ -70,9 +79,11 @@ tmpfs and runs `/init` (the agent) as PID 1. On start the agent:
    PTY), `/run`, `/tmp`;
 2. `modprobe`s the virtio drivers (`virtio_console` for the serial ports,
    `virtio_blk` for the disks, …);
-3. starts an interactive debug channel on virtio-serial port
-   `org.kc-utils.debug` (`/bin/bash -i` on a PTY, respawned on exit);
-4. resolves the agent virtio-serial port and serves the protocol in
+3. if qemu-user-static is packaged, mounts `binfmt_misc` and registers
+   foreign-ISA interpreters with the F flag;
+4. waits for a host client on virtio-serial port `org.kc-utils.debug`, then
+   starts `/bin/bash -i` on a PTY (waits again after disconnect);
+5. resolves the agent virtio-serial port and serves the protocol in
    `pkg/qemuagent/proto`, reopening the port after each stage disconnects. The
    named node `/dev/virtio-ports/<name>` is a udev artifact, so with no udevd
    the agent falls back to matching `/sys/class/virtio-ports/*/name` and opens
@@ -101,6 +112,7 @@ full protocol and the host/guest logic split.
 | `ntfs-3g`, `ntfsprogs`  | `ntfsfix`, NTFS mount                       |
 | `dosfstools`            | vfat / ESP tooling                         |
 | `glibc`, `bash`, `coreutils` | runtime for chrooted guest commands   |
+| `qemu-user-static-x86` or `qemu-user-static-aarch64` | binfmt interpreter for the foreign guest ISA |
 
 Keep this list in sync with the host backend's expectations (`discover.go`,
 `ldm.go`, `fscheck.go`, `crypt.go`, `run.go`).

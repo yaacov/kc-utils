@@ -156,11 +156,44 @@ func parseLVPaths(out []byte) []string {
 func (b *Backend) remountFromDiskInfos() error {
 	for _, p := range orderMountPlans(b.diskInfos) {
 		hostMountPoint := hostMountFromGuest(b.mountRoot, p.mount)
+		if !pathUnderRoot(b.mountRoot, hostMountPoint) {
+			return fmt.Errorf("remount %s: host path %s escapes mount root %s", p.mount, hostMountPoint, b.mountRoot)
+		}
 		if err := b.Mount(p.device, hostMountPoint, "", false); err != nil {
 			return fmt.Errorf("remount %s at %s: %w", p.device, p.mount, err)
 		}
 	}
 	return nil
+}
+
+// recordAdoptedMounts fills b.mounts from prior-stage disk infos when this
+// process adopted a shared appliance and never called Mount itself.
+func (b *Backend) recordAdoptedMounts() {
+	if len(b.mounts) > 0 {
+		return
+	}
+	b.mounts = mountEntriesFromDiskInfos(b.mountRoot, b.diskInfos)
+}
+
+// mountEntriesFromDiskInfos maps recorded guest mounts to appliance paths in
+// parent-before-child order (UnmountAll reverses it).
+func mountEntriesFromDiskInfos(mountRoot string, diskInfos []types.DiskInfo) []mountEntry {
+	var out []mountEntry
+	for _, p := range orderMountPlans(diskInfos) {
+		host := hostMountFromGuest(mountRoot, p.mount)
+		if !pathUnderRoot(mountRoot, host) {
+			continue
+		}
+		app := applianceMountPath(mountRoot, host)
+		if app != applianceMountRoot && !pathUnderRoot(applianceMountRoot, app) {
+			continue
+		}
+		out = append(out, mountEntry{
+			Device:        p.device,
+			AppliancePath: app,
+		})
+	}
+	return out
 }
 
 // mountPlan is one recorded (device, guest mount point) pair to re-establish.

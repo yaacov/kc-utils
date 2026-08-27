@@ -15,7 +15,7 @@ Compiles and runs on any Unix host (no guest disk backend).
 Two input modes:
 
 1. **`--input copy-input.json`** — read `CopyInput` directly
-2. **Flags** — `--host`, `--vm-name`, `--fingerprint`, `--target-dir`, `--disk-path`, TLS flags, etc.
+2. **Flags** — `--host`, `--username`, `--password`, `--vm-name`, `--fingerprint`, `--target-dir`, `--disk-path`, TLS flags, etc.
 
 Exit codes: `0` success, `1` configuration or copy error.
 
@@ -26,8 +26,10 @@ make build-kc-copy
 
 kc-copy \
   --host vcenter.example.com \
+  --username myuser \
+  --password mypass \
   --datacenter mydatacenter \
-  --insecure \
+  --ca-cert /path/to/ca.pem \
   --vm-name my-vm \
   --fingerprint "AB:CD:..." \
   --target-dir /data/my-vm
@@ -35,8 +37,10 @@ kc-copy \
 
 kc-copy \
   --host vcenter.example.com \
+  --username myuser \
+  --password mypass \
   --datacenter mydatacenter \
-  --insecure \
+  --ca-cert /path/to/ca.pem \
   --vm-name my-vm \
   --fingerprint "AB:CD:..." \
   --disk-path "[ds] vm/disk1.vmdk,[ds] vm/disk2.vmdk" \
@@ -50,6 +54,8 @@ cat > copy-input.json <<'EOF'
 {
   "host": "vcenter.example.com",
   "datacenter": "mydatacenter",
+  "username": "myuser",
+  "password": "mypass",
   "insecure": true,
   "vm_name": "my-vm",
   "fingerprint": "...",
@@ -91,6 +97,9 @@ to copy every disk on the VM. `--target-dir` / `target_dir` writes
 |-------------------|---------|-------------|
 | `--host` / `host` | (required) | vCenter or ESXi hostname |
 | `--datacenter` / `datacenter` | — | vSphere datacenter name (optional) |
+| `--username` / `username` | — | vSphere username; empty falls back to `/etc/secret/accessKeyId` |
+| `--password` / `password` | — | vSphere password; empty falls back to `--password-file`, then `/etc/secret/secretKey` |
+| `--password-file` | — | Password file. Used when `--password` and JSON `password` are empty |
 | `--insecure` / `insecure` | `false` | Skip TLS certificate verification |
 | `--ca-cert` / `ca_cert` | — | PEM custom CA path; error if set but file missing |
 | `--vm-name` / `vm_name` | (required) | Source VM name |
@@ -102,12 +111,12 @@ to copy every disk on the VM. `--target-dir` / `target_dir` writes
 | `--copy-concurrency` / `copy_concurrency` | `4` | Max parallel disk copies (capped at disk count; `1` = sequential) |
 | `--log-level` | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
-vSphere credentials (read at connect time, not part of `CopyInput`):
+vSphere credentials (resolved at connect time):
 
-| Path | Purpose |
-|------|---------|
-| `/etc/secret/accessKeyId` | vSphere username |
-| `/etc/secret/secretKey` | vSphere password |
+1. `--username` / `--password` (or JSON `username` / `password`); `--password-file` if the password is still empty
+2. `/etc/secret/accessKeyId` and `/etc/secret/secretKey` for any field still empty (Forklift secret mount)
+
+Omit the flags in a conversion pod; the secret files are enough.
 
 ### TLS modes
 

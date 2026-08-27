@@ -5,15 +5,35 @@ package qemu
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 )
 
 // hostMountFromGuest builds the host mount point that corresponds to a guest
-// mount path, used when re-establishing a recorded mount plan.
+// mount path, used when re-establishing a recorded mount plan. The guest path
+// is cleaned under "/" first so ".." cannot walk above mountRoot.
 func hostMountFromGuest(mountRoot, guestMount string) string {
 	if guestMount == "/" || guestMount == "" {
 		return mountRoot
 	}
-	return filepath.Join(mountRoot, filepath.FromSlash(guestMount))
+	confined := filepath.Clean("/" + filepath.FromSlash(guestMount))
+	rel := strings.TrimPrefix(confined, "/")
+	if rel == "" {
+		return mountRoot
+	}
+	return filepath.Join(mountRoot, rel)
+}
+
+// pathUnderRoot reports whether p is root or a descendant of root after Clean.
+func pathUnderRoot(root, p string) bool {
+	root = filepath.Clean(root)
+	p = filepath.Clean(p)
+	if root == "" || root == "." {
+		return false
+	}
+	if p == root {
+		return true
+	}
+	return strings.HasPrefix(p, root+"/")
 }
 
 // Mount eagerly mounts device at the appliance path corresponding to

@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	DefaultBasePath      = "/usr/share/virtio-win/drivers/by-os"
-	DefaultGuestAgentDir = "/usr/share/virtio-win/guest-agent"
+	DefaultVirtioWinDir  = "/usr/share/virtio-win"
+	DefaultBasePath      = DefaultVirtioWinDir + "/drivers/by-os"
+	DefaultGuestAgentDir = DefaultVirtioWinDir + "/guest-agent"
 )
 
 type DirectorySource struct {
@@ -22,6 +23,25 @@ type DirectorySource struct {
 
 func init() {
 	driversource.Sources.Register("directory", &DirectorySource{})
+}
+
+// Configure sets the virtio-win root used by the registered directory source
+// (drivers at <dir>/drivers/by-os, qemu-ga MSIs at <dir>/guest-agent). Empty
+// path leaves the defaults under /usr/share/virtio-win.
+func Configure(virtioWinDir string) {
+	if virtioWinDir == "" {
+		return
+	}
+	src, ok := driversource.Sources.Get("directory")
+	if !ok {
+		return
+	}
+	d, ok := src.(*DirectorySource)
+	if !ok {
+		return
+	}
+	d.BasePath = filepath.Join(virtioWinDir, "drivers", "by-os")
+	d.GuestAgentDir = filepath.Join(virtioWinDir, "guest-agent")
 }
 
 func (d *DirectorySource) basePath() string {

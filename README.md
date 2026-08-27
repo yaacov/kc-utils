@@ -88,8 +88,8 @@ orchestrator (`kc-v2v`, a shell script, etc.):
 | `kc-copy` | NFC disk copy stage via govmomi |
 | `kc-guest-agent` | In-appliance PID 1 for `--backend qemu` (not run on the conversion host) |
 
-The tree compiles on any Unix host. `kc-copy` runs on any Unix. Release
-binaries are built with `make build` (`GOOS=linux`). Guest disk backend
+The tree compiles on any Unix host. `kc-copy` runs on any Unix. `make build`
+defaults to `GOOS=linux` (set `GOOS=darwin` for a native Mac binary). Guest disk backend
 requirements are documented in [docs/architecture/backends.md](docs/architecture/backends.md).
 
 Inter-app communication uses JSON files written to a shared directory, plus a

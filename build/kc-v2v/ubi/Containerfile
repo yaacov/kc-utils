@@ -55,7 +55,7 @@ RUN chmod +x /tmp/stage-virtio-win.sh && \
     VIRTIO_WIN_MODERN_URL="$VIRTIO_WIN_MODERN_URL" \
     VIRTIO_WIN_LEGACY_URL="$VIRTIO_WIN_LEGACY_URL" \
     VIRTIO_WIN_CACHE_DIR=/tmp/virtio-win-cache \
-    /tmp/stage-virtio-win.sh && \
+    /tmp/stage-virtio-win.sh /usr/share/virtio-win && \
     rm -rf /tmp/stage-virtio-win.sh /tmp/virtio-win-cache
 
 # Offline Linux qemu-guest-agent (RHEL family el8/el9/el10 x86_64)

@@ -34,8 +34,8 @@ var diskTargetIDRE = regexp.MustCompile(`(?i)^disk-\d+\.vmdk$`)
 
 // ExportVM starts an NFC export of the named VM and returns a Lease with
 // per-disk HTTPS download URLs. The caller must call Complete or Abort.
-func ExportVM(ctx context.Context, host, datacenter string, policy v2vtls.Policy, fingerprint, vmName string) (*Lease, error) {
-	client, err := vsphere.ConnectHost(ctx, host, policy, fingerprint)
+func ExportVM(ctx context.Context, host, datacenter string, policy v2vtls.Policy, fingerprint, vmName, username, password string) (*Lease, error) {
+	client, err := vsphere.ConnectHost(ctx, host, policy, fingerprint, username, password)
 	if err != nil {
 		return nil, err
 	}

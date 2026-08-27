@@ -78,6 +78,10 @@ Example: [examples/target-meta.json](examples/target-meta.json).
 | Interface | Implementations |
 |-----------|----------------|
 | `Customizer` | `native` (hostname, timezone, SELinux relabel), `dynamicscriptslinux`, `dynamicscriptswindows` (user-provided scripts) |
+
+`*_linux_run.sh` dynamic scripts run via `guest.RunInGuest`. On the qemu backend
+they are best-effort when the guest ISA is not the appliance's (qemu-user);
+failures are logged and skipped, same as same-ISA failures.
 | `FirstBootHandler` | `systemd` (implementation in `pkg/common/firstboot/`, used by `dynamicscriptslinux` customizer) |
 
 ## Cleanup Sequence

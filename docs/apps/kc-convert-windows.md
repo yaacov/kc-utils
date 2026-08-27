@@ -18,11 +18,16 @@ Guest disk backends: [../architecture/backends.md](../architecture/backends.md).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network-only firstboot operations while still scheduling local guest-agent/driver setup |
+| `--packages-dir` | no | | Ignored (accepted so Linux and Windows converters share a CLI) |
+| `--virtio-win-dir` | no | `/usr/share/virtio-win` | Host virtio-win tree (`drivers/by-os` + `guest-agent`) |
 | `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux), `qemu` (Linux or macOS) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
 VirtIO drivers are located from the pre-extracted virtio-win tree via the
-`directory` `DriverSource` plugin at `/usr/share/virtio-win/drivers/by-os`.
+`directory` `DriverSource` plugin (`--virtio-win-dir`/drivers/by-os, default
+`/usr/share/virtio-win/drivers/by-os`). Stage a local tree with
+[`build/kc-v2v/stage-virtio-win.sh`](../../build/kc-v2v/stage-virtio-win.sh)
+(destination directory argument).
 
 ## Pipeline Blocks
 
@@ -56,18 +61,21 @@ conversion. See [Windows NTFS operations](../architecture/filesystem-checks.md#w
 - `PipelineData` JSON (from kc-prepare): OS info, disk layout, mount paths (in `prepare` section)
 - Mounted guest filesystem at `--mount-root`
 
-VirtIO drivers are read from the **conversion host**, not from JSON or CLI flags.
-The kc-v2v container image ships these drivers under
-`/usr/share/virtio-win/drivers/by-os/`, downloaded from public
+VirtIO drivers are read from the **conversion host** at `--virtio-win-dir`
+(default `/usr/share/virtio-win`), not from JSON. The `directory` plugin
+looks under `<virtio-win-dir>/drivers/by-os` and qemu-ga MSIs under
+`<virtio-win-dir>/guest-agent`. The kc-v2v container image ships these
+drivers under `/usr/share/virtio-win/drivers/by-os/`, downloaded from public
 [Fedora People ISOs](https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/)
 at image build time (modern 0.1.285 + legacy 0.1.160 for pre–Win 8 guests).
 
-For local development without the container, extract a virtio-win ISO into that
-path or install the `virtio-win` package on Fedora/RHEL.
+For local development without the container, extract a virtio-win ISO into
+`--virtio-win-dir` or install the `virtio-win` package on Fedora/RHEL
+(default path).
 
 | Plugin | Path | Notes |
 |--------|------|-------|
-| `directory` | `/usr/share/virtio-win/drivers/by-os` | Match guest arch and Windows version; qemu-ga MSIs from `/usr/share/virtio-win/guest-agent/` when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista). [`FilterComplete`](../../pkg/convert-windows/driversource/complete.go) keeps packages whose INF/`CatalogFile[.nt*]`/`SourceDisksFiles[.arch]` payloads (including package-relative companion subdirs) exist offline; other INF requirement forms are not resolved yet |
+| `directory` | `<virtio-win-dir>/drivers/by-os` | Default `/usr/share/virtio-win/drivers/by-os`. Match guest arch and Windows version; qemu-ga MSIs from `<virtio-win-dir>/guest-agent/` when [`CollectGuestAgentMSI`](../../pkg/convert-windows/version/guestagent.go) allows (omitted for XP, 2003, Server 2008, Vista). [`FilterComplete`](../../pkg/convert-windows/driversource/complete.go) keeps packages whose INF/`CatalogFile[.nt*]`/`SourceDisksFiles[.arch]` payloads (including package-relative companion subdirs) exist offline; other INF requirement forms are not resolved yet |
 
 ## Version classification
 
@@ -79,8 +87,8 @@ See [guest-os-handlers.md](guest-os-handlers.md) for the full handler matrix,
 code locations, and archived driver merge details. Summary tables also appear
 below under **Driver source** and **Firstboot scripts**.
 
-There is no JSON field for driver location — use the kc-v2v image (which
-includes drivers) or populate the host tree before conversion.
+There is no JSON field for driver location — set `--virtio-win-dir` or use
+the default tree (`/usr/share/virtio-win`).
 
 See [pkg/convert-windows/driversource/plugins/README.md](../../pkg/convert-windows/driversource/plugins/README.md) for
 plugin details. Linux guest offline packages (`qemu-guest-agent` RPM/DEB) are a
