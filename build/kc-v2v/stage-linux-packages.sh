@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Stage RHEL-family qemu-guest-agent RPMs into /usr/share/kc-packages for
-# offline Linux guest-agent install (kc-convert-linux --offline).
+# Stage RHEL-family qemu-guest-agent RPMs for offline Linux guest-agent install
+# (kc-convert-linux --packages-dir / --offline).
+#
+# Usage: stage-linux-packages.sh [DEST]
+#   DEST  package tree (default: /usr/share/kc-packages)
 #
 # Layout:
 #   $DEST/rpm/el8/x86_64/qemu-guest-agent-*.rpm
@@ -8,6 +11,7 @@
 #   $DEST/rpm/el10/x86_64/qemu-guest-agent-*.rpm
 #
 # Pins are CentOS Stream Koji builds (subpackages of qemu-kvm). Fail loud on HTTP errors.
+# Optional: KOJI_BASE — Koji files root (mirrors).
 set -euo pipefail
 
 DEST="${1:-/usr/share/kc-packages}"

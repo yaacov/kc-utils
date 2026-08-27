@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/yaacov/kc-utils/pkg/common/logger"
 	kccopy "github.com/yaacov/kc-utils/pkg/copy"
@@ -19,6 +20,9 @@ func main() {
 	outputFile := flag.String("output", "copy-progress.json", "output JSON file")
 	host := flag.String("host", "", "vCenter/ESXi hostname (e.g. vcenter.example.com)")
 	datacenter := flag.String("datacenter", "", "vSphere datacenter name")
+	username := flag.String("username", "", "vSphere username (falls back to /etc/secret/accessKeyId)")
+	passwordFlag := flag.String("password", "", "vSphere password (falls back to --password-file, then /etc/secret/secretKey)")
+	passwordFile := flag.String("password-file", "", "vSphere password file; used when --password is empty")
 	insecure := flag.Bool("insecure", false, "skip TLS certificate verification")
 	caCert := flag.String("ca-cert", "", "PEM CA cert path for secure TLS")
 	vmName := flag.String("vm-name", "", "VM name")
@@ -32,7 +36,13 @@ func main() {
 
 	logger.Init(*logLevel)
 
-	input, err := loadInput(*inputFile, *host, *datacenter, *insecure, *caCert, *vmName, *fingerprint, *diskPath, *targetDir, *workdir, *outputFile, *copyConcurrency)
+	password, err := resolvePassword(*passwordFlag, *passwordFile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	input, err := loadInput(*inputFile, *host, *datacenter, *username, password, *insecure, *caCert, *vmName, *fingerprint, *diskPath, *targetDir, *workdir, *outputFile, *copyConcurrency)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -48,7 +58,7 @@ func main() {
 	}
 }
 
-func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName, fingerprint, diskPath, targetDir, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
+func loadInput(inputFile, host, datacenter, username, password string, insecure bool, caCert, vmName, fingerprint, diskPath, targetDir, workdir, outputPath string, copyConcurrency int) (kccopy.CopyInput, error) {
 	if inputFile != "" {
 		data, err := os.ReadFile(inputFile)
 		if err != nil {
@@ -70,6 +80,14 @@ func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName
 		if input.TargetDir == "" {
 			input.TargetDir = targetDir
 		}
+		input.Username = strings.TrimSpace(input.Username)
+		input.Password = strings.TrimSpace(input.Password)
+		if input.Username == "" {
+			input.Username = username
+		}
+		if input.Password == "" {
+			input.Password = password
+		}
 		if err := validateInput(&input); err != nil {
 			return kccopy.CopyInput{}, err
 		}
@@ -79,6 +97,8 @@ func loadInput(inputFile, host, datacenter string, insecure bool, caCert, vmName
 	input := kccopy.CopyInput{
 		Host:            host,
 		Datacenter:      datacenter,
+		Username:        username,
+		Password:        password,
 		Insecure:        insecure,
 		CaCert:          caCert,
 		VMName:          vmName,
@@ -106,4 +126,26 @@ func validateInput(input *kccopy.CopyInput) error {
 		return fmt.Errorf("--fingerprint is required (or use --input)")
 	}
 	return nil
+}
+
+// resolvePassword prefers --password, then --password-file, then the empty
+// value so connect falls back to /etc/secret/secretKey.
+func resolvePassword(flagValue, filePath string) (string, error) {
+	if flagValue != "" {
+		return flagValue, nil
+	}
+	return readPassword(filePath)
+}
+
+// readPassword returns the contents of path. An empty path leaves the
+// password unset so connect falls back to /etc/secret/secretKey.
+func readPassword(path string) (string, error) {
+	if path == "" {
+		return "", nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read password: %w", err)
+	}
+	return strings.TrimRight(string(data), "\r\n"), nil
 }

@@ -9,9 +9,49 @@ import (
 	"net"
 	"os"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
+
+func TestHostConnected(t *testing.T) {
+	cases := []struct {
+		revents int16
+		want    bool
+	}{
+		{0, false},
+		{pollHup, false},
+		{pollIn | pollHup, false},
+		{pollOut, true},
+		{pollIn | pollOut, true},
+	}
+	for _, c := range cases {
+		if got := hostConnected(c.revents); got != c.want {
+			t.Errorf("hostConnected(%#x) = %v, want %v", c.revents, got, c.want)
+		}
+	}
+}
+
+func TestWaitHostConnectedSocketpair(t *testing.T) {
+	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := os.NewFile(uintptr(fds[0]), "sp")
+	defer f.Close()
+	defer syscall.Close(fds[1])
+
+	done := make(chan error, 1)
+	go func() { done <- waitHostConnected(f) }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("waitHostConnected blocked on a connected socketpair")
+	}
+}
 
 func TestServeChannelOnceMissingPort(t *testing.T) {
 	err := serveChannelOnce("org.kc-utils.does-not-exist", []string{"/bin/true"})
@@ -65,6 +105,8 @@ func TestRunOnChannelReadsInput(t *testing.T) {
 		t.Fatalf("write: %v", err)
 	}
 
+	// Drain until EOF. net.Pipe is unbuffered, so stopping after the
+	// expected line leaves runOnChannel blocked in the PTY copy write.
 	_ = b.SetReadDeadline(time.Now().Add(5 * time.Second))
 	var buf bytes.Buffer
 	tmp := make([]byte, 256)
@@ -72,17 +114,20 @@ func TestRunOnChannelReadsInput(t *testing.T) {
 		n, err := b.Read(tmp)
 		if n > 0 {
 			buf.Write(tmp[:n])
-			if strings.Contains(buf.String(), "got:ping") {
-				break
-			}
 		}
 		if err != nil {
-			t.Fatalf("read: %v (got %q)", err, buf.Bytes())
+			break
 		}
+	}
+	if !strings.Contains(buf.String(), "got:ping") {
+		t.Fatalf("output %q, want got:ping", buf.Bytes())
 	}
 
 	select {
-	case <-errc:
+	case err := <-errc:
+		if err != nil {
+			t.Errorf("runOnChannel: %v", err)
+		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("runOnChannel did not return")
 	}

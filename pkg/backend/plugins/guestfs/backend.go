@@ -449,6 +449,10 @@ func (b *Backend) mountVirtualFS() error {
 		`-mount-vfs "" proc /proc /proc`,
 		`-mount-vfs "" sysfs /sys /sys`,
 		`-mount-vfs "" devtmpfs /dev /dev`,
+		`-ln-sf /proc/self/fd /dev/fd`,
+		`-ln-sf fd/0 /dev/stdin`,
+		`-ln-sf fd/1 /dev/stdout`,
+		`-ln-sf fd/2 /dev/stderr`,
 	}, "\n") + "\n"
 	_, err := b.session.remoteScript(script)
 	return err

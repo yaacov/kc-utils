@@ -3,79 +3,122 @@
 Copy a vSphere VM's disks to sparse raw `diskN.img` files with
 [`kc-copy`](../apps/kc-copy.md). Runs on Mac or Linux. No libguestfs.
 
+This page uses the **eco** vCenter (`ECO_VSPHERE_*` in the shell).
+
 ## Credentials
 
-`kc-copy` reads vSphere user/password from files, not flags:
+Pass vSphere user/password as flags (`$ECO_VSPHERE_USERNAME` /
+`$ECO_VSPHERE_PASSWORD`). `--password-file` is optional when you do not want
+the password on argv. If a flag is empty, `kc-copy` reads
+`/etc/secret/accessKeyId` and `/etc/secret/secretKey` (Forklift secret
+mount).
 
-```sh
-sudo mkdir -p /etc/secret
-printf '%s' "$GOVC_USERNAME" | sudo tee /etc/secret/accessKeyId >/dev/null
-printf '%s' "$GOVC_PASSWORD" | sudo tee /etc/secret/secretKey >/dev/null
-sudo chmod 600 /etc/secret/accessKeyId /etc/secret/secretKey
-```
+`--host` is `$ECO_VSPHERE_URL` (hostname only, no `https://`).
 
 ## vCenter fingerprint
 
 SHA-1 thumbprint of the vCenter TLS certificate (colon-separated hex):
 
 ```sh
-echo | openssl s_client -connect vcenter.example.com:443 2>/dev/null \
-  | openssl x509 -noout -fingerprint -sha1
+export ECO_VSPHERE_FINGERPRINT=$(echo | openssl s_client -connect "${ECO_VSPHERE:-${ECO_VSPHERE_URL}:${ECO_VSPHERE_PORT:-443}}" 2>/dev/null \
+  | openssl x509 -noout -fingerprint -sha1 | cut -d= -f2)
 ```
 
 ## Copy
 
-From the repo root, after `make build` (or `make build-kc-copy`):
+From the repo root, after `GOOS=darwin make build-kc-copy` (or `make build` on
+Linux):
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
-mkdir -p "$WORKDIR"
+export PATH="$PWD/bin:$PATH"
+export ECO_VSPHERE_VM=yzamir-d-5g-linux
+export GOVC_VM=$ECO_VSPHERE_VM
+export ECO_VSPHERE_DATACENTER=Eco-Datacenter
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=$WORKDIR/$GOVC_VM
+mkdir -p "$IMGDIR"
 
 kc-copy \
-  --host vcenter.example.com \
-  --datacenter mydatacenter \
-  --insecure \
-  --vm-name my-vm \
-  --fingerprint "AB:CD:EF:..." \
-  --target-dir "$WORKDIR" \
-  --output "$WORKDIR/copy-progress.json" \
+  --host "$ECO_VSPHERE_URL" \
+  --username "$ECO_VSPHERE_USERNAME" \
+  --password "$ECO_VSPHERE_PASSWORD" \
+  --datacenter "$ECO_VSPHERE_DATACENTER" \
+  --vm-name "$ECO_VSPHERE_VM" \
+  --fingerprint "$ECO_VSPHERE_FINGERPRINT" \
+  --target-dir "$IMGDIR" \
+  --output "$IMGDIR/copy-progress.json" \
   --log-level info
 ```
 
-`--insecure` is for a lab. Prefer `--ca-cert /path/to/ca.pem` (or omit both
-`--insecure` and `--ca-cert` to use the host trust store) plus the fingerprint
-as a thumbprint fallback. See [kc-copy.md](../apps/kc-copy.md) for TLS modes
-and `--disk-path` to select a subset of VMDKs.
+Prefer `--ca-cert /path/to/ca.pem` (or omit both `--insecure` and `--ca-cert`
+to use the host trust store) plus the fingerprint as a thumbprint fallback.
+See [kc-copy.md](../apps/kc-copy.md) for TLS modes and `--disk-path` to select
+a subset of VMDKs.
+
+Lab only — skip TLS verification:
+
+```sh
+kc-copy \
+  --host "$ECO_VSPHERE_URL" \
+  --username "$ECO_VSPHERE_USERNAME" \
+  --password "$ECO_VSPHERE_PASSWORD" \
+  --datacenter "$ECO_VSPHERE_DATACENTER" \
+  --insecure \
+  --vm-name "$ECO_VSPHERE_VM" \
+  --fingerprint "$ECO_VSPHERE_FINGERPRINT" \
+  --target-dir "$IMGDIR" \
+  --output "$IMGDIR/copy-progress.json"
+```
 
 Result:
 
 ```text
-$WORKDIR/disk0.img
-$WORKDIR/disk1.img   # if the VM had more than one disk
-$WORKDIR/copy-progress.json
+$IMGDIR/disk0.img
+$IMGDIR/copy-progress.json
 ```
 
 Images are **raw** (stream-optimized VMDK decompressed on the fly), typically
-sparse. `jq . "$WORKDIR/copy-progress.json"` should list each disk with
+sparse. `jq . "$IMGDIR/copy-progress.json"` should list each disk with
 `"status": "complete"` (or the equivalent completed status in that file).
 
-## Verify with the debug socket
+## Boot the unconverted guest (legacy IDE + e1000)
 
-Host `ls -lh` / `qemu-img info` only prove a file exists. Confirm the copy is
-a real disk by attaching it to the kc appliance and inspecting block devices.
-
-1. Follow [start-appliance.md](start-appliance.md) with `$WORKDIR/disk0.img`
-   (and further `diskN.img` in the same order).
-2. Attach the debug shell ([README.md](README.md#attach-the-debug-shell)).
-3. In the appliance:
+The copy is still a VMware guest: no virtio. Attach disks as **IDE** and the
+NIC as **e1000** so in-tree drivers can boot it. This is not the kc
+appliance and not [boot-guest-qemu-x86.md](boot-guest-qemu-x86.md) (virtio
+after convert). SeaBIOS is qemu's default (BIOS guest).
 
 ```sh
-lsblk -f
-blkid
+export ECO_VSPHERE_VM=yzamir-d-5g-linux
+export GOVC_VM=$ECO_VSPHERE_VM
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=$WORKDIR/$GOVC_VM
+
+disks=()
+i=0
+while [ -e "$IMGDIR/disk$i.img" ]; do
+  disks+=(-drive "file=$IMGDIR/disk$i.img,format=raw,if=ide")
+  i=$((i+1))
+done
+
+qemu-system-x86_64 \
+  -machine pc,accel=tcg \
+  -cpu max \
+  -m 4096 \
+  -smp 2 \
+  "${disks[@]}" \
+  -netdev user,id=net0 \
+  -device e1000,netdev=net0 \
+  -vga std
 ```
 
-Success: `/dev/vda` (then `/dev/vdb`, …) shows partitions and filesystem
-types (ext4, xfs, ntfs, vfat, LVM, …), not an empty disk. `lsblk -J` is
-what prepare will parse next.
+The loop attaches every `$IMGDIR/diskN.img` as IDE (boot disk first). Do not use
+`-nographic`: an unconverted guest rarely has a serial console. On Apple
+Silicon this is TCG and slow; success is GRUB or a login prompt.
 
-Then continue with [prepare.md](prepare.md) **without** stopping qemu.
+Quit qemu (`Ctrl-C` in that terminal, or the window close) **before**
+[start-appliance.md](start-appliance.md). The same `diskN.img` cannot be
+opened by two qemu processes.
+
+Then continue with [start-appliance.md](start-appliance.md) and
+[prepare.md](prepare.md) to convert.

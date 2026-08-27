@@ -74,6 +74,33 @@ func TestInferInitrdPathDefault(t *testing.T) {
 	}
 }
 
+func TestDracutArgv(t *testing.T) {
+	got := dracutArgv("/boot/initramfs-5.14.img", "5.14.0-427", "virtio virtio_blk")
+	want := []string{
+		"dracut", "--force",
+		"--no-hostonly", "--no-hostonly-cmdline",
+		"--add-drivers", "virtio virtio_blk",
+		"/boot/initramfs-5.14.img", "5.14.0-427",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("len=%d want %d: %v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("argv[%d]=%q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestDracutReportedFailure(t *testing.T) {
+	if !dracutReportedFailure([]byte("dracut-install: Failed to find module 'bochs_drm'\ndracut: FAILED:  /usr/lib/dracut/dracut-install -m virtio bochs_drm\n")) {
+		t.Fatal("expected failure for dracut: FAILED output")
+	}
+	if dracutReportedFailure([]byte("*** Creating image file ***\n")) {
+		t.Fatal("clean dracut output should not be a failure")
+	}
+}
+
 func TestInjectVirtioModulesEmptyInitrdPath(t *testing.T) {
 	kernel := &types.KernelInfo{
 		Version:    "5.14.0-427",

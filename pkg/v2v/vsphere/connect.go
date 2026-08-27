@@ -36,39 +36,61 @@ func sdkURL(libvirtURL string) (*url.URL, bool, error) {
 	return sdk, insecure, nil
 }
 
-func credentials(libvirtURL string) (user, password string, err error) {
-	if libvirtURL != "" {
+const (
+	secretAccessKeyPath = "/etc/secret/accessKeyId"
+	secretSecretKeyPath = "/etc/secret/secretKey"
+)
+
+// credentials resolves vSphere user/password: explicit values first, then
+// Forklift secret files, then the username in libvirtURL.
+func credentials(libvirtURL, username, password string) (string, string, error) {
+	return readCredentials(libvirtURL, username, password, secretAccessKeyPath, secretSecretKeyPath)
+}
+
+func readCredentials(libvirtURL, username, password, userFile, passFile string) (string, string, error) {
+	user := username
+	pass := password
+
+	if strings.TrimSpace(user) == "" {
+		if b, err := os.ReadFile(userFile); err == nil {
+			user = strings.TrimSpace(string(b))
+		} else if !os.IsNotExist(err) {
+			return "", "", fmt.Errorf("read vSphere username: %w", err)
+		}
+	}
+	if strings.TrimSpace(user) == "" && libvirtURL != "" {
 		u, parseErr := url.Parse(libvirtURL)
 		if parseErr != nil {
 			return "", "", parseErr
 		}
-		user = u.User.Username()
-	}
-	if userBytes, readErr := os.ReadFile("/etc/secret/accessKeyId"); readErr == nil {
-		if fromSecret := strings.TrimSpace(string(userBytes)); fromSecret != "" {
-			user = fromSecret
+		if u.User != nil {
+			user = u.User.Username()
 		}
 	}
-	passBytes, err := os.ReadFile("/etc/secret/secretKey")
-	if err != nil {
-		return "", "", fmt.Errorf("read vSphere password: %w", err)
+
+	if strings.TrimSpace(pass) == "" {
+		if b, err := os.ReadFile(passFile); err == nil {
+			pass = strings.TrimSpace(string(b))
+		} else if !os.IsNotExist(err) {
+			return "", "", fmt.Errorf("read vSphere password: %w", err)
+		}
 	}
-	password = strings.TrimSpace(string(passBytes))
-	if user == "" || password == "" {
+
+	if strings.TrimSpace(user) == "" || strings.TrimSpace(pass) == "" {
 		return "", "", fmt.Errorf("vSphere credentials are empty")
 	}
-	return user, password, nil
+	return user, pass, nil
 }
 
 // connectSDK dials the vCenter SOAP API. TLS uses CA policy; optional fingerprint
 // is a govmomi fallback when CA verification fails. ESXi NFC downloads reuse this
 // client and inherit ESXi thumbprints registered during lease.Wait().
-func connectSDK(ctx context.Context, sdk *url.URL, policy v2vtls.Policy, fingerprint, libvirtURL string) (*govmomi.Client, error) {
-	user, password, err := credentials(libvirtURL)
+func connectSDK(ctx context.Context, sdk *url.URL, policy v2vtls.Policy, fingerprint, libvirtURL, username, password string) (*govmomi.Client, error) {
+	user, pass, err := credentials(libvirtURL, username, password)
 	if err != nil {
 		return nil, err
 	}
-	sdk.User = url.UserPassword(user, password)
+	sdk.User = url.UserPassword(user, pass)
 
 	tlsCfg, err := v2vtls.VCenterConfig(policy)
 	if err != nil {
@@ -105,17 +127,18 @@ func connect(ctx context.Context, libvirtURL string, fingerprint string) (*govmo
 	if err != nil {
 		return nil, err
 	}
-	return connectSDK(ctx, sdk, policy, fingerprint, libvirtURL)
+	return connectSDK(ctx, sdk, policy, fingerprint, libvirtURL, "", "")
 }
 
-// ConnectHost connects to https://host/sdk using Forklift secret credentials and TLS policy.
-func ConnectHost(ctx context.Context, host string, policy v2vtls.Policy, fingerprint string) (*govmomi.Client, error) {
+// ConnectHost connects to https://host/sdk. Username and password take
+// precedence over Forklift secret files when non-empty.
+func ConnectHost(ctx context.Context, host string, policy v2vtls.Policy, fingerprint, username, password string) (*govmomi.Client, error) {
 	sdk := &url.URL{
 		Scheme: "https",
 		Host:   host,
 		Path:   "/sdk",
 	}
-	return connectSDK(ctx, sdk, policy, fingerprint, "")
+	return connectSDK(ctx, sdk, policy, fingerprint, "", username, password)
 }
 
 func datacenterName(libvirtURL string) string {

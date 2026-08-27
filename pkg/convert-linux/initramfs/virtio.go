@@ -3,6 +3,7 @@
 package initramfs
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -14,10 +15,9 @@ import (
 
 // InjectVirtioModules rebuilds the initramfs for the selected kernel to ensure
 // virtio drivers are included for early boot. The existing initramfs is backed
-// up before the rebuild. We pass a fixed driver list to dracut without
-// pre-filtering; dracut silently skips modules that don't exist in the kernel
-// tree, and avoiding the per-module filesystem probes keeps the guestfish
-// daemon stable (each probe was a separate CLI invocation with mount cycles).
+// up before the rebuild. --add-drivers is a single dracut-install -m list: one
+// missing module fails the whole set, so only modules needed to boot on virtio
+// are passed (not optional display drivers such as bochs).
 func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 	if kernel == nil {
 		return fmt.Errorf("no kernel selected")
@@ -39,13 +39,14 @@ func InjectVirtioModules(guestRoot string, kernel *types.KernelInfo) error {
 
 	virtioDrivers := strings.Join([]string{
 		"virtio", "virtio_ring", "virtio_blk", "virtio_scsi", "virtio_net", "virtio_pci",
-		"xts", "bochs-drm", "bochs",
+		"xts",
 	}, " ")
 
-	out, err := guest.RunInGuest(guestRoot, []string{
-		"dracut", "--force", "--add-drivers", virtioDrivers,
-		initrdPath, kernel.Version,
-	})
+	slog.Info("running dracut", "kernel", kernel.Version)
+	out, err := guest.RunInGuest(guestRoot, dracutArgv(initrdPath, kernel.Version, virtioDrivers))
+	if err == nil && dracutReportedFailure(out) {
+		err = fmt.Errorf("dracut reported FAILED")
+	}
 	if err == nil {
 		slog.Info("dracut completed", "kernel", kernel.Version, "output", string(out))
 		if verifyErr := verifyInitramfsRebuilt(initrdHostPath); verifyErr != nil {
@@ -129,6 +130,22 @@ func inferInitrdPath(guestRoot, version string) string {
 	}
 	// Default to RPM convention when no existing file is found.
 	return "/boot/initramfs-" + version + ".img"
+}
+
+func dracutReportedFailure(out []byte) bool {
+	return bytes.Contains(out, []byte("dracut: FAILED"))
+}
+
+// dracutArgv rebuilds a generic virtio-capable initramfs for kernelVersion.
+// --no-hostonly keeps dracut from following whatever /sys is visible (appliance
+// or source hypervisor hardware).
+func dracutArgv(initrdPath, kernelVersion, virtioDrivers string) []string {
+	return []string{
+		"dracut", "--force",
+		"--no-hostonly", "--no-hostonly-cmdline",
+		"--add-drivers", virtioDrivers,
+		initrdPath, kernelVersion,
+	}
 }
 
 // ensureInitramfsToolsModules adds virtio module names to

@@ -21,6 +21,12 @@ func (b *Backend) UnmountFilesystems() error {
 		if err := b.Sync(); err != nil && firstErr == nil {
 			firstErr = err
 		}
+		// Leftover chroot binds (/proc /sys /dev) sit on the guest tree and
+		// would keep the root FS busy for umount / xfs_repair.
+		b.unmountVirtualFS()
+		if len(b.mounts) == 0 && b.session.ownedExternally {
+			b.recordAdoptedMounts()
+		}
 		if err := b.UnmountAll(); err != nil && firstErr == nil {
 			firstErr = err
 		}

@@ -25,6 +25,8 @@ const DefaultWorkdir = "/var/tmp/v2v"
 type CopyInput struct {
 	Host            string   `json:"host"`
 	Datacenter      string   `json:"datacenter,omitempty"`
+	Username        string   `json:"username,omitempty"`
+	Password        string   `json:"password,omitempty"`
 	Insecure        bool     `json:"insecure"`
 	CaCert          string   `json:"ca_cert,omitempty"`
 	VMName          string   `json:"vm_name"`
@@ -115,7 +117,7 @@ func Run(input *CopyInput) error {
 		return err
 	}
 
-	lease, err := ExportVM(ctx, input.Host, input.Datacenter, policy, input.Fingerprint, input.VMName)
+	lease, err := ExportVM(ctx, input.Host, input.Datacenter, policy, input.Fingerprint, input.VMName, input.Username, input.Password)
 	if err != nil {
 		return fmt.Errorf("NFC export: %w", err)
 	}

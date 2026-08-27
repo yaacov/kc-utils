@@ -18,6 +18,8 @@ Guest disk backends: [../architecture/backends.md](../architecture/backends.md).
 | `--output` | no | `convert-out.json` | Path to write PipelineData JSON (with `convert` section added) |
 | `--mount-root` | no | `/tmp/kc-guest` | Host directory where guest filesystems are mounted |
 | `--offline` | no | `false` | Skip network firstboot when no local package matches (local packages are always tried first) |
+| `--packages-dir` | no | `/usr/share/kc-packages` | Host tree of staged `qemu-guest-agent` packages (see layout below) |
+| `--virtio-win-dir` | no | | Ignored (accepted so Linux and Windows converters share a CLI) |
 | `--backend` | no | `direct` | Guest disk backend: `direct` or `guestfs` (Linux), `qemu` (Linux or macOS) |
 | `--log-level` | no | `info` | Log level (`debug`, `info`, `warn`, `error`) |
 
@@ -38,7 +40,9 @@ image-staged packages without falling back to network install.
 
 ### Host package layout (RHEL family)
 
-Default base: `/usr/share/kc-packages`
+Default base: `/usr/share/kc-packages` (`--packages-dir` to override). Stage a
+local tree with [`build/kc-v2v/stage-linux-packages.sh`](../../build/kc-v2v/stage-linux-packages.sh)
+(first argument is the destination).
 
 ```text
 /usr/share/kc-packages/rpm/el8/x86_64/qemu-guest-agent-*.rpm
@@ -121,7 +125,7 @@ The converter rebuilds the guest initramfs using the guest's own tooling
 via `RunInGuest`:
 
 1. Back up the existing initramfs (`{path}.pre-v2v`)
-2. Try `dracut --force --add-drivers "virtio ..." {path} {version}` (RHEL/Fedora/SUSE)
+2. Try `dracut --force --no-hostonly --no-hostonly-cmdline --add-drivers "virtio ..." {path} {version}` (RHEL/Fedora/SUSE)
 3. Fall back to `update-initramfs -u -k {version}` (Debian/Ubuntu)
 4. Fall back to `mkinitramfs -o {path} {version}` (older Debian)
 

@@ -29,6 +29,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags '-s -w' \
 
 # ── Stage 2: assemble the appliance root + pack initramfs ────────────
 FROM quay.io/fedora/fedora:44 AS build
+# BuildKit/podman set this from --platform (amd64, arm64). Used to pick the
+# foreign-ISA qemu-user-static interpreter so a host-arch appliance can exec
+# guest binaries of the other arch via binfmt_misc.
+ARG TARGETARCH
 
 # Host-side tools needed to assemble/pack the appliance (not shipped in it).
 # kmod supplies depmod, used to regenerate the appliance's module dependency
@@ -50,8 +54,18 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 #   ntfs-3g ntfsprogs    ntfsfix, ntfs-3g mount
 #   dosfstools           vfat (ESP) tooling
 #   glibc bash coreutils runtime for chrooted guest commands
+#   qemu-user-static-<foreign>  binfmt interpreter so chroot can exec a
+#                               guest ELF whose ISA is not the appliance's.
+#                               arm64 appliance → x86_64+i386; amd64 → aarch64.
 ARG APPLIANCE_ROOT=/rootfs
-RUN dnf install -y \
+RUN set -eux; \
+    qemu_pkg=; \
+    arch="${TARGETARCH:-$(uname -m)}"; \
+    case "$arch" in \
+        arm64|aarch64) qemu_pkg=qemu-user-static-x86 ;; \
+        amd64|x86_64)  qemu_pkg=qemu-user-static-aarch64 ;; \
+    esac; \
+    dnf install -y \
         --installroot=${APPLIANCE_ROOT} \
         --use-host-config \
         --releasever=44 \
@@ -62,7 +76,8 @@ RUN dnf install -y \
         util-linux lvm2 cryptsetup libldm \
         clevis clevis-luks \
         e2fsprogs xfsprogs btrfs-progs \
-        ntfs-3g ntfsprogs dosfstools && \
+        ntfs-3g ntfsprogs dosfstools \
+        ${qemu_pkg}; \
     dnf --installroot=${APPLIANCE_ROOT} clean all
 
 # Install the agent as /init: the kernel runs it as PID 1 out of the initramfs.
@@ -86,6 +101,8 @@ COPY --from=agent /out/kc-guest-agent ${APPLIANCE_ROOT}/init
 #   usr/lib/systemd             no init system; the agent IS /init and the host
 #                               powers the VM off by signalling qemu.
 #   usr/lib/dracut              an initramfs generator — a build-time tool.
+#                               qemu-user-static and /usr/lib/binfmt.d stay;
+#                               the agent registers those interpreters at boot.
 #   usr/lib/udev/hwdb.*         ~9M udev hardware database — no udevd runs here.
 #   usr/lib/kbd                 console keymaps/fonts — we use a serial console.
 #

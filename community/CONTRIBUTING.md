@@ -3,7 +3,7 @@
 ## Before you start
 
 - Read [architecture.md](architecture.md) before changing code structure, packages, plugins, or guest disk access.
-- Source compiles on any Unix (`//go:build unix`). Guest disk backends have platform-specific runtime requirements; see [docs/architecture/backends.md](../docs/architecture/backends.md). Release binaries use `make build` (`GOOS=linux`).
+- Source compiles on any Unix (`//go:build unix`). Guest disk backends have platform-specific runtime requirements; see [docs/architecture/backends.md](../docs/architecture/backends.md). Release binaries use `make build` (`GOOS=linux`; override with `GOOS=darwin` on Mac).
 
 ## Directory layout
 
@@ -102,7 +102,7 @@ disk e2e also needs `guestfs-tools` (`make test-e2e-disk-guestfs`).
 ## Build
 
 ```bash
-make build              # all six binaries into bin/
+make build              # all six binaries into bin/ (GOOS=linux)
 make build-kc-v2v       # kc-v2v only
 make build-kc-copy      # kc-copy only
 make build-kc-v2v-image # container image (build/kc-v2v/Containerfile)
@@ -112,6 +112,12 @@ Or build directly on any Unix host:
 
 ```bash
 go build ./cmd/...
+```
+
+Native Mac binaries:
+
+```bash
+GOOS=darwin make build
 ```
 
 Release Linux binaries (same as `make build`):

@@ -246,3 +246,25 @@ func TestFindPackagesAmazonLinuxMappedEL9(t *testing.T) {
 		t.Errorf("ELTag = %q, want el9 (not el10 for mapped AL major)", pkgs[0].ELTag)
 	}
 }
+
+func TestConfigure(t *testing.T) {
+	src, ok := guestagent.Sources.Get("directory")
+	if !ok {
+		t.Fatal("directory source not registered")
+	}
+	d, ok := src.(*DirectorySource)
+	if !ok {
+		t.Fatalf("unexpected source type %T", src)
+	}
+	orig := d.BasePath
+	t.Cleanup(func() { d.BasePath = orig })
+
+	Configure("/tmp/kc-packages")
+	if got := d.basePath(); got != "/tmp/kc-packages" {
+		t.Fatalf("basePath = %q, want /tmp/kc-packages", got)
+	}
+	Configure("")
+	if got := d.basePath(); got != "/tmp/kc-packages" {
+		t.Fatalf("empty Configure should not reset, got %q", got)
+	}
+}

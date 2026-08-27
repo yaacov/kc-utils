@@ -22,6 +22,23 @@ func init() {
 	guestagent.Sources.Register("directory", &DirectorySource{})
 }
 
+// Configure sets the host kc-packages tree used by the registered directory
+// source. Empty path leaves the default (/usr/share/kc-packages).
+func Configure(basePath string) {
+	if basePath == "" {
+		return
+	}
+	src, ok := guestagent.Sources.Get("directory")
+	if !ok {
+		return
+	}
+	d, ok := src.(*DirectorySource)
+	if !ok {
+		return
+	}
+	d.BasePath = basePath
+}
+
 func (d *DirectorySource) basePath() string {
 	if d.BasePath != "" {
 		return d.BasePath

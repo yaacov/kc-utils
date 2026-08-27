@@ -29,7 +29,7 @@ import (
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/drivers/plugins/driverdb"
 
 	// Plugin registrations: driver sources
-	_ "github.com/yaacov/kc-utils/pkg/convert-windows/driversource/plugins/directory"
+	windir "github.com/yaacov/kc-utils/pkg/convert-windows/driversource/plugins/directory"
 
 	// Plugin registrations: Windows version handlers
 	_ "github.com/yaacov/kc-utils/pkg/convert-windows/version"
@@ -70,11 +70,15 @@ func main() {
 	outputFile := flag.String("output", "convert-out.json", "output JSON file")
 	mountRoot := flag.String("mount-root", "/tmp/kc-guest", "guest mount root")
 	offline := flag.Bool("offline", false, "skip network-dependent operations")
+	_ = flag.String("packages-dir", "", "ignored (Linux converter)")
+	virtioWinDir := flag.String("virtio-win-dir", windir.DefaultVirtioWinDir, "host virtio-win tree (drivers/by-os + guest-agent)")
 	backendName := flag.String("backend", backend.NameDirect, "guest disk backend (direct|guestfs|qemu)")
 	logLevel := flag.String("log-level", "info", "log level (debug, info, warn, error)")
 	flag.Parse()
 
 	logger.Init(*logLevel)
+
+	windir.Configure(*virtioWinDir)
 
 	if *inputFile == "" {
 		fmt.Fprintln(os.Stderr, "error: --input is required")

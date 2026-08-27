@@ -1,19 +1,22 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Download and stage virtio-win drivers from public Fedora People ISOs.
+#
+# Usage: stage-virtio-win.sh [DEST]
+#   DEST  virtio-win tree (default: /usr/share/virtio-win)
+#         drivers → $DEST/drivers/by-os/  qemu-ga → $DEST/guest-agent/
 #
 # Two ISOs are fetched:
 #   - Modern (0.1.285): Win7+ / 2008R2+ drivers and qemu-ga MSIs
 #   - Legacy (0.1.160): pre-Win 8 drivers (2k8, 2k3, xp, vista)
 #
-# Environment variables:
-#   VIRTIO_WIN_MODERN_URL  — override modern ISO URL (version bumps / mirrors)
-#   VIRTIO_WIN_LEGACY_URL  — override legacy ISO URL
-#   VIRTIO_WIN_DEST        — destination tree (default: /usr/share/virtio-win)
-#   VIRTIO_WIN_CACHE_DIR   — cache dir for downloaded ISOs (skip curl if present)
-#   VIRTIO_WIN_SKIP_DOWNLOAD — set to 1 to skip all downloads (pre-populated tree)
+# Optional environment:
+#   VIRTIO_WIN_MODERN_URL    override modern ISO URL (version bumps / mirrors)
+#   VIRTIO_WIN_LEGACY_URL    override legacy ISO URL
+#   VIRTIO_WIN_CACHE_DIR     cache dir for downloaded ISOs (skip curl if present)
+#   VIRTIO_WIN_SKIP_DOWNLOAD set to 1 to skip all downloads (pre-populated tree)
 set -euo pipefail
 
-DEST="${VIRTIO_WIN_DEST:-/usr/share/virtio-win}"
+DEST="${1:-/usr/share/virtio-win}"
 MODERN_URL="${VIRTIO_WIN_MODERN_URL:-https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.285-1/virtio-win-0.1.285.iso}"
 LEGACY_URL="${VIRTIO_WIN_LEGACY_URL:-https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/archive-virtio/virtio-win-0.1.160-1/virtio-win-0.1.160.iso}"
 CACHE_DIR="${VIRTIO_WIN_CACHE_DIR:-}"

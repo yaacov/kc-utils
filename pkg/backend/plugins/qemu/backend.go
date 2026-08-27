@@ -42,8 +42,9 @@ func New() *Backend {
 
 // NewMounted creates a Backend for a guest already prepared by a prior stage.
 // When a shared appliance is advertised (KC_QEMU_SOCK) it is adopted with its
-// live mounts intact; otherwise a fresh VM is booted and filesystems remounted
-// from the recorded disk info.
+// live mounts intact, and b.mounts is rebuilt from diskInfos so later unmount
+// (finalize post-fsck) is not a no-op. Otherwise a fresh VM is booted and
+// filesystems remounted from the recorded disk info.
 func NewMounted(disks []types.DiskSpec, mountRoot string, diskInfos []types.DiskInfo) (*Backend, error) {
 	b := New()
 	b.mountRoot = mountRoot
@@ -63,6 +64,10 @@ func NewMounted(disks []types.DiskSpec, mountRoot string, diskInfos []types.Disk
 		if err := b.ensureApplianceRoot(); err != nil {
 			return nil, err
 		}
+		// Prepare's mounts are still live in the appliance, but this process
+		// did not call Mount, so b.mounts is empty. Rebuild it from the
+		// recorded plan so finalize UnmountAll actually unmounts before fsck.
+		b.recordAdoptedMounts()
 		return b, nil
 	}
 

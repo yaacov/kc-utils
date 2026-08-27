@@ -142,9 +142,9 @@ guest is detected.
 
 | Component | Details |
 |-----------|---------|
-| VirtIO kernel modules in initramfs | `virtio`, `virtio_ring`, `virtio_blk`, `virtio_scsi`, `virtio_net`, `virtio_pci`, `xts`, `bochs-drm`, `bochs` |
+| VirtIO kernel modules in initramfs | `virtio`, `virtio_ring`, `virtio_blk`, `virtio_scsi`, `virtio_net`, `virtio_pci`, `xts` |
 | Modprobe aliases (`/etc/modprobe.d/kc-virtio.conf`) | `scsi_hostadapter` -> `virtio_blk`, `scsi_hostadapter1` -> `virtio_scsi`, `eth0` -> `virtio_net` |
-| Initramfs rebuild | `dracut` (rpm-based) or `update-initramfs`/`mkinitramfs` (deb-based) |
+| Initramfs rebuild | `dracut --no-hostonly --no-hostonly-cmdline` (rpm-based) or `update-initramfs`/`mkinitramfs` (deb-based) |
 | Guest agent | `qemu-guest-agent` -- local package from `/usr/share/kc-packages/` or firstboot network install (see Amazon Linux below) |
 
 ### What gets cleaned up (install-related)

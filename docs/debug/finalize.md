@@ -8,7 +8,11 @@ Keep the held qemu process until the debug checks below succeed, then stop it.
 ## Run
 
 ```sh
-export WORKDIR=~/kc-debug/my-vm
+# from the repo root (make build → bin/)
+export PATH="$PWD/bin:$PATH"
+export GOVC_VM=yzamir-d-5g-linux
+export WORKDIR=/tmp/kc-debug
+export IMGDIR=${IMGDIR:-$WORKDIR/$GOVC_VM}
 # KC_QEMU_* still set from start-appliance.md
 
 # Stale hold: if qemu is gone, drop the env so finalize remounts instead of
@@ -19,8 +23,8 @@ fi
 
 kc-finalize \
   --backend qemu \
-  --input "$WORKDIR/pipeline.json" \
-  --output "$WORKDIR/pipeline.json" \
+  --input "$IMGDIR/pipeline.json" \
+  --output "$IMGDIR/pipeline.json" \
   --mount-root /tmp/kc-guest \
   --log-level info
 ```
@@ -47,7 +51,7 @@ On the host:
 
 ```sh
 jq '{firmware: .target.target_firmware, guestcaps: .target.guestcaps, warnings: .target.warnings}' \
-  "$WORKDIR/pipeline.json"
+  "$IMGDIR/pipeline.json"
 ```
 
 `target_firmware` is `bios` or `uefi` — you need that for
@@ -72,5 +76,5 @@ fi
 unset KC_QEMU_SOCK KC_QEMU_PID KC_QEMU_DEBUG_SOCK
 ```
 
-The converted disks are still `$WORKDIR/diskN.img` (raw, in place). There is
+The converted disks are still `$IMGDIR/diskN.img` (raw, in place). There is
 no overlay commit in this cookbook.

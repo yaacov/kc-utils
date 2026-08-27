@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/yaacov/kc-utils/pkg/convert-windows/driversource"
 	"github.com/yaacov/kc-utils/pkg/convert-windows/version"
 )
 
@@ -105,5 +106,29 @@ func TestFindDriversWin2008FallbackTo2k8R2(t *testing.T) {
 	}
 	if filepath.Base(filepath.Dir(drivers[0].InfPath)) != "2k8R2" {
 		t.Fatalf("expected 2k8R2 dir, got %q", drivers[0].SrcPath)
+	}
+}
+
+func TestConfigure(t *testing.T) {
+	src, ok := driversource.Sources.Get("directory")
+	if !ok {
+		t.Fatal("directory source not registered")
+	}
+	d, ok := src.(*DirectorySource)
+	if !ok {
+		t.Fatalf("unexpected source type %T", src)
+	}
+	origBase, origGA := d.BasePath, d.GuestAgentDir
+	t.Cleanup(func() {
+		d.BasePath = origBase
+		d.GuestAgentDir = origGA
+	})
+
+	Configure("/tmp/virtio-win")
+	if got := d.basePath(); got != "/tmp/virtio-win/drivers/by-os" {
+		t.Fatalf("basePath = %q", got)
+	}
+	if got := d.guestAgentDir(); got != "/tmp/virtio-win/guest-agent" {
+		t.Fatalf("guestAgentDir = %q", got)
 	}
 }

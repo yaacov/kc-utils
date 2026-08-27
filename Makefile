@@ -9,11 +9,14 @@ MODULE  := github.com/yaacov/kc-utils
 #   PLATFORM=linux/amd64        Container build platform (linux/amd64 or linux/arm64)
 #   CONTAINER_RUNTIME=          Force docker or podman (auto-detected if empty)
 
-# Release binaries are built with GOOS=linux; source compiles on any Unix (//go:build unix).
+# Release binaries default to GOOS=linux. Override for a native Mac build:
+#   GOOS=darwin make build-kc-copy
 BINS := kc-prepare kc-finalize kc-v2v kc-copy kc-convert-linux kc-convert-windows
 BIN_DIR    := bin
 
 GO      := go
+GOOS    ?= linux
+GOARCH  ?= $(shell $(GO) env GOARCH)
 GOFLAGS := -trimpath
 LDFLAGS := -s -w
 
@@ -87,16 +90,17 @@ help:
 	@printf "  \033[36m%-28s\033[0m %s\n" "REGISTRY_TAG=devel"          "Image tag for builds and pushes"
 	@printf "  \033[36m%-28s\033[0m %s\n" "GIT_TAGS="                  "Extra image tags to push (auto-detected from git when empty)"
 	@printf "  \033[36m%-28s\033[0m %s\n" "PLATFORM=linux/amd64"        "Container build platform (linux/amd64 or linux/arm64)"
-	@printf "  \033[36m%-28s\033[0m %s\n" "CONTAINER_RUNTIME="          "Force docker or podman (auto-detected if empty)"
+	@printf "  \033[36m%-28s\033[0m %s\n" "GOOS=linux"                 "Target OS for make build (e.g. GOOS=darwin)"
+	@printf "  \033[36m%-28s\033[0m %s\n" "GOARCH=$(GOARCH)"             "Target arch for make build (host default)"
 	@printf "\n\033[1mExample:\033[0m  REGISTRY_ORG=myuser make build-kc-v2v-image push-kc-v2v-image\n"
 	@printf "\033[1mRelease:\033[0m     git tag v0.1.0 && make push-kc-v2v-image  # pushes devel-amd64 + v0.1.0-amd64\n\n"
 	@awk '/^## /{desc=substr($$0,4)} /^[a-zA-Z0-9_-]+:/ && desc{sub(/:.*/, "", $$1); printf "  \033[36m%-24s\033[0m %s\n", $$1, desc; desc=""}' $(MAKEFILE_LIST)
 
-## Build all binaries (linux)
+## Build all binaries (linux; set GOOS/GOARCH to override)
 build: $(BINS)
 
 $(BINS):
-	CGO_ENABLED=0 GOOS=linux $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
+	CGO_ENABLED=0 GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO) build $(GOFLAGS) -ldflags '$(LDFLAGS)' -o $(BIN_DIR)/$@ ./cmd/$@
 
 ## Run unit tests locally
 test:
