@@ -17,7 +17,7 @@ for creating the target VM.
 </p>
 
 - Disk copying from VMware uses pure Go
-  [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files
+  [govmomi](https://github.com/vmware/govmomi) NFC export to stream VMDK files raw data
   directly into target PVCs.
 - Guest filesystem operations go through a pluggable backend: host-kernel
   mounts (`direct`), a libguestfs appliance
