@@ -159,7 +159,7 @@ before `/boot/efi`) are mounted in the correct order and unmounted in reverse.
 
 | Step | Actor | Action |
 |------|-------|--------|
-| 0 | kc-v2v | If `env.NeedsCopy()` (`!V2V_inPlace`, default): resolve sources, validate count vs empty PVCs, write `copy-input.json`, spawn `kc-copy` |
+| 0 | kc-v2v | If `env.NeedsCopy()` (`!V2V_inPlace`, default): resolve sources, validate count vs discovered PVCs, write `copy-input.json`, spawn `kc-copy` |
 | 1 | kc-v2v | Discover disks on PVC mounts, write `PrepareInput` JSON, invoke `kc-prepare` |
 | 2 | kc-v2v | Read `PrepareOutput.converter`, invoke `kc-convert-linux` or `kc-convert-windows` |
 | 3 | kc-v2v | Invoke `kc-finalize` |

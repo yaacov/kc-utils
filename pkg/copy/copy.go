@@ -65,7 +65,7 @@ func ClampConcurrency(n, disks int) int {
 	return n
 }
 
-// Run copies vSphere disks into empty PVC targets or `{target_dir}/diskN.img`.
+// Run copies vSphere disks into discovered PVC targets or `{target_dir}/diskN.img`.
 func Run(input *CopyInput) error {
 	if input.Host == "" {
 		return fmt.Errorf("host is required")
@@ -79,21 +79,15 @@ func Run(input *CopyInput) error {
 
 	var targets []Target
 	if input.TargetDir == "" {
-		allTargets, err := DiscoverTargets()
+		discovered, err := DiscoverTargets()
 		if err != nil {
 			return err
 		}
-		if err := logDiscoveredTargets(allTargets); err != nil {
-			return err
+		if len(discovered) == 0 {
+			return fmt.Errorf("no PVC targets found")
 		}
-
-		targets, err = EmptyTargets()
-		if err != nil {
-			return err
-		}
-		if len(targets) == 0 {
-			return fmt.Errorf("no empty PVC targets found")
-		}
+		logDiscoveredTargets(discovered)
+		targets = discovered
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -103,7 +97,7 @@ func Run(input *CopyInput) error {
 		"source_disks", len(input.SourceDisks),
 		"all_disks", len(input.SourceDisks) == 0,
 		"target_dir", input.TargetDir,
-		"empty_targets", len(targets),
+		"targets", len(targets),
 		"vm", input.VMName,
 	)
 
@@ -147,7 +141,7 @@ func Run(input *CopyInput) error {
 		}
 	} else if len(selected) != len(targets) {
 		_ = lease.Abort(ctx)
-		return fmt.Errorf("disk count mismatch: %d selected source disk(s) vs %d empty target(s)", len(selected), len(targets))
+		return fmt.Errorf("disk count mismatch: %d selected source disk(s) vs %d target(s)", len(selected), len(targets))
 	}
 
 	total := len(targets)
@@ -242,13 +236,9 @@ func Run(input *CopyInput) error {
 	return nil
 }
 
-func logDiscoveredTargets(targets []Target) error {
+func logDiscoveredTargets(targets []Target) {
 	slog.Info("discovered PVC targets", "count", len(targets))
 	for _, t := range targets {
-		empty, err := isTargetEmpty(t)
-		if err != nil {
-			return err
-		}
 		kind := "filesystem"
 		if t.IsBlockDev {
 			kind = "block"
@@ -257,8 +247,6 @@ func logDiscoveredTargets(targets []Target) error {
 			"index", t.Index,
 			"path", t.Path,
 			"kind", kind,
-			"empty", empty,
 		)
 	}
-	return nil
 }

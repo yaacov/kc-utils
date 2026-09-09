@@ -6,86 +6,36 @@ import (
 	"testing"
 )
 
-func TestIsBlockEmptyIgnoresZeroStatSize(t *testing.T) {
+func TestDiscoverTargetsAllMounts(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "disk.raw")
-
-	// Populated content with st_size forced to 0 (Linux block-device Stat behavior).
-	data := make([]byte, 4096)
-	data[0] = 0x55 // MBR/boot signature-ish non-zero
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	blockPath := filepath.Join(dir, "block0")
+	if err := os.WriteFile(blockPath, []byte{0}, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	empty, err := isBlockEmpty(path, 0)
+	mountDir := filepath.Join(dir, "disk1")
+	if err := os.Mkdir(mountDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	img := filepath.Join(mountDir, "disk.img")
+	if err := os.WriteFile(img, make([]byte, 1<<20+1), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	restore := SetTargetGlobs(filepath.Join(dir, "block*"), filepath.Join(dir, "disk*"))
+	defer restore()
+
+	targets, err := DiscoverTargets()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if empty {
-		t.Fatal("expected non-zero content to be treated as populated when Stat size is 0")
+	if len(targets) != 2 {
+		t.Fatalf("len = %d, want 2 (all discovered mounts)", len(targets))
 	}
-
-	// Blank content with unknown size must still count as empty.
-	if err := os.WriteFile(path, make([]byte, emptyThreshold), 0o644); err != nil {
-		t.Fatal(err)
+	if targets[0].Path != blockPath || !targets[0].IsBlockDev {
+		t.Fatalf("block target: %+v", targets[0])
 	}
-	empty, err = isBlockEmpty(path, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !empty {
-		t.Fatal("expected all-zero prefix to be empty when Stat size is 0")
-	}
-}
-
-func TestIsTargetEmptyFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "disk.img")
-	if err := os.WriteFile(path, make([]byte, 512), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	empty, err := isTargetEmpty(Target{Path: path, IsBlockDev: false})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !empty {
-		t.Fatal("expected small file to be empty")
-	}
-
-	if err := os.WriteFile(path, append(make([]byte, emptyThreshold), 1), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	empty, err = isTargetEmpty(Target{Path: path, IsBlockDev: false})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if empty {
-		t.Fatal("expected large zero-padded file to not be empty (size check)")
-	}
-
-	data := make([]byte, 512)
-	data[0] = 1
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	empty, err = isTargetEmpty(Target{Path: path, IsBlockDev: false})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !empty {
-		t.Fatal("expected sub-threshold file to be treated as empty")
-	}
-
-	data = make([]byte, emptyThreshold)
-	data[0] = 1
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	empty, err = isTargetEmpty(Target{Path: path, IsBlockDev: false})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if empty {
-		t.Fatal("expected populated file to not be empty")
+	if targets[1].Path != img || targets[1].IsBlockDev {
+		t.Fatalf("filesystem target: %+v", targets[1])
 	}
 }
 
