@@ -42,17 +42,16 @@ func TestNeedsCopyFlagOnly(t *testing.T) {
 	}
 }
 
-func setupCopyTestTargets(t *testing.T, empty bool) (dir string, restore func()) {
+func setupCopyTestTargets(t *testing.T, withPreSizedDisk bool) (dir string, restore func()) {
 	t.Helper()
 	dir = t.TempDir()
 	mountDir := filepath.Join(dir, "disk0")
 	if err := os.Mkdir(mountDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if !empty {
+	if withPreSizedDisk {
 		img := filepath.Join(mountDir, "disk.img")
-		data := make([]byte, copyEmptyThreshold()+1)
-		data[0] = 1
+		data := make([]byte, 1<<20+1) // pre-sized filesystem target (e.g. NFS PVC)
 		if err := os.WriteFile(img, data, 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -61,11 +60,8 @@ func setupCopyTestTargets(t *testing.T, empty bool) (dir string, restore func())
 	return dir, restore
 }
 
-// copyEmptyThreshold mirrors pkg/copy emptyThreshold (1 MiB) for test fixtures.
-func copyEmptyThreshold() int { return 1 << 20 }
-
 func TestValidateCopyModeCopyOK(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, true)
+	_, restore := setupCopyTestTargets(t, false)
 	defer restore()
 
 	cfg := &Config{
@@ -79,8 +75,8 @@ func TestValidateCopyModeCopyOK(t *testing.T) {
 	}
 }
 
-func TestValidateCopyModeCopyPopulatedFails(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, false)
+func TestValidateCopyModeCopyPreSizedOK(t *testing.T) {
+	_, restore := setupCopyTestTargets(t, true)
 	defer restore()
 
 	cfg := &Config{
@@ -89,14 +85,13 @@ func TestValidateCopyModeCopyPopulatedFails(t *testing.T) {
 		LibvirtURL: "vpx://user@vcenter/dc/host/esxi",
 		VmName:     "my-vm",
 	}
-	err := ValidateCopyMode(cfg)
-	if err == nil || !strings.Contains(err.Error(), "already populated") {
-		t.Fatalf("expected populated mismatch error, got %v", err)
+	if err := ValidateCopyMode(cfg); err != nil {
+		t.Fatalf("expected OK with pre-sized target: %v", err)
 	}
 }
 
 func TestValidateCopyModeInPlaceOK(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, false)
+	_, restore := setupCopyTestTargets(t, true)
 	defer restore()
 
 	cfg := &Config{IsInPlace: true}
@@ -105,19 +100,18 @@ func TestValidateCopyModeInPlaceOK(t *testing.T) {
 	}
 }
 
-func TestValidateCopyModeInPlaceEmptyFails(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, true)
+func TestValidateCopyModeInPlaceBlankOK(t *testing.T) {
+	_, restore := setupCopyTestTargets(t, false)
 	defer restore()
 
 	cfg := &Config{IsInPlace: true}
-	err := ValidateCopyMode(cfg)
-	if err == nil || !strings.Contains(err.Error(), "PVC targets are empty") {
-		t.Fatalf("expected empty mismatch error, got %v", err)
+	if err := ValidateCopyMode(cfg); err != nil {
+		t.Fatalf("expected OK with blank target when in-place: %v", err)
 	}
 }
 
 func TestValidateCopyModeCopyWrongSource(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, true)
+	_, restore := setupCopyTestTargets(t, false)
 	defer restore()
 
 	cfg := &Config{
@@ -144,7 +138,7 @@ func TestValidateCopyModeNoTargets(t *testing.T) {
 }
 
 func TestValidateCopySourceCountOK(t *testing.T) {
-	_, restore := setupCopyTestTargets(t, true)
+	_, restore := setupCopyTestTargets(t, false)
 	defer restore()
 
 	if err := ValidateCopySourceCount([]string{"[ds] vm/a.vmdk"}); err != nil {
@@ -152,8 +146,17 @@ func TestValidateCopySourceCountOK(t *testing.T) {
 	}
 }
 
-func TestValidateCopySourceCountMismatch(t *testing.T) {
+func TestValidateCopySourceCountPreSizedOK(t *testing.T) {
 	_, restore := setupCopyTestTargets(t, true)
+	defer restore()
+
+	if err := ValidateCopySourceCount([]string{"[ds] vm/a.vmdk"}); err != nil {
+		t.Fatalf("expected OK with pre-sized target: %v", err)
+	}
+}
+
+func TestValidateCopySourceCountMismatch(t *testing.T) {
+	_, restore := setupCopyTestTargets(t, false)
 	defer restore()
 
 	err := ValidateCopySourceCount([]string{"[ds] vm/a.vmdk", "[ds] vm/b.vmdk"})

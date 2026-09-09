@@ -22,7 +22,7 @@ func NeedsCopy(cfg *Config) bool {
 	return !cfg.IsInPlace
 }
 
-// ValidateCopyMode checks that PVC state matches the V2V_inPlace flag.
+// ValidateCopyMode checks PVC targets exist and copy mode has required vSphere settings.
 func ValidateCopyMode(cfg *Config) error {
 	targets, err := kccopy.DiscoverTargets()
 	if err != nil {
@@ -32,26 +32,12 @@ func ValidateCopyMode(cfg *Config) error {
 		return fmt.Errorf("no PVC targets found at /dev/block* or /mnt/disks/disk*")
 	}
 
-	emptyCount := 0
-	for _, t := range targets {
-		empty, err := kccopy.IsTargetEmpty(t)
-		if err != nil {
-			return fmt.Errorf("check PVC target %s: %w", t.Path, err)
-		}
-		if empty {
-			emptyCount++
-		}
-	}
-	hasEmpty := emptyCount > 0
-
 	needsCopy := NeedsCopy(cfg)
 	slog.Info("copy mode validation",
 		"inPlace", cfg.IsInPlace,
 		"needsCopy", needsCopy,
 		"source", cfg.Source,
 		"targets", len(targets),
-		"emptyTargets", emptyCount,
-		"hasEmpty", hasEmpty,
 	)
 
 	if needsCopy {
@@ -61,14 +47,6 @@ func ValidateCopyMode(cfg *Config) error {
 		if cfg.LibvirtURL == "" || cfg.VmName == "" {
 			return fmt.Errorf("disk copy requires %s and %s", EnvLibvirtURL, EnvVmName)
 		}
-		if !hasEmpty {
-			return fmt.Errorf("%s=0 (copy) but PVC targets are already populated; set %s=1 for pre-filled disks", EnvInPlace, EnvInPlace)
-		}
-		return nil
-	}
-
-	if hasEmpty {
-		return fmt.Errorf("%s=1 (no copy) but PVC targets are empty; set %s=0 to run disk copy", EnvInPlace, EnvInPlace)
 	}
 	return nil
 }
@@ -88,14 +66,14 @@ func ResolveCopySources(cfg *Config) ([]string, error) {
 	return nil, fmt.Errorf("source disk paths required: set V2V_diskPath or vSphere credentials (V2V_libvirtURL, V2V_vmName)")
 }
 
-// ValidateCopySourceCount checks that resolved source disks match empty PVC targets.
+// ValidateCopySourceCount checks that resolved source disks match discovered PVC targets.
 func ValidateCopySourceCount(sources []string) error {
-	targets, err := kccopy.EmptyTargets()
+	targets, err := kccopy.DiscoverTargets()
 	if err != nil {
-		return fmt.Errorf("discover empty PVC targets: %w", err)
+		return fmt.Errorf("discover PVC targets: %w", err)
 	}
 	if len(sources) != len(targets) {
-		return fmt.Errorf("disk count mismatch: %d source vmdk(s) vs %d empty target(s)", len(sources), len(targets))
+		return fmt.Errorf("disk count mismatch: %d source vmdk(s) vs %d target(s)", len(sources), len(targets))
 	}
 	return nil
 }

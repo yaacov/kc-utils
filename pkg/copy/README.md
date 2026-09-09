@@ -11,10 +11,8 @@ This package implements the `kc-copy` binary's core logic.
 1. **Target discovery** — if `CopyInput.target_dir` is set, writes
    `{target_dir}/diskN.img` (raw format) and skips PVC discovery. Otherwise
    scans `/dev/block[0-9]*` (block devices) and `/mnt/disks/disk[0-9]*`
-   (filesystem mounts) for conversion-pod PVCs. Filters to empty targets
-   (block devices whose first 1 MiB is all zeros — probed by read, since
-   Linux `stat` reports size 0 for block devices — or filesystem images
-   smaller than 1 MiB).
+   (filesystem mounts) for conversion-pod PVCs and copies to all discovered
+   targets (existing content is overwritten).
 
 2. **NFC export** — connects to vSphere using `--username`/`--password` (or
    JSON `username`/`password`) when set, otherwise `--password-file` then
@@ -29,7 +27,7 @@ This package implements the `kc-copy` binary's core logic.
    VMDK paths (snapshot delta suffixes like `-000001.vmdk` are normalized to
    base `.vmdk` names). Empty `source_disks` selects every lease disk. PVC
    mode validates that the number of selected source disks matches the number
-   of empty targets.
+   of discovered targets.
 
 4. **Concurrent copy** — downloads disks in parallel (default concurrency 4,
    bounded by a semaphore). Each disk is streamed through `StreamToRaw`,
@@ -73,7 +71,7 @@ memory-constrained pods.
 | `nfc.go` | ESXi NFC HTTPS download via govmomi lease thumbprints |
 | `download.go` | NFC download orchestration, `CopyDisk`, progress logging |
 | `filter.go` | VMDK path normalization and NFC lease filtering |
-| `target.go` | PVC target discovery (`DiscoverTargets`, `EmptyTargets`) and `TargetsFromDir` |
+| `target.go` | PVC target discovery (`DiscoverTargets`) and `TargetsFromDir` |
 | `drain_linux.go` | Linux page-cache drain via fdatasync + fadvise |
 | `drain_other.go` | No-op drain for non-Linux platforms |
 

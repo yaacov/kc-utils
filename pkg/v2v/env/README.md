@@ -2,7 +2,7 @@
 
 Loads the kc-v2v runtime configuration from environment variables and CLI flags, then builds the `PrepareInput` structure consumed by the prepare pipeline. This package bridges the gap between Forklift's `V2V_*` environment and the internal pipeline types.
 
-`Load` reads all `V2V_*` environment variables and CLI flags into a `Config` struct, validates copy mode against PVC state, and returns the populated config. `BuildPrepareInput` assembles a `PrepareInput` from the config, discovered disks, and source metadata (static IPs, LUKS spec, disk specs, and prepare options). Supporting functions handle disk discovery, source metadata fetching from vCenter, static IP parsing, LUKS key loading, copy input construction, and certificate symlink management.
+`Load` reads all `V2V_*` environment variables and CLI flags into a `Config` struct, validates copy prerequisites (PVC targets exist; vSphere settings when copy is enabled), and returns the populated config. `BuildPrepareInput` assembles a `PrepareInput` from the config, discovered disks, and source metadata (static IPs, LUKS spec, disk specs, and prepare options). Supporting functions handle disk discovery, source metadata fetching from vCenter, static IP parsing, LUKS key loading, copy input construction, and certificate symlink management.
 
 ## File layout
 
@@ -31,7 +31,7 @@ Loads the kc-v2v runtime configuration from environment variables and CLI flags,
 | `BuildLUKSSpec` | Builds `*types.LUKSSpec` from Clevis flag or LUKS key directory |
 | `IsVSphereSource` | Reports whether the config source is a vSphere migration |
 | `NeedsCopy` | Reports whether disk copy should run (true when not in-place) |
-| `ValidateCopyMode` | Checks that PVC empty/populated state matches the `V2V_inPlace` flag |
+| `ValidateCopyMode` | Verifies PVC targets exist and copy mode has required vSphere settings |
 | `ResolveCopySources` | Returns ordered VMDK paths from `V2V_diskPath` or vCenter inventory |
 | `BuildCopyInput` | Maps Forklift TLS + copy settings to `kccopy.CopyInput` for `copy-input.json` |
 | `LinkCertificates` | Symlinks `/opt/ca-bundle.crt` → `/etc/secret/cacert` when provider CA is mounted |

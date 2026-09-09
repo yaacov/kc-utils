@@ -101,12 +101,14 @@ overrides via `env.Load()`. Full schema:
 
 ### Copy vs in-place
 
-| `V2V_inPlace` | Behavior | Expected disk state |
-|---------------|----------|---------------------|
-| unset (default) / `0` | Run NFC disk copy, then convert | Blank PVCs |
-| `1` / `true` | Skip copy, convert in-place | Pre-filled PVCs |
+| `V2V_inPlace` | Behavior |
+|---------------|----------|
+| unset (default) / `0` | Run NFC disk copy to all discovered PVC targets, then convert |
+| `1` / `true` | Skip copy, convert in-place on attached PVCs |
 
-`Load()` validates that PVC state matches the flag; mismatch fails early.
+Copy vs in-place is controlled solely by `V2V_inPlace`; kc-v2v does not probe
+PVC content (file size or zero regions). When copy runs, targets are
+overwritten (`O_TRUNC` for filesystem `disk.img`, raw write for block devices).
 
 ### Common optional
 

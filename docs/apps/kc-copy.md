@@ -1,8 +1,8 @@
 # kc-copy Utility
 
 Standalone vSphere NFC disk copy: downloads VMDK disks from vCenter/ESXi over
-HTTPS and writes raw images to empty PVC targets (block devices or filesystem
-images) or to `{target_dir}/diskN.img`. Pure Go govmomi export.
+HTTPS and writes raw images to discovered PVC targets (block devices or
+filesystem images) or to `{target_dir}/diskN.img`. Pure Go govmomi export.
 
 Runs [`pkg/copy/`](../../pkg/copy/) via `copy.Run(CopyInput)`.
 
@@ -144,13 +144,13 @@ For each selected source disk → target (up to `copy_concurrency` disks in para
 
 1. Connect to vCenter via govmomi, export VM via NFC lease
 2. Filter lease URLs to disks matching `source_disks` (normalized path; list order preserved). Empty `source_disks` selects every lease disk in lease order.
-3. PVC mode: require selected count equals empty target count. `--target-dir` mode: write `{target_dir}/disk{N}.img` (`N` = 0..n-1) and skip PVC discovery.
+3. PVC mode: require selected count equals discovered target count. `--target-dir` mode: write `{target_dir}/disk{N}.img` (`N` = 0..n-1) and skip PVC discovery.
 4. Per disk (worker pool): govmomi NFC download (ESXi thumbprint from lease) → `StreamToRaw` VMDK-to-raw converter → direct write to target
 5. On first disk failure, cancel remaining in-flight copies
 6. For block device targets, `fsync` the device before closing
 7. Complete NFC lease
 
-Count gate (PVC mode only): `len(FilterDiskURLs(...))` must equal empty PVC count.
+Count gate (PVC mode only): `len(FilterDiskURLs(...))` must equal discovered PVC count.
 
 ### Disk selection and PVC ordering
 
@@ -160,7 +160,7 @@ Count gate (PVC mode only): `len(FilterDiskURLs(...))` must equal empty PVC coun
 3. NFC lease items are matched to `source_disks` by normalized path
    (`disk-000001.vmdk` → `disk.vmdk`).
 4. Selected disks keep **source_disks order**; lease disks not in the list are skipped.
-5. Empty PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
+5. Discovered PVC targets are sorted by numeric index (`/dev/blockN` or `/mnt/disks/diskN`).
 6. Pairing is `targets[i]` ← `selected[i]`. With `--target-dir`, `targets[i]` is
    `{target_dir}/disk{i}.img`.
 

@@ -218,12 +218,12 @@ Conversion pod (blank PVCs)
       → in-place conversion pipeline
 ```
 
-| `V2V_inPlace` | Behavior | Expected disk state |
-|---|---|---|
-| unset (default) / `0` | Run NFC disk copy, then convert | Blank PVCs |
-| `1` / `true` | Skip copy, convert in-place | Pre-filled PVCs |
+| `V2V_inPlace` | Behavior |
+|---|---|
+| unset (default) / `0` | Run NFC disk copy to all discovered PVC targets, then convert |
+| `1` / `true` | Skip copy, convert in-place on attached PVCs |
 
-`ValidateCopyMode` fails if the flag and PVC state disagree.
+Copy vs in-place is controlled solely by `V2V_inPlace`; PVC content is not probed.
 
 kc-v2v does not distinguish CDI, EC2, Nutanix, copy-offload, etc. — those differ
 only in how Forklift fills PVCs before the pod starts. Attached block PVCs are
@@ -238,8 +238,8 @@ V2V_inPlace=1 V2V_source=nutanix V2V_vmName=my-vm kc-v2v
 
 ## Requirements
 
-- **Blank PVC / copy path (default)** — unset or `V2V_inPlace=0`; empty PVCs
-- **Pre-filled disks** — `V2V_inPlace=1` (CDI populator, offload, etc.)
+- **Copy path (default)** — unset or `V2V_inPlace=0`; NFC copy overwrites all PVC targets
+- **Pre-filled / skip copy** — `V2V_inPlace=1` (CDI populator, offload, etc.)
 - **NFC disk copy** — requires `V2V_libvirtURL`, `V2V_fingerprint`, `V2V_vmName`, and vSphere credentials
 
 ## Environment variables
